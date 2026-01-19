@@ -1,3 +1,6 @@
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
 const userSchema = new Schema({
     email: { 
         type: String, 
@@ -35,4 +38,31 @@ const userSchema = new Schema({
     },
 }, {timestamps: true});
 
-export default mongoose.model('User', userSchema);
+module.exports = mongoose.model('User', userSchema);
+
+// // Tạo model từ schema
+// const User = mongoose.model('User', userSchema);
+
+// // Hàm tạo user admin mẫu
+// const createAdminUser = async () => {
+//     try {
+//         const admin = await User.create({
+//             email: 'admin@example.com',
+//             password: 'admin123',
+//             profileName: 'Admin User',
+//             phone: '123456789',
+//             avatar: 'https://example.com/avatar.jpg',
+//             role: 'admin',
+//             isActive: true,
+//         });
+//         console.log('Admin user created:', admin);
+//     } catch (err) {
+//         console.error('Error creating admin user:', err);
+//     }
+// };
+
+// // Gọi hàm createAdminUser khi muốn tạo admin (có thể gọi hàm này trong khi khởi động server)
+// createAdminUser();
+
+// // Export model User để sử dụng ở các nơi khác
+// module.exports = User;
