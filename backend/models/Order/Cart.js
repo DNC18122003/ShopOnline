@@ -1,8 +1,9 @@
+import mongoose from "mongoose";
+const { Schema, Types } = mongoose;
 const cartItemSchema = new Schema(
   {
     productId: {
-      type: Types,
-      ObjectId,
+      type: Types.ObjectId,
       ref: "Product",
       required: true,
     },
@@ -28,25 +29,24 @@ const cartItemSchema = new Schema(
       default: Date.now,
     },
   },
-  { _id: false },
+  { _id: false }
 );
 
-const cartSchema = new Schema ({
+const cartSchema = new Schema(
+  {
     userId: {
-        type: Types.ObjectId,
-        ref: 'User',
-        required:true,
-        unique: true,
-        index: true,
+      type: Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true,
     },
     items: {
-        type: [cartItemSchema],
-        default: [],
+      type: [cartItemSchema],
+      default: [],
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now,
-    },
-},{timestamps: true});
+  },
+  { timestamps: true }
+);
 
-module.export = mongoose.model('Cart', cartSchema);
+module.exports = mongoose.model("Cart", cartSchema);
