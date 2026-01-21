@@ -44,6 +44,45 @@ const addToCart = async (req, res) => {
         if(quantity < 0){
            return res.status(400).json({ message: "Invalid quantity" });
         }
+        if (quantity > 99) {
+           return res.status(400).json({
+             message: "The quantity must not exceed 99 products.",
+           });
+        }
+         const product = await Product.findById(productId).lean();
+         if (!product || !product.isActive) {
+           return res.status(404).json({ message: "Product not found" });
+         }
+
+         if (product.stock < quantity) {
+           return res.status(400).json({ message: "Not enough stock" });
+         }
+
+         let cart = await Cart.findOne({ userId });
+         if (!cart) cart = new Cart({ userId, items: [] });
+
+         const index = cart.items.findIndex(
+           (i) => i.productId.toString() === productId
+         );
+
+         if (index > -1) {
+           const newQuantity = cart.items[index].quantity + quantity;
+           if (newQuantity > product.stock) {
+             return res.status(400).json({ message: "Exceed stock limit" });
+           }
+           cart.items[index].quantity = newQuantity;
+         } else {
+           cart.items.push({
+             productId,
+             quantity,
+             priceSnapshot: product.price,
+             nameSnapshot: product.name,
+             imageSnapshot: product.images?.[0] || "",
+           });
+         }
+
+         await cart.save();
+         res.json(cart);
 
     } catch (error) {
         res.status(500).json({ message: "Add to cart failed", error: err.message });
@@ -118,12 +157,48 @@ const clearCart = async (req, res) => {
 };
 
 export const mergeCart = async (req, res) => {
-    try {
-        
-    } catch (error) {
-        
+  try {
+    const userId = req.user.id;
+    const guestItems = req.body.items || [];
+
+    let cart = await Cart.findOne({ userId });
+    if (!cart) cart = new Cart({ userId, items: [] });
+
+    for (const guestItem of guestItems) {
+      const product = await Product.findById(guestItem.productId).lean();
+      if (!product || !product.isActive) continue;
+
+      const index = cart.items.findIndex(
+        (i) => i.productId.toString() === guestItem.productId
+      );
+
+      const quantityToAdd = Math.min(guestItem.quantity, product.stock);
+
+      if (quantityToAdd <= 0) continue;
+
+      if (index > -1) {
+        cart.items[index].quantity = Math.min(
+          cart.items[index].quantity + quantityToAdd,
+          product.stock
+        );
+      } else {
+        cart.items.push({
+          productId: product._id,
+          quantity: quantityToAdd,
+          priceSnapshot: product.price,
+          nameSnapshot: product.name,
+          imageSnapshot: product.images?.[0] || "",
+        });
+      }
     }
-}
+
+    await cart.save();
+    res.json(cart);
+  } catch (err) {
+    res.status(500).json({ message: "Merge cart failed", error: err.message });
+  }
+};
+
 
 
 module.exports = {getCart , addToCart, deleteCart, clearCart};
