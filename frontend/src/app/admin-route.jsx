@@ -1,14 +1,14 @@
-import SaleLayout from '@/components/layouts/sale-layout';
+import AdminLayout from '@/components/layouts/admin-layout';
 
 import ProtectedRoute from './protected-route';
 import { UserProfile } from '@/pages/user';
 // Chỉ export mảng object, không tạo router tại đây
-export const saleRoutes = [
+export const adminRoutes = [
     {
-        path: '/sale',
+        path: '/admin',
         element: (
-            <ProtectedRoute requiredRole="Sale">
-                <SaleLayout />
+            <ProtectedRoute requiredRole="Admin">
+                <AdminLayout />
             </ProtectedRoute>
         ),
         children: [

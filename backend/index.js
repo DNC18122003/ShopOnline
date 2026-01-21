@@ -5,7 +5,8 @@ const connectDB = require("./configs/db.connect");
 const cloudinary = require('./configs/cloudinary');
 const router = require("./routes/index");
 const app = express();
-
+const passport = require("passport");
+const { passportConfig } = require('./configs/passport');
 app.use(express.json());
 app.use(
   cors({
@@ -14,6 +15,9 @@ app.use(
   })
 );
 
+// === CẤU HÌNH PASSPORT TẠI ĐÂY ===
+app.use(passport.initialize()); 
+passportConfig(passport);      
 //Routers
 router(app);
 

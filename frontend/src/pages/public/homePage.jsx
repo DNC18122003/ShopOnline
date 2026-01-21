@@ -1,15 +1,11 @@
-import React from 'react';
-import Header from '../../components/public/header';
-import Footer from '../../components/public/footer';
+import { useState } from 'react';
+
 const homePage = () => {
+    const [data, setData] = useState({});
     return (
         <div>
-            {/* header */}
-            <Header />
             {/* body */}
             <div>home page body</div>
-            {/* footer */}
-            <Footer />
         </div>
     );
 };

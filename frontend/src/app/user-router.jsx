@@ -1,19 +1,18 @@
-import SaleLayout from '@/components/layouts/sale-layout';
-
-import ProtectedRoute from './protected-route';
+import UserLayout from '@/components/layouts/user-layout';
 import { UserProfile } from '@/pages/user';
+import ProtectedRoute from './protected-route';
 // Chỉ export mảng object, không tạo router tại đây
-export const saleRoutes = [
+export const userRoutes = [
     {
-        path: '/sale',
+        path: '/',
         element: (
-            <ProtectedRoute requiredRole="Sale">
-                <SaleLayout />
+            <ProtectedRoute requiredRole="User">
+                <UserLayout />
             </ProtectedRoute>
         ),
         children: [
             {
-                path: 'profile',
+                path: '/profile',
                 element: <UserProfile />,
             },
         ],

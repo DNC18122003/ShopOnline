@@ -4,6 +4,7 @@ module.exports = (app) => {
   const api = "/api";
   app.use(api + "/upload", uploadRouter);//Test upload
   app.use(api + "/auth", authRouter);
+  
 };
 
 
