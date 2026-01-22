@@ -1,5 +1,5 @@
 const Cart = require("../../models/order/Cart");
-import Product from "../../models/product/Product";
+const Product = require("../../models/product/Product");
 const getCart = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -156,7 +156,7 @@ const clearCart = async (req, res) => {
     }
 };
 
-export const mergeCart = async (req, res) => {
+ const mergeCart = async (req, res) => {
   try {
     const userId = req.user.id;
     const guestItems = req.body.items || [];
@@ -201,4 +201,4 @@ export const mergeCart = async (req, res) => {
 
 
 
-module.exports = {getCart , addToCart, deleteCart, clearCart};
+module.exports = {getCart , addToCart, updateCart,deleteCart, clearCart};

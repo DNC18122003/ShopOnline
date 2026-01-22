@@ -1,0 +1,21 @@
+import StaffLayout from '@/components/layouts/staff-layout';
+
+import ProtectedRoute from './protected-route';
+import { UserProfile } from '@/pages/user';
+// Chỉ export mảng object, không tạo router tại đây
+export const staffRoutes = [
+    {
+        path: '/staff',
+        element: (
+            <ProtectedRoute requiredRole="Admin">
+                <StaffLayout />
+            </ProtectedRoute>
+        ),
+        children: [
+            {
+                path: 'profile',
+                element: <UserProfile />,
+            },
+        ],
+    },
+];
