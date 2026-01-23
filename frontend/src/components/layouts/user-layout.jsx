@@ -2,6 +2,7 @@ import React from 'react';
 import Header from '../public/header';
 import Footer from '../public/footer';
 import { Outlet } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 const UserLayout = () => {
     return (
         <div>
