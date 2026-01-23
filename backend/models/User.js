@@ -1,47 +1,50 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const hashPassword = require('../utils/hash-password');
-const userSchema = new Schema({
-    email: { 
-        type: String, 
-        required: true, 
-        unique: true, 
-        trim: true, 
-        lowercase: true 
+const hashPassword = require("../utils/hash-password");
+const userSchema = new Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
-    password: { 
-        type: String, 
-        default: null 
+    password: {
+      type: String,
+      default: null,
     },
-    googleId: { 
-        type: String, 
-        unique: true, 
-        sparse: true 
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
-    profileName: { 
-        type: String, 
-        trim: true 
+    profileName: {
+      type: String,
+      trim: true,
     },
-    phone: { 
-        type: String, 
-        trim: true 
+    phone: {
+      type: String,
+      trim: true,
     },
     avatar: String,
-    role: { 
-        type: String, 
-        enum: ['guest', 'customer', 'staff', 'sale', 'admin'], 
-        default: 'guest'
+    role: {
+      type: String,
+      enum: ["guest", "customer", "staff", "sale", "admin"],
+      default: "guest",
     },
-    isActive: { 
-        type: Boolean, 
-        default: true 
+    isActive: {
+      type: Boolean,
+      default: true,
     },
-}, {timestamps: true});
+  },
+  { timestamps: true },
+);
 
 //module.exports = mongoose.model('User', userSchema);
 
 // Tạo model từ schema
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 // Hàm tạo user admin mẫu
 // const createAdminUser = async () => {
