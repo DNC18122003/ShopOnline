@@ -49,26 +49,35 @@ const hashPassword = require('../utils/hash-password');
 };
 // controller for register
 const registerController = async (req, res) => {
-    const { profileName, email, password } = req.body;
-    console.log('Register controller called with:', profileName, email, password);
+    const { userName, email, password } = req.body; 
+    console.log('Register controller called in backend:', userName, email, password);
+    // validate data in backend
+    if (!userName || !email || !password) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
     try {
         // check emai exist
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: 'Email already in use' });
         }
-        // create new user
-        // hash password
+        // check userName exist
+        const existingUserName = await User.findOne({ userName })
+        if (existingUserName) {
+            return res.status(400).json({ message: 'User name already in use' });
+        }
+        //hash password
         const hash_Password = await hashPassword(password);
         const newUser = new User({
-            profileName,
+            userName,
             email,
             password: hash_Password
         });
+        //create new user
         await newUser.save();
         return res.status(201).json({ message: 'User registered successfully', user: {
             id: newUser._id,
-            profileName: newUser.profileName,
+            userName: newUser.userName,
             email: newUser.email
         }
         })
@@ -76,9 +85,6 @@ const registerController = async (req, res) => {
         console.log(error);
         return res.status(500).json({ message: 'Server error' });
     }
-
-
-
 };
 // controller for login with google 
  const loginWithGoogleController = async (req, res) => {};
