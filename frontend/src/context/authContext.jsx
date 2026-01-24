@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 // 1. Tạo Context
-const AuthContext = createContext(null);
+export const AuthContext = createContext(null);
 
 // 2. Tạo Provider
 export const AuthProvider = ({ children }) => {
@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = {
         user,
+        setUser,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

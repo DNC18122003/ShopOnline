@@ -34,21 +34,21 @@ const register = () => {
         }
         // validate email
         if (!form.email) {
-            errors.emailError = 'Email is required';
+            errors.emailError = 'Địa chỉ email không được để trống !';
         } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
-            errors.emailError = 'Invalid email address';
+            errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
         }
         // validate password
         if (!form.password || form.password.length < 8) {
-            errors.passwordError = 'Password is required and must be at least 8 characters';
+            errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
         } else {
             errors.passwordError = '';
         }
         // validate confirm password
         if (form.password !== form.confirmPassword) {
-            errors.confirmPasswordError = 'Password and confirm password do not match';
+            errors.confirmPasswordError = 'Mật khẩu và xác nhận mật khẩu không khớp !';
         }
         return errors;
     };

@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+const { Schema, Types } = mongoose;
 const addressSchema = new Schema(
   {
     fullName: String,
@@ -102,12 +104,7 @@ const orderSchema = new Schema(
 
     orderStatus: {
       type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "completed",
-        "cancelled",
-      ],
+      enum: ["pending", "confirmed", "completed", "cancelled"],
       default: "pending",
       index: true,
     },
