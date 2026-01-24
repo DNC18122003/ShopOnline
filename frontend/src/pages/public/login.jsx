@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import poster from '../../assets/tech_shop_poster.png';
-import { Cpu, Mail, Lock, ArrowLeft } from 'lucide-react';
+import poster from '../../assets/techstore.png';
+import { Cpu, Mail, Lock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
