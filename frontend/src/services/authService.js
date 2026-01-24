@@ -19,3 +19,12 @@ export const register_service = async (userName, email, password) => {
         throw error;
     }
 };
+// logout
+export const logout_service = async () => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/auth/logout`, {}, { withCredentials: true });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};

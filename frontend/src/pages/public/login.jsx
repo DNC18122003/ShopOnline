@@ -1,16 +1,20 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '@/context/authContext';
 
-import poster from '../../assets/techstore.png';
-import { Cpu, Mail, Lock } from 'lucide-react';
+import { Cpu, Mail } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 
+import poster from '../../assets/tech_shop_poster.png';
+
 import { login_service } from '../../services/authService';
 const login = () => {
     const navigate = useNavigate();
+    const { setUser } = useContext(AuthContext);
+
     const [formLogin, setFormLogin] = React.useState({
         email: '',
         password: '',
@@ -26,14 +30,14 @@ const login = () => {
     const validateForm = (form) => {
         const errors = {};
         if (!form.email) {
-            errors.emailError = 'Email is required';
+            errors.emailError = 'Địa chỉ email không được để trống !';
         } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
-            errors.emailError = 'Invalid email address';
+            errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
         }
         if (!form.password || form.password.length < 8) {
-            errors.passwordError = 'Password is required and must be at least 8 characters';
+            errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
         } else {
             errors.passwordError = '';
         }
@@ -52,9 +56,18 @@ const login = () => {
             const response = await login_service(formLogin.email, formLogin.password);
             // console.log('Login successful api:', response.data);
             if (response.status === 200) {
-                localStorage.setItem('user', JSON.stringify(response.data.user));
+                // set data in auth context
+                setUser(response.data.user);
+                // set data in local storage
+                const data_ui = {
+                    fullName: response.data.user.fullName,
+                    email: response.data.user.email,
+                    userName: response.data.user.userName,
+                    avatar: response.data.user.avatar,
+                };
+                localStorage.setItem('data_ui', JSON.stringify(data_ui));
                 // alert('Login successful!');
-                toast.success('Login successful!');
+                toast.success('Đăng nhập thành công, chào ' + response.data.user.userName);
                 setTimeout(() => {
                     navigate('/');
                 }, 1000);
