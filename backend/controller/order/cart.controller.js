@@ -201,4 +201,4 @@ const clearCart = async (req, res) => {
 
 
 
-module.exports = {getCart , addToCart, updateCart,deleteCart, clearCart};
+module.exports = {getCart , addToCart, updateCart,deleteCart, clearCart, mergeCart};

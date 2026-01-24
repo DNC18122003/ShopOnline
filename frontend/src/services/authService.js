@@ -9,11 +9,11 @@ export const login_service = async (email, password) => {
         throw error;
     }
 };
-export const register_service = async (profileName, email, password) => {
-    console.log('Register service called with:', profileName, email, password);
-    console.log('API_BASE_URL:', `${API_BASE_URL}/auth/register`);
+export const register_service = async (userName, email, password) => {
+    // console.log('Register service called with:', userName, email, password);
+    // console.log('API_BASE_URL:', `${API_BASE_URL}/auth/register`);
     try {
-        const response = await axios.post(`${API_BASE_URL}/auth/register`, { profileName, email, password });
+        const response = await axios.post(`${API_BASE_URL}/auth/register`, { userName, email, password });
         return response;
     } catch (error) {
         throw error;
