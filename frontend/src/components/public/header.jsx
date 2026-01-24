@@ -1,6 +1,8 @@
 import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
 import { AuthContext } from '@/context/authContext';
+import { useCart } from '@/context/cartContext';
 
 import { Cpu, ShoppingCart } from 'lucide-react';
 
@@ -23,6 +25,8 @@ import {
 import { toast } from 'react-toastify';
 
 import { logout_service } from '@/services/authService';
+
+
 const header = () => {
     const { setUser } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -41,6 +45,8 @@ const header = () => {
             console.log(error);
         }
     };
+    const { cart } = useCart();
+
     return (
         <header className="w-full border-b bg-white">
             <div className="flex h-16 justify-between items-center px-4">
@@ -69,10 +75,12 @@ const header = () => {
                 {/* Action Cart + Avatar */}
                 <div className="flex items-center gap-6">
                     {/* Cart */}
-                    <div className="relative cursor-pointer">
-                        <ShoppingCart className="h-6 w-6 text-gray-700" />
-                        <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs">3</Badge>
-                    </div>
+                    <Link to={'/cart'} className="relative cursor-pointer">
+                        <div className="relative cursor-pointer">
+                            <ShoppingCart className="h-6 w-6 text-gray-700" />
+                            <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs">0</Badge>
+                        </div>
+                    </Link>
 
                     {/* User Avatar */}
                     {data_ui == null ? (
