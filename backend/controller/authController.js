@@ -22,19 +22,23 @@ const hashPassword = require('../utils/hash-password');
             id: user._id,
             role: user.role
         }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        console.log('Token:', token);
         // Set token in cookie
         res.cookie('accessToken', token, {
             httpOnly: true,
             secure: false,
-            sameSite: 'strict',
+            sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000 
         })
         // set data use to response
         const userResponse = {
             id: user._id,
             email: user.email,
-            name: user.name,
+            userName: user.userName,
             role: user.role,
+            fullName: user.fullName,
+            phone: user.phone,
+            avatar: user.avatar
             // Thêm các field khác nếu cần
         };
 
@@ -86,6 +90,20 @@ const registerController = async (req, res) => {
         return res.status(500).json({ message: 'Server error' });
     }
 };
+// controller for logout
+const logoutController = async (req, res) => {
+    try {
+        // log associated user out
+        console.log('Logout controller called in backend');
+        console.log('accessToken:', req.cookies.accessToken);
+        res.clearCookie('accessToken');
+        return res.status(200).json({ message: 'Logout successful' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // controller for login with google 
  const loginWithGoogleController = async (req, res) => {};
- module.exports = { loginController, loginWithGoogleController, registerController };   
+ module.exports = { loginController, loginWithGoogleController, registerController, logoutController };   
