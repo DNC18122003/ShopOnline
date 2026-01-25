@@ -96,7 +96,6 @@ export default function VoucherManagement() {
 
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code)
-    // Có thể thêm thông báo (toast) ở đây
   }
 
   const filteredVouchers = vouchers.filter((v) =>
