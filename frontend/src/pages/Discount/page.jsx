@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, Suspense } from "react"
 import { Search, ChevronDown, Calendar, Filter, Plus } from "lucide-react"
 import { Sidebar } from "@/components/layouts/Discount/sidebar"
@@ -74,6 +72,8 @@ const initialVouchers = [
 
 export default function VoucherManagement() {
   const [activeMenu, setActiveMenu] = useState("vouchers")
+  // State quản lý đóng mở sidebar
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [vouchers, setVouchers] = useState(initialVouchers)
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
@@ -96,6 +96,7 @@ export default function VoucherManagement() {
 
   const handleCopyCode = (code) => {
     navigator.clipboard.writeText(code)
+    // Có thể thêm thông báo (toast) ở đây
   }
 
   const filteredVouchers = vouchers.filter((v) =>
@@ -104,8 +105,13 @@ export default function VoucherManagement() {
 
   return (
     <Suspense fallback={<Loading />}>
-      <div className="flex min-h-screen bg-[#E8F4FC]">
-        <Sidebar activeItem={activeMenu} onItemClick={setActiveMenu} />
+      <div className="flex min-h-screen bg-gray-100"> 
+        <Sidebar 
+          activeItem={activeMenu} 
+          onItemClick={setActiveMenu}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        />
 
         <main className="flex-1 p-8">
           {/* Header */}
