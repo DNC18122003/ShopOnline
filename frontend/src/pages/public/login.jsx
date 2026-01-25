@@ -1,34 +1,73 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '@/context/authContext';
 
-import poster from '../../assets/tech_shop_poster.png';
-import { Cpu, Mail, Lock } from 'lucide-react';
+import { Cpu, Mail } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'react-toastify';
+
+import poster from '../../assets/tech_shop_poster.png';
+
 import { login_service } from '../../services/authService';
 const login = () => {
     const navigate = useNavigate();
-    const [messageError, setMessageError] = React.useState('');
+    const { setUser } = useContext(AuthContext);
+
     const [formLogin, setFormLogin] = React.useState({
         email: '',
         password: '',
     });
+    const [messageError, setMessageError] = React.useState({});
+    const [loadingLogin, setLoadingLogin] = React.useState(false);
     const handleChange = (e) => {
         setFormLogin({
             ...formLogin,
             [e.target.name]: e.target.value,
         });
     };
+    const validateForm = (form) => {
+        const errors = {};
+        if (!form.email) {
+            errors.emailError = 'Địa chỉ email không được để trống !';
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
+            errors.emailError = 'Địa chỉ email không hợp lệ !';
+        } else {
+            errors.emailError = '';
+        }
+        if (!form.password || form.password.length < 8) {
+            errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
+        } else {
+            errors.passwordError = '';
+        }
+        return errors;
+    };
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const errors = validateForm(formLogin);
+        setMessageError(errors);
+
+        if (errors.emailError || errors.passwordError) {
+            return;
+        }
         try {
+            setLoadingLogin(true);
             const response = await login_service(formLogin.email, formLogin.password);
             // console.log('Login successful api:', response.data);
             if (response.status === 200) {
-                localStorage.setItem('user', JSON.stringify(response.data.user));
-                alert('Login successful!');
+                // set data in auth context
+                setUser(response.data.user);
+                // set data in local storage
+                const data_ui = {
+                    fullName: response.data.user.fullName,
+                    email: response.data.user.email,
+                    userName: response.data.user.userName,
+                    avatar: response.data.user.avatar,
+                };
+                localStorage.setItem('data_ui', JSON.stringify(data_ui));
+                // alert('Login successful!');
+                toast.success('Đăng nhập thành công, chào ' + response.data.user.userName);
                 setTimeout(() => {
                     navigate('/');
                 }, 1000);
@@ -36,6 +75,8 @@ const login = () => {
         } catch (error) {
             setMessageError(error.response.data.message);
             console.error('Login failed:', error);
+        } finally {
+            setLoadingLogin(false);
         }
     };
     return (
@@ -43,7 +84,7 @@ const login = () => {
             {/* left : login form */}
             <div className=" bg-slate-300 w-full lg:w-1/2 flex items-center justify-center p-4">
                 <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
-                    {/* iCon */}
+                    {/* Logo */}
                     <div className="flex justify-center mb-5">
                         <Cpu className="text-blue-700 h-10 w-10" />
                     </div>
@@ -66,21 +107,24 @@ const login = () => {
                                     className=" border-gray-300 focus:border-blue-500 text-gray-900"
                                 />
                             </div>
+                            {messageError?.emailError && (
+                                <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>
+                            )}
                         </div>
                         {/* password */}
                         <div>
                             <label className="text-sm font-medium text-gray-700 block mb-2">Mật khẩu</label>
-                            <div className="relative">
-                                <Lock className="absolute right-3 top-[50%] translate-y-[-50%] w-5 h-5 text-gray-400" />
-                                <Input
-                                    type="password"
-                                    placeholder="Nhập mật khẩu của bạn"
-                                    name="password"
-                                    value={formLogin.password}
-                                    onChange={handleChange}
-                                    className=" border-gray-300 focus:border-blue-500 text-gray-900"
-                                />
-                            </div>
+                            <Input
+                                type="password"
+                                placeholder="Nhập mật khẩu của bạn"
+                                name="password"
+                                value={formLogin.password}
+                                onChange={handleChange}
+                                className=" border-gray-300 focus:border-blue-500 text-gray-900"
+                            />
+                            {messageError?.passwordError && (
+                                <p className="text-red-500 text-sm mt-1">{messageError.passwordError}</p>
+                            )}
                         </div>
                         {/*  Forgot Password */}
                         <div className="flex items-center justify-end">
@@ -90,11 +134,14 @@ const login = () => {
                         </div>
                         <Button
                             type="submit"
+                            disabled={loadingLogin}
                             className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-lg"
                         >
                             Đăng nhập
                         </Button>
-                        {messageError && <p className="text-red-500 text-sm ">{messageError}</p>}
+                        {messageError && typeof messageError === 'string' && (
+                            <p className="text-red-500 text-sm">{messageError}</p>
+                        )}
                     </form>
 
                     {/* Divider */}
