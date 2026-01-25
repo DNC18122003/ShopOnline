@@ -8,3 +8,4 @@ router.post('/register', registerController);
 router.post('/login-with-google', loginWithGoogleController);
 router.post('/logout', logoutController);
 module.exports = router;
+

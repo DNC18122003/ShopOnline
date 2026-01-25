@@ -1,8 +1,8 @@
 const Cart = require("../../models/order/Cart");
-const Product = require("../../models/product/Product");
+const Product = require("../../models/Products/Product");
 const getCart = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user?._id;
         const cart = await Cart.findOne({userId}).lean();
 
         if(!cart){
