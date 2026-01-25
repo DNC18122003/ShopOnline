@@ -1,27 +1,21 @@
 import { createBrowserRouter } from 'react-router-dom';
-import {
-
-} from "@/components/layouts";
+import {DiscountPage} from "@/pages/Discount/page";
 import { NotFound } from '@/pages';
-import Login from '@/pages/public/login';
-import HomePage from '@/pages/public/homePage';
-import Register from '@/pages/public/register';
+import DiscountPage from '@/pages/Discount/page';
 export const router = createBrowserRouter([
     {
         path: '/',
-        element: <HomePage />,
+        element: <div>Hẹ Hẹ Hẹ</div>,
         children: [],
     },
     {
-        path: '/login',
-        element: <Login />,
-    },
-    {
-        path: '/register',
-        element: <Register />,
+        path: '/discount', 
+        element: <DiscountPage />,
     },
     {
         path: '*',
         element: <NotFound />,
     },
+    
+    
 ]);
