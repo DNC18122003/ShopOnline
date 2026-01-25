@@ -5,6 +5,7 @@ import ProductListingPage from '@/pages/product/product_listing_page';
 import UserLayout from '@/components/layouts/user-layout';
 import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
+import CartPage from '@/pages/cart/CartPage';
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
