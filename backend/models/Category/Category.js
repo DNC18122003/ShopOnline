@@ -19,7 +19,7 @@ const categorySchema = new Schema(
       type: String,
       default: "",
     },
-  
+
     isActive: {
       type: Boolean,
       default: true,
@@ -27,9 +27,7 @@ const categorySchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
-
-
 
 module.exports = mongoose.model("Category", categorySchema);
