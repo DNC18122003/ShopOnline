@@ -39,9 +39,10 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
     try {
         const userId = req.user._id;
+        
         const {productId, quantity = 1} = req.body;
         
-        if(quantity < 0){
+        if(quantity <= 0){
            return res.status(400).json({ message: "Invalid quantity" });
         }
         if (quantity > 99) {
@@ -85,14 +86,14 @@ const addToCart = async (req, res) => {
          res.json(cart);
 
     } catch (error) {
-        res.status(500).json({ message: "Add to cart failed", error: err.message });
+        res.status(500).json({ message: "Add to cart failed", error: error.message });
   }
 
 };
 
 const updateCart = async (req, res) => {
     try {
-          const userId = req.user.id;
+          const userId = req.user._id;
           const { productId, quantity } = req.body;
 
           if (quantity < 0)
@@ -125,13 +126,13 @@ const updateCart = async (req, res) => {
           res.json(cart);
         
     } catch (error) {
-        res.status(500).json({ message: "Update to cart failed", error: err.message });
+        res.status(500).json({ message: "Update to cart failed", error: error.message });
     }
 };
 
 const deleteCart = async (req, res) => {
     try {
-         const userId = req.user.id;
+         const userId = req.user._id;
          const { productId } = req.params;
 
          const cart = await Cart.findOneAndUpdate(
@@ -142,23 +143,23 @@ const deleteCart = async (req, res) => {
 
          res.json(cart || { items: [] });
     } catch (error) {
-       res.status(500).json({ message: "Delete to cart failed", error: err.message });          
+       res.status(500).json({ message: "Delete to cart failed", error: error.message });          
     }
 };
 
 const clearCart = async (req, res) => {
     try {
-          await Cart.findOneAndUpdate({ userId: req.user.id }, { items: [] });
+          await Cart.findOneAndUpdate({ userId: req.user._id }, { items: [] });
 
           res.json({ message: "Cart cleared" });
     } catch (error) {
-         res.status(500).json({ message: "Clear to cart failed", error: err.message });
+         res.status(500).json({ message: "Clear to cart failed", error: error.message });
     }
 };
 
  const mergeCart = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const guestItems = req.body.items || [];
 
     let cart = await Cart.findOne({ userId });

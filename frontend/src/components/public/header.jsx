@@ -60,13 +60,18 @@ const header = () => {
                 {/* Navigation Menu: Home, Products, About us, Support */}
                 <NavigationMenu>
                     <NavigationMenuList className="gap-6">
-                        {['Trang chủ', 'Sản phẩm', 'Về chúng tôi', 'Liên hệ '].map((item) => (
+                        {[
+                            { name: 'Trang chủ', url: '/home' },
+                            { name: 'Sản phẩm', url: '/product' },
+                            { name: 'Về chúng tôi', url: '/about' },
+                            { name: 'Liên hệ', url: '/contact' },
+                        ].map((item) => (
                             <NavigationMenuItem key={item}>
                                 <NavigationMenuLink
-                                    href="#"
+                                    href={item.url}
                                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                                 >
-                                    {item}
+                                    {item.name}
                                 </NavigationMenuLink>
                             </NavigationMenuItem>
                         ))}

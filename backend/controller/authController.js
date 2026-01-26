@@ -19,7 +19,7 @@ const hashPassword = require('../utils/hash-password');
         }
         // Create jwt token 
         const token = jwt.sign({
-            id: user._id,
+            _id: user._id,
             role: user.role
         }, process.env.JWT_SECRET, { expiresIn: '24h' });
         console.log('Token:', token);
