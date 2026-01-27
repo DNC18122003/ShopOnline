@@ -113,4 +113,35 @@ const getProducts = async (req, res) => {
     });
   }
 };
-module.exports = { getProducts };
+const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const product = await Product.findOne({
+      _id: id,
+      isActive: true,
+    })
+      .populate("brand", "name slug logo")
+      .populate("category", "name slug")
+      .lean();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sản phẩm",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  } catch (error) {
+    console.error("Get product by id error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+    });
+  }
+};
+module.exports = { getProducts,getProductById };
