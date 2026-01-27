@@ -7,3 +7,7 @@ export const getProducts = (params) => {
 export const getProductById = (id) => {
     return api.get(`/product/${id}`);
 };
+
+export const getSimilarProducts = (id, params) => {
+    return api.get(`/product/${id}/similar`, { params });
+};
