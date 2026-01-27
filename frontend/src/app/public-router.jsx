@@ -6,6 +6,10 @@ import UserLayout from '@/components/layouts/user-layout';
 import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
 import CartPage from '@/pages/cart/CartPage';
+import ProductDetailPage from '@/pages/product/product_detail_page';
+
+
+
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -21,9 +25,14 @@ export const publicRoutes = [
                 element: <ProductListingPage />,
             },
             {
+                path: '/product/:id',
+                element: <ProductDetailPage/>,
+            },
+            {
                 path: '/cart',
                 element: <CartPage />,
             },
+           
         ],
     },
     {

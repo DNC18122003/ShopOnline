@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, ShoppingCart, Star } from 'lucide-react';
 import { getProducts } from '@/services/product/product.api';
+import { getCategories } from '@/services/category/category.api';
+import { getBrands } from '@/services/brand/brand.api';
 
-function ProductCard({ name, brand, price, averageRating, reviewCount, images, badge }) {
+function ProductCard({ _id, name, price, averageRating, reviewCount, images, badge }) {
+    const navigate = useNavigate();
     const formatVND = (amount) => {
         return new Intl.NumberFormat('vi-VN', {
             style: 'currency',
@@ -11,7 +15,10 @@ function ProductCard({ name, brand, price, averageRating, reviewCount, images, b
     };
 
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
+        <div
+            onClick={() => navigate(`/product/${_id}`)}
+            className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300"
+        >
             <div className="relative bg-muted p-6">
                 <div className="relative bg-muted p-6 flex items-center justify-center h-48">
                     {images ? (
@@ -50,6 +57,10 @@ export default function ProductListingPage() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
 
+    // DYNAMIC DATA FROM API
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
+
     // PAGINATION
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 6;
@@ -84,7 +95,26 @@ export default function ProductListingPage() {
     // UI
     const [expandedSections, setExpandedSections] = useState(new Set(['category']));
 
-    // FETCH API
+    // FETCH CATEGORIES AND BRANDS ON MOUNT
+    useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [categoriesRes, brandsRes] = await Promise.all([
+                    getCategories({ isActive: true }),
+                    getBrands({ isActive: true }),
+                ]);
+
+                setCategories(categoriesRes.data || []);
+                setBrands(brandsRes.data || []);
+            } catch (err) {
+                console.error('❌ Fetch filters error:', err);
+            }
+        };
+
+        fetchFilters();
+    }, []);
+
+    // FETCH PRODUCTS
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
@@ -165,30 +195,24 @@ export default function ProductListingPage() {
 
                     {expandedSections.has('category') && (
                         <div className="mt-2 space-y-2 pl-2">
-                            {[
-                                { label: 'CPU', slug: 'cpu', count: 89 },
-                                { label: 'VGA', slug: 'vga', count: 247 },
-                                { label: 'RAM', slug: 'ram', count: 156 },
-                                { label: 'Ổ cứng SSD', slug: 'ssd', count: 203 },
-                                { label: 'Ổ cứng HDD', slug: 'hdd', count: 203 },
-                                { label: 'Mainboard', slug: 'mainboard', count: 134 },
-                                { label: 'Nguồn', slug: 'psu', count: 98 },
-                            ].map((cat) => (
-                                <label
-                                    key={cat.slug}
-                                    className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedCategories.has(cat.slug)}
-                                        onChange={() => toggleFilter(setSelectedCategories, cat.slug)}
-                                        className="w-4 h-4 rounded border-gray-300"
-                                    />
-                                    <span className="text-sm text-muted-foreground flex-1">
-                                        {cat.label} ({cat.count})
-                                    </span>
-                                </label>
-                            ))}
+                            {categories.length === 0 ? (
+                                <p className="text-xs text-muted-foreground pl-2">Đang tải...</p>
+                            ) : (
+                                categories.map((cat) => (
+                                    <label
+                                        key={cat._id}
+                                        className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedCategories.has(cat.slug)}
+                                            onChange={() => toggleFilter(setSelectedCategories, cat.slug)}
+                                            className="w-4 h-4 rounded border-gray-300"
+                                        />
+                                        <span className="text-sm text-muted-foreground flex-1">{cat.name}</span>
+                                    </label>
+                                ))
+                            )}
                         </div>
                     )}
                 </div>
@@ -246,20 +270,24 @@ export default function ProductListingPage() {
 
                     {expandedSections.has('brand') && (
                         <div className="mt-2 space-y-2 pl-2">
-                            {['NVIDIA', 'AMD', 'Intel', 'ASUS', 'MSI', 'Corsair'].map((brand) => (
-                                <label
-                                    key={brand}
-                                    className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
-                                >
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedBrands.has(brand)}
-                                        onChange={() => toggleFilter(setSelectedBrands, brand)}
-                                        className="w-4 h-4 rounded border-gray-300"
-                                    />
-                                    <span className="text-sm text-muted-foreground">{brand}</span>
-                                </label>
-                            ))}
+                            {brands.length === 0 ? (
+                                <p className="text-xs text-muted-foreground pl-2">Đang tải...</p>
+                            ) : (
+                                brands.map((brand) => (
+                                    <label
+                                        key={brand._id}
+                                        className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedBrands.has(brand.slug)}
+                                            onChange={() => toggleFilter(setSelectedBrands, brand.slug)}
+                                            className="w-4 h-4 rounded border-gray-300"
+                                        />
+                                        <span className="text-sm text-muted-foreground">{brand.name}</span>
+                                    </label>
+                                ))
+                            )}
                         </div>
                     )}
                 </div>

@@ -19,7 +19,7 @@ const getStatusLabel = (status) => {
   return status === "public" ? "Công khai" : "Bản nháp"
 }
 
-export default function BlogTable({
+export  function BlogTable({
   posts,
   onView,
   onEdit,
