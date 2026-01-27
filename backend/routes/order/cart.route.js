@@ -4,9 +4,9 @@ const {isAuth,optionalAuth,authenticateToken} = require("../../middleware/author
 const router = express.Router();
 router.get("/",optionalAuth, cartController.getCart);
 router.post("/add",authenticateToken, cartController.addToCart);
-router.put("/update",cartController.updateCart);
-router.delete("/remove/:productId", cartController.deleteCart);
-router.delete("/clear", cartController.clearCart);
-router.delete("/merge", cartController.mergeCart);
+router.put("/update",authenticateToken,cartController.updateCart);
+router.delete("/remove/:productId",authenticateToken, cartController.deleteCart);
+router.delete("/clear",authenticateToken, cartController.clearCart);
+router.post("/merge", authenticateToken,cartController.mergeCart);
 
 module.exports = router;

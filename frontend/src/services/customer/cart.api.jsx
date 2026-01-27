@@ -21,5 +21,5 @@ export const removeCartItem = (productId) => {
 
 
 export const clearCart = () => {
-    return api.delete('/cart/clear');
+    return api.post('/cart/clear');
 };

@@ -41,9 +41,10 @@ const CartPage = () => {
                         </div>
 
                         <div className="space-y-4">
+                            
                             {cart.items.map((item) => (
                                 <CartItem
-                                    key={item.productId}
+                                    key={String(item.productId)}
                                     item={item}
                                     onRemove={() => removeItem(item.productId)}
                                     onUpdateQuantity={(qty) => updateQuantity(item.productId, qty)}
