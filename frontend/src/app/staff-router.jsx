@@ -7,7 +7,7 @@ export const staffRoutes = [
     {
         path: '/staff',
         element: (
-            <ProtectedRoute requiredRole="Admin">
+            <ProtectedRoute requiredRole="Staff">
                 <StaffLayout />
             </ProtectedRoute>
         ),

@@ -1,8 +1,70 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, Eye, RotateCw, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getProductById, getSimilarProducts } from '../../services/product/product.api';
 
 export default function ProductDetailPage() {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [currentImage, setCurrentImage] = useState(0);
+    const [similarProducts, setSimilarProducts] = useState([]);
+
+    // Fetch product data
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await getProductById(id);
+                setProduct(response.data);
+            } catch (err) {
+                console.error('Error fetching product:', err);
+                setError('Không thể tải thông tin sản phẩm. Vui lòng thử lại sau.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (id) {
+            fetchProduct();
+        }
+    }, [id]);
+
+    // Fetch similar products based on current product
+    useEffect(() => {
+        const fetchSimilarProducts = async () => {
+            if (!product) {
+                console.log('No product loaded yet');
+                return;
+            }
+
+            const productId = product._id || product.id;
+            if (!productId) {
+                console.log('Product has no ID');
+                return;
+            }
+
+            console.log('Fetching similar products for product ID:', productId);
+
+            try {
+                const response = await getSimilarProducts(productId, { limit: 4 });
+                console.log('Similar products API response:', response);
+
+                // Handle response structure { success: true, data: [...] }
+                const products = response.data?.data || response.data || [];
+                console.log('Similar products found:', products.length, products);
+                setSimilarProducts(products);
+            } catch (err) {
+                console.error('Error fetching similar products:', err);
+                setSimilarProducts([]);
+            }
+        };
+
+        fetchSimilarProducts();
+    }, [product]);
 
     // Product Gallery Images
     const images = [
@@ -35,15 +97,38 @@ export default function ProductDetailPage() {
         { label: 'Bảo hành:', value: '36 Tháng' },
     ];
 
-    // Detailed Specifications
-    const specifications = [
-        { title: 'Architecture', value: 'Ada' },
-        { title: 'Memory Boost', value: 'Smart Boost' },
-        { title: 'PCI Express', value: 'PCI-E 4.0' },
-        { title: 'System Interface', value: '384-bit' },
-        { title: 'Cooling Solution', value: 'Vapor Chamber' },
-        { title: 'Cooler Noise', value: 'Low Noise' },
-    ];
+    // Get specifications from product.specifications.detail_json
+    // This is the ONLY source for displaying technical specifications
+    const getSpecifications = () => {
+        if (!product?.specifications?.detail_json) {
+            return [];
+        }
+
+        const detailJson = product.specifications.detail_json;
+
+        // Convert detail_json object to array of { title, value } pairs
+        return Object.entries(detailJson).map(([key, value]) => ({
+            title: formatSpecTitle(key),
+            value: formatSpecValue(value),
+        }));
+    };
+
+    // Format specification key to readable title
+    const formatSpecTitle = (key) => {
+        return key
+            .split('_')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
+
+    // Format specification value
+    const formatSpecValue = (value) => {
+        if (value === null || value === undefined) return 'N/A';
+        if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+    };
+
+    const specifications = getSpecifications();
 
     // Customer Reviews Data
     const reviews = [
@@ -70,33 +155,45 @@ export default function ProductDetailPage() {
         },
     ];
 
-    // Related Products
-    const products = [
-        {
-            id: 1,
-            name: 'Power Supply 850W Gold',
-            price: '$129.99',
-            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3EPower Supply%3C/text%3E%3C/svg%3E',
-        },
-        {
-            id: 2,
-            name: 'GPU Cooling Fan',
-            price: '$49.99',
-            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23e8e8e8" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ECooling Fan%3C/text%3E%3C/svg%3E',
-        },
-        {
-            id: 3,
-            name: 'Gaming Case RGB',
-            price: '$159.99',
-            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23ececec" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3EGaming Case%3C/text%3E%3C/svg%3E',
-        },
-        {
-            id: 4,
-            name: 'Motherboard X870E',
-            price: '$349.99',
-            image: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f5f5f5" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3EMotherboard%3C/text%3E%3C/svg%3E',
-        },
-    ];
+    // Loading state
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Đang tải thông tin sản phẩm...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-red-600 mb-4">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded font-semibold"
+                    >
+                        Thử lại
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // No product found
+    if (!product) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-gray-600">Không tìm thấy sản phẩm.</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-white">
@@ -159,32 +256,46 @@ export default function ProductDetailPage() {
 
                     {/* Product Info */}
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">GeForce RTX 4090 Founders Edition</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name || 'Tên sản phẩm'}</h1>
                         <div className="flex items-center gap-4 mb-6">
                             <div className="flex items-center gap-1">
                                 <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                                <span className="text-sm font-semibold text-gray-900">4.8</span>
-                                <span className="text-sm text-gray-600">(324 đánh giá)</span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                    {product.averageRating || '0'}
+                                </span>
+                                <span className="text-sm text-gray-600">({product.reviewCount || 0} đánh giá)</span>
                             </div>
                             <span className="text-sm text-green-600 font-semibold">Còn hàng</span>
                         </div>
 
                         {/* Price */}
                         <div className="mb-6">
-                            <div className="text-4xl font-bold text-gray-900">$1,599.99</div>
-                            <div className="text-sm text-gray-600 mt-2">
-                                <span className="line-through">$1,999.99</span>
+                            <div className="text-4xl font-bold text-gray-900">
+                                {product.price ? `${product.price.toLocaleString('vi-VN')} ₫` : 'Liên hệ'}
                             </div>
+                            {product.originalPrice && product.originalPrice > product.price && (
+                                <div className="text-sm text-gray-600 mt-2">
+                                    <span className="line-through">
+                                        {product.originalPrice.toLocaleString('vi-VN')} ₫
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Key Specs */}
                         <div className="space-y-2 mb-6 pb-6 border-b border-gray-200">
-                            {specs.map((spec, index) => (
-                                <div key={index} className="grid grid-cols-[140px_1fr] items-center">
-                                    <span className="text-sm text-gray-600">{spec.label}</span>
-                                    <span className="text-sm font-semibold text-gray-900">{spec.value}</span>
+                            {product.brand && (
+                                <div className="grid grid-cols-[140px_1fr] items-center">
+                                    <span className="text-sm text-gray-600">Hãng sản xuất:</span>
+                                    <span className="text-sm font-semibold text-gray-900">{product.brand.name}</span>
                                 </div>
-                            ))}
+                            )}
+                            {product.category && (
+                                <div className="grid grid-cols-[140px_1fr] items-center">
+                                    <span className="text-sm text-gray-600">Danh mục:</span>
+                                    <span className="text-sm font-semibold text-gray-900">{product.category.name}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Buttons */}
@@ -194,22 +305,6 @@ export default function ProductDetailPage() {
                                 Thêm vào giỏ hàng
                             </button>
                         </div>
-
-                        {/* Quick Actions
-                        <div className="grid grid-cols-3 gap-3">
-                            <button className="border border-gray-200 rounded p-3 text-center hover:bg-gray-50 transition">
-                                <Eye className="w-4 h-4 mx-auto mb-2" />
-                                <span className="text-xs font-semibold text-gray-900">Quick View</span>
-                            </button>
-                            <button className="border border-gray-200 rounded p-3 text-center hover:bg-gray-50 transition">
-                                <RotateCw className="w-4 h-4 mx-auto mb-2" />
-                                <span className="text-xs font-semibold text-gray-900">Compare</span>
-                            </button>
-                            <button className="border border-gray-200 rounded p-3 text-center hover:bg-gray-50 transition">
-                                <Zap className="w-4 h-4 mx-auto mb-2" />
-                                <span className="text-xs font-semibold text-gray-900">Notify Me</span>
-                            </button>
-                        </div> */}
                     </div>
                 </div>
             </section>
@@ -220,27 +315,27 @@ export default function ProductDetailPage() {
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">MÔ TẢ SẢN PHẨM</h2>
                         <p className="text-gray-600 leading-relaxed">
-                            Trải nghiệm hiệu năng chơi game thế hệ mới với NVIDIA GeForce RTX 4090 Founders Edition.
-                            Được thiết kế để đạt hiệu năng tối đa, GPU hàng đầu này mang đến khả năng chơi game và sáng
-                            tạo vượt trội. Với 16.384 lõi CUDA và công nghệ dò tia tiên tiến, hãy tận hưởng trải nghiệm
-                            chơi game sống động ở cài đặt đồ họa cao nhất. Thiết kế tản nhiệt tiên tiến đảm bảo hiệu
-                            năng tối ưu ngay cả khi xử lý các tác vụ nặng.
+                            {product.description || 'Chưa có mô tả cho sản phẩm này.'}
                         </p>
                     </div>
 
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">THÔNG SỐ KỸ THUẬT</h2>
-                        <div className="space-y-1">
-                            {specifications.map((spec, index) => (
-                                <div
-                                    key={index}
-                                    className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 px-2 rounded transition"
-                                >
-                                    <span className="text-sm text-gray-600 font-medium">{spec.title}</span>
-                                    <span className="text-sm font-semibold text-gray-900">{spec.value}</span>
-                                </div>
-                            ))}
-                        </div>
+                        {specifications.length === 0 ? (
+                            <p className="text-gray-600 py-4">Chưa có thông số kỹ thuật chi tiết cho sản phẩm này.</p>
+                        ) : (
+                            <div className="space-y-1">
+                                {specifications.map((spec, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 px-2 rounded transition"
+                                    >
+                                        <span className="text-sm text-gray-600 font-medium">{spec.title}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{spec.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-8">
@@ -248,13 +343,18 @@ export default function ProductDetailPage() {
                         <div className="bg-gray-100 rounded p-6 mb-6">
                             <div className="flex items-center gap-4">
                                 <div>
-                                    <div className="flex items-center gap-1 mb-2">
-                                        {[...Array(5)].map((_, i) => (
-                                            <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                                        ))}
+                                    <div className="flex items-center gap-2">
+                                        <Star className="w-7 h-7 fill-yellow-400 text-yellow-400" />
+                                        <span className="text-lg font-bold text-gray-900">
+                                            {product.averageRating || '0'}
+                                        </span>
+                                        <span className="text-lg text-gray-400">
+                                            /5
+                                        </span>
+                                        <span className="text-base text-gray-600">
+                                            ({product.reviewCount || 0} đánh giá)
+                                        </span>
                                     </div>
-                                    <p className="text-2xl font-bold text-gray-900">4.8</p>
-                                    <p className="text-sm text-gray-600">Based on 324 reviews</p>
                                 </div>
                             </div>
                         </div>
@@ -285,39 +385,58 @@ export default function ProductDetailPage() {
                 </div>
             </section>
 
-            {/* Compatible Components */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Sản phẩm khác</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {products.map((product) => (
-                        <div
-                            key={product.id}
-                            className="border border-gray-200 rounded overflow-hidden hover:shadow-lg transition cursor-pointer"
-                        >
-                            {/* Product Image */}
-                            <div className="aspect-square bg-gray-100 overflow-hidden">
-                                <div
-                                    className="w-full h-full"
-                                    style={{
-                                        backgroundImage: `url(${product.image})`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                    }}
-                                />
-                            </div>
+            {/* Similar Products */}
+            {similarProducts.length > 0 && (
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Sản phẩm tương tự</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {similarProducts.map((similarProduct) => (
+                            <div
+                                key={similarProduct._id || similarProduct.id}
+                                className="border border-gray-200 rounded overflow-hidden hover:shadow-lg transition cursor-pointer"
+                                onClick={() => {
+                                    const productId = similarProduct._id || similarProduct.id;
+                                    navigate(`/product/${productId}`);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                            >
+                                {/* Product Image */}
+                                <div className="aspect-square bg-gray-100 overflow-hidden">
+                                    <div
+                                        className="w-full h-full"
+                                        style={{
+                                            backgroundImage: `url(${similarProduct.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'})`,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center',
+                                        }}
+                                    />
+                                </div>
 
-                            {/* Product Info */}
-                            <div className="p-4">
-                                <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
-                                <p className="text-lg font-bold text-blue-600 mt-2">{product.price}</p>
-                                <button className="w-full mt-3 py-2 bg-blue-600 text-white rounded text-sm font-semibold hover:bg-blue-700 transition">
-                                    Add to Cart
-                                </button>
+                                {/* Product Info */}
+                                <div className="p-4">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                        {similarProduct.name}
+                                    </p>
+                                    <p className="text-lg font-bold text-blue-600 mt-2">
+                                        {similarProduct.price
+                                            ? `${similarProduct.price.toLocaleString('vi-VN')} ₫`
+                                            : 'Liên hệ'}
+                                    </p>
+                                    <button
+                                        className="w-full mt-3 py-2 bg-blue-600 text-white rounded text-sm font-semibold hover:bg-blue-700 transition"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Add to cart logic here
+                                        }}
+                                    >
+                                        Thêm vào giỏ
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
+                        ))}
+                    </div>
+                </section>
+            )}
         </div>
     );
 }

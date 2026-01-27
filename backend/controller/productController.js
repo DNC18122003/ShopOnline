@@ -144,4 +144,48 @@ const getProductById = async (req, res) => {
     });
   }
 };
-module.exports = { getProducts,getProductById };
+
+/**
+ * GET /api/product/:id/similar
+ * Lấy sản phẩm tương tự (cùng category)
+ */
+const getSimilarProducts = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 4 } = req.query;
+
+    // Tìm sản phẩm hiện tại
+    const product = await Product.findById(id);
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sản phẩm",
+      });
+    }
+
+    // Tìm sản phẩm cùng category, loại trừ sản phẩm hiện tại
+    const similarProducts = await Product.find({
+      category: product.category,
+      _id: { $ne: id }, // không lấy chính sản phẩm đó
+      isActive: true,
+    })
+      .populate("brand", "name logo")
+      .populate("category", "name slug")
+      .limit(Number(limit))
+      .sort({ averageRating: -1, createdAt: -1 }) // ưu tiên rating cao và mới nhất
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      data: similarProducts,
+    });
+  } catch (error) {
+    console.error("Get similar products error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+    });
+  }
+};
+
+module.exports = { getProducts, getProductById, getSimilarProducts };
