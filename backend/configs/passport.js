@@ -11,20 +11,23 @@ const opts = {
 };
 
 const passportConfig = (passport) => {
-    passport.use(
-        new JwtStrategy(opts, async (jwt_payload, done) => {
-            try {
-                // check jwt => get _id => find data user by _id => return 
-                const user = await User.findById(jwt_payload.id);
-                if (user) {
-                    return done(null, user);
-                }
-                return done(null, false);
-            } catch (err) {
-                return done(err, false);
-            }
-        })
-    );
+  passport.use(
+    new JwtStrategy(opts, async (jwt_payload, done) => {
+      try {
+        // jwt_payload chứa dữ liệu bạn đã mã hóa (thường là { id: ..., email: ... })
+        const user = await User.findById(jwt_payload.id);
+
+        if (user) {
+          // Tìm thấy user -> Cho qua và gán vào req.user
+          return done(null, user);
+        }
+        // Không tìm thấy user (dù token đúng format) -> Chặn
+        return done(null, false);
+      } catch (err) {
+        return done(err, false);
+      }
+    })
+  );
 };
 
 module.exports = { passportConfig };
