@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-
 import { AuthContext } from '@/context/authContext';
 import { useCart } from '@/context/cartContext';
 
@@ -25,7 +24,6 @@ import {
 import { toast } from 'react-toastify';
 
 import { logout_service } from '@/services/authService';
-
 
 const header = () => {
     const { setUser } = useContext(AuthContext);
@@ -60,16 +58,49 @@ const header = () => {
                 {/* Navigation Menu: Home, Products, About us, Support */}
                 <NavigationMenu>
                     <NavigationMenuList className="gap-6">
-                        {['Trang chủ', 'Sản phẩm', 'Về chúng tôi', 'Liên hệ '].map((item) => (
-                            <NavigationMenuItem key={item}>
-                                <NavigationMenuLink
-                                    href="#"
+                        <NavigationMenuItem>
+                            <NavigationMenuLink asChild>
+                                <Link
+                                    to="/"
                                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                                 >
-                                    {item}
-                                </NavigationMenuLink>
-                            </NavigationMenuItem>
-                        ))}
+                                    Trang chủ
+                                </Link>
+                            </NavigationMenuLink>
+                        </NavigationMenuItem>
+
+                        <NavigationMenuItem>
+                            <NavigationMenuLink asChild>
+                                <Link
+                                    to="/product"
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                >
+                                    Sản phẩm
+                                </Link>
+                            </NavigationMenuLink>
+                        </NavigationMenuItem>
+
+                        <NavigationMenuItem>
+                            <NavigationMenuLink asChild>
+                                <Link
+                                    to="/about"
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                >
+                                    Về chúng tôi
+                                </Link>
+                            </NavigationMenuLink>
+                        </NavigationMenuItem>
+
+                        <NavigationMenuItem>
+                            <NavigationMenuLink asChild>
+                                <Link
+                                    to="/contact"
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                >
+                                    Liên hệ
+                                </Link>
+                            </NavigationMenuLink>
+                        </NavigationMenuItem>
                     </NavigationMenuList>
                 </NavigationMenu>
                 {/* Action Cart + Avatar */}

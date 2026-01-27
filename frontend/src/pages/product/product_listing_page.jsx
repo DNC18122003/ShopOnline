@@ -1,510 +1,386 @@
-'use client';
-
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, ShoppingCart, Star } from 'lucide-react';
+import { getProducts } from '@/services/product/product.api';
+import { getCategories } from '@/services/category/category.api';
+import { getBrands } from '@/services/brand/brand.api';
 
-function ProductCard({
-  name,
-  brand,
-  price,
-  originalPrice,
-  rating,
-  reviews,
-  image,
-  badge,
-}) {
-  const formatVND = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(amount);
-  };
+function ProductCard({ _id, name, price, averageRating, reviewCount, images, badge }) {
+    const navigate = useNavigate();
+    const formatVND = (amount) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+        }).format(amount);
+    };
 
-  return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
-      <div className="relative bg-muted p-6">
-        <div className="text-6xl text-center">🖥️</div>
-        <div className="absolute top-2 left-2 bg-secondary px-2 py-1 rounded-md text-xs font-medium text-secondary-foreground">
-          {brand}
+    return (
+        <div
+            onClick={() => navigate(`/product/${_id}`)}
+            className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300"
+        >
+            <div className="relative bg-muted p-6">
+                <div className="relative bg-muted p-6 flex items-center justify-center h-48">
+                    {images ? (
+                        <img src={images} alt={name} className="max-h-full max-w-full object-contain" />
+                    ) : (
+                        <div className="text-6xl">🖥️</div>
+                    )}
+                </div>
+            </div>
+            <div className="p-4">
+                <h3 className="font-semibold text-foreground mb-2 line-clamp-2 h-12">{name}</h3>
+                <div className="flex items-center gap-1 mb-3">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < averageRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                        />
+                    ))}
+                    <span className="text-xs text-muted-foreground ml-1">({reviewCount})</span>
+                </div>
+                <div className="flex items-baseline gap-2 mb-4">
+                    <span className="text-xl font-bold text-primary">{formatVND(price)}</span>
+                </div>
+                <button className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    Thêm Vào Giỏ
+                </button>
+            </div>
         </div>
-        {badge && (
-          <div className="absolute top-2 right-2 bg-primary px-2 py-1 rounded-md text-xs font-medium text-primary-foreground">
-            {badge}
-          </div>
-        )}
-      </div>
-      <div className="p-4">
-        <p className="text-xs text-muted-foreground mb-1">{brand}</p>
-        <h3 className="font-semibold text-foreground mb-2 line-clamp-2 h-12">
-          {name}
-        </h3>
-        <div className="flex items-center gap-1 mb-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              className={`w-4 h-4 ${
-                i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
-              }`}
-            />
-          ))}
-          <span className="text-xs text-muted-foreground ml-1">({reviews})</span>
-        </div>
-        <div className="flex items-baseline gap-2 mb-4">
-          <span className="text-xl font-bold text-primary">{formatVND(price)}</span>
-          <span className="text-sm text-muted-foreground line-through">
-            {formatVND(originalPrice)}
-          </span>
-        </div>
-        <button className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-medium hover:bg-primary/90 transition flex items-center justify-center gap-2">
-          <ShoppingCart className="w-4 h-4" />
-          Thêm Vào Giỏ
-        </button>
-      </div>
-    </div>
-  );
+    );
 }
 
-const mockProducts = [
-  {
-    name: 'NVIDIA GeForce RTX 4090',
-    brand: 'NVIDIA',
-    price: 38900000,
-    originalPrice: 48900000,
-    rating: 5,
-    reviews: 234,
-    badge: 'Card Đồ Họa',
-    category: 'GPU',
-  },
-  {
-    name: 'NVIDIA GeForce RTX 4080',
-    brand: 'NVIDIA',
-    price: 29200000,
-    originalPrice: 38900000,
-    rating: 5,
-    reviews: 189,
-    badge: 'Card Đồ Họa',
-    category: 'GPU',
-  },
-  {
-    name: 'Intel Core i9-13900K',
-    brand: 'Intel',
-    price: 12990000,
-    originalPrice: 16900000,
-    rating: 5,
-    reviews: 156,
-    badge: 'CPU',
-    category: 'CPU',
-  },
-  {
-    name: 'ASUS ROG Strix Z690-E',
-    brand: 'ASUS',
-    price: 14600000,
-    originalPrice: 19500000,
-    rating: 5,
-    reviews: 78,
-    badge: 'Bo Mạch Chủ',
-    category: 'Mainboard',
-  },
-  {
-    name: 'NVIDIA GeForce RTX 4070',
-    brand: 'NVIDIA',
-    price: 19500000,
-    originalPrice: 24400000,
-    rating: 4,
-    reviews: 302,
-    badge: 'Card Đồ Họa',
-    category: 'GPU',
-  },
-  {
-    name: 'Corsair Vengeance DDR5 32GB',
-    brand: 'Corsair',
-    price: 3400000,
-    originalPrice: 4300000,
-    rating: 5,
-    reviews: 142,
-    badge: 'RAM',
-    category: 'RAM',
-  },
-  {
-    name: 'Samsung 980 PRO 1TB',
-    brand: 'Samsung',
-    price: 2900000,
-    originalPrice: 3700000,
-    rating: 5,
-    reviews: 456,
-    badge: 'SSD',
-    category: 'Ổ cứng',
-  },
-  {
-    name: 'Corsair RM850x 850W',
-    brand: 'Corsair',
-    price: 3800000,
-    originalPrice: 4800000,
-    rating: 5,
-    reviews: 267,
-    badge: 'PSU',
-    category: 'PSU',
-  },
-];
+export default function ProductListingPage() {
+    const [products, setProducts] = useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [loading, setLoading] = useState(false);
 
-export default function ProductListingPage({ products = mockProducts }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState('best-match');
-  
-  const [expandedSections, setExpandedSections] = useState(new Set(['category']));
-  
-  // State cho các filter
-  const [selectedCategories, setSelectedCategories] = useState(new Set());
-  const [selectedPriceRanges, setSelectedPriceRanges] = useState(new Set());
-  const [selectedBrands, setSelectedBrands] = useState(new Set());
-  const [selectedSpecs, setSelectedSpecs] = useState(new Set());
+    // DYNAMIC DATA FROM API
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
 
-  const toggleSection = (section) => {
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(section)) {
-        newSet.delete(section);
-      } else {
-        newSet.add(section);
-      }
-      return newSet;
-    });
-  };
+    // PAGINATION
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 6;
 
-  const toggleFilter = (filterSet, setFilterSet, value) => {
-    setFilterSet(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(value)) {
-        newSet.delete(value);
-      } else {
-        newSet.add(value);
-      }
-      return newSet;
-    });
-  };
+    // SORT
+    const [sortBy, setSortBy] = useState('best-match');
 
-  const clearAllFilters = () => {
-    setSelectedCategories(new Set());
-    setSelectedPriceRanges(new Set());
-    setSelectedBrands(new Set());
-    setSelectedSpecs(new Set());
-  };
+    // FILTERS
+    const [selectedCategories, setSelectedCategories] = useState(new Set());
+    const [selectedBrands, setSelectedBrands] = useState(new Set());
+    const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+    const PRICE_RANGES = [
+        { key: 'under_5', label: 'Dưới 5 triệu', min: 0, max: 5_000_000 },
+        { key: '5_10', label: '5 - 10 triệu', min: 5_000_000, max: 10_000_000 },
+        { key: '10_20', label: '10 - 20 triệu', min: 10_000_000, max: 20_000_000 },
+        { key: '20_40', label: '20 - 40 triệu', min: 20_000_000, max: 40_000_000 },
+        { key: 'over_40', label: 'Trên 40 triệu', min: 40_000_000 },
+    ];
+    const buildPriceQuery = () => {
+        if (!selectedPriceRange) return {};
 
-  const itemsPerPage = 6;
-  const totalPages = Math.ceil(products.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const displayedProducts = products.slice(startIndex, startIndex + itemsPerPage);
+        const range = PRICE_RANGES.find((r) => r.key === selectedPriceRange);
+        if (!range) return {};
 
-  return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="w-72 border-r border-border bg-card p-6 overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-foreground">Bộ Lọc</h2>
-          <button 
-            onClick={clearAllFilters}
-            className="text-sm text-primary hover:underline"
-          >
-            Xóa Tất Cả
-          </button>
-        </div>
+        const query = {};
+        if (range.min !== undefined) query.minPrice = range.min;
+        if (range.max !== undefined) query.maxPrice = range.max;
 
-        {/* Category Filter */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('category')}
-            className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
-          >
-            <span className="font-medium text-foreground">Danh Mục</span>
-            {expandedSections.has('category') ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-          {expandedSections.has('category') && (
-            <div className="mt-2 space-y-2 pl-2">
-              {[
-                { label: 'CPU', count: 89 },
-                { label: 'VGA', count: 247 },
-                { label: 'RAM', count: 156 },
-                { label: 'Ổ cứng SSD', count: 203 },
-                { label: 'Ổ cứng HDD', count: 203 },
-                { label: 'Mainboard', count: 134 },
-                { label: 'Nguồn', count: 98 },
-                { label: 'Tản nhiệt', count: 76 },
-                { label: 'Case', count: 112 }
-              ].map((cat) => (
-                <label key={cat.label} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.has(cat.label)}
-                    onChange={() => toggleFilter(selectedCategories, setSelectedCategories, cat.label)}
-                    className="w-4 h-4 rounded border-gray-300"
-                  />
-                  <span className="text-lg">{cat.icon}</span>
-                  <span className="text-sm text-muted-foreground flex-1">
-                    {cat.label} ({cat.count})
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+        return query;
+    };
 
-        {/* Price Range Filter */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('price')}
-            className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
-          >
-            <span className="font-medium text-foreground">Khoảng Giá</span>
-            {expandedSections.has('price') ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-          {expandedSections.has('price') && (
-            <div className="mt-2 space-y-2 pl-2">
-              {[
-                'Dưới 5 triệu',
-                '5 - 10 triệu',
-                '10 - 20 triệu',
-                '20 - 40 triệu',
-                'Trên 40 triệu'
-              ].map((range) => (
-                <label key={range} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedPriceRanges.has(range)}
-                    onChange={() => toggleFilter(selectedPriceRanges, setSelectedPriceRanges, range)}
-                    className="w-4 h-4 rounded border-gray-300"
-                  />
-                  <span className="text-sm text-muted-foreground">{range}</span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+    // UI
+    const [expandedSections, setExpandedSections] = useState(new Set(['category']));
 
-        {/* Brand Filter */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('brand')}
-            className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
-          >
-            <span className="font-medium text-foreground">Thương Hiệu</span>
-            {expandedSections.has('brand') ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-          {expandedSections.has('brand') && (
-            <div className="mt-2 space-y-2 pl-2">
-              {[
-                { label: 'NVIDIA', count: 89 },
-                { label: 'AMD', count: 67 },
-                { label: 'Intel', count: 78 },
-                { label: 'ASUS', count: 145 },
-                { label: 'MSI', count: 134 },
-                { label: 'Gigabyte', count: 98 },
-                { label: 'Corsair', count: 76 },
-                { label: 'Samsung', count: 54 }
-              ].map((brand) => (
-                <label key={brand.label} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                  <input
-                    type="checkbox"
-                    checked={selectedBrands.has(brand.label)}
-                    onChange={() => toggleFilter(selectedBrands, setSelectedBrands, brand.label)}
-                    className="w-4 h-4 rounded border-gray-300"
-                  />
-                  <span className="text-sm text-muted-foreground">
-                    {brand.label} ({brand.count})
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
+    // FETCH CATEGORIES AND BRANDS ON MOUNT
+    useEffect(() => {
+        const fetchFilters = async () => {
+            try {
+                const [categoriesRes, brandsRes] = await Promise.all([
+                    getCategories({ isActive: true }),
+                    getBrands({ isActive: true }),
+                ]);
 
-        {/* Specifications Filter */}
-        <div className="mb-4">
-          <button
-            onClick={() => toggleSection('specs')}
-            className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
-          >
-            <span className="font-medium text-foreground">Thông Số</span>
-            {expandedSections.has('specs') ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-          </button>
-          {expandedSections.has('specs') && (
-            <div className="mt-2 space-y-3 pl-2">
-              {/* Socket */}
-              <div>
-                <p className="text-xs font-medium text-foreground mb-1">Socket</p>
-                <div className="space-y-1">
-                  {['LGA1700', 'AM5', 'AM4'].map((socket) => (
-                    <label key={socket} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedSpecs.has(`socket-${socket}`)}
-                        onChange={() => toggleFilter(selectedSpecs, setSelectedSpecs, `socket-${socket}`)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="text-sm text-muted-foreground">{socket}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* RAM Type */}
-              <div>
-                <p className="text-xs font-medium text-foreground mb-1">Loại RAM</p>
-                <div className="space-y-1">
-                  {['DDR5', 'DDR4'].map((ramType) => (
-                    <label key={ramType} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedSpecs.has(`ram-${ramType}`)}
-                        onChange={() => toggleFilter(selectedSpecs, setSelectedSpecs, `ram-${ramType}`)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="text-sm text-muted-foreground">{ramType}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Capacity */}
-              <div>
-                <p className="text-xs font-medium text-foreground mb-1">Dung Lượng</p>
-                <div className="space-y-1">
-                  {['8GB', '16GB', '32GB', '64GB'].map((capacity) => (
-                    <label key={capacity} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedSpecs.has(`capacity-${capacity}`)}
-                        onChange={() => toggleFilter(selectedSpecs, setSelectedSpecs, `capacity-${capacity}`)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="text-sm text-muted-foreground">{capacity}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Form Factor */}
-              <div>
-                <p className="text-xs font-medium text-foreground mb-1">Form Factor</p>
-                <div className="space-y-1">
-                  {['ATX', 'Micro-ATX', 'Mini-ITX'].map((form) => (
-                    <label key={form} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
-                      <input
-                        type="checkbox"
-                        checked={selectedSpecs.has(`form-${form}`)}
-                        onChange={() => toggleFilter(selectedSpecs, setSelectedSpecs, `form-${form}`)}
-                        className="w-4 h-4 rounded border-gray-300"
-                      />
-                      <span className="text-sm text-muted-foreground">{form}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 p-8">
-        {/* Section Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Linh Kiện PC</h1>
-          <div className="flex items-center justify-between">
-            <p className="text-muted-foreground">
-              Tìm thấy {products.length} sản phẩm
-            </p>
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground">Sắp xếp:</label>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-border rounded-lg bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="best-match">Phù Hợp Nhất</option>
-                <option value="price-asc">Giá: Thấp đến Cao</option>
-                <option value="price-desc">Giá: Cao đến Thấp</option>
-                <option value="newest">Mới Nhất</option>
-                <option value="rating">Đánh Giá Cao Nhất</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {displayedProducts.map((product, index) => (
-            <ProductCard key={index} {...product} />
-          ))}
-        </div>
-
-        {/* Pagination */}
-        <div className="flex justify-center items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="p-2 rounded-lg border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const page = i + 1;
-            if (
-              page === 1 ||
-              page === totalPages ||
-              (page >= currentPage - 1 && page <= currentPage + 1)
-            ) {
-              return (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-10 h-10 rounded-lg font-medium transition ${
-                    currentPage === page
-                      ? 'bg-primary text-primary-foreground'
-                      : 'border border-border hover:bg-secondary text-foreground'
-                  }`}
-                >
-                  {page}
-                </button>
-              );
-            } else if (
-              (page === currentPage - 2 && currentPage > 3) ||
-              (page === currentPage + 2 && currentPage < totalPages - 2)
-            ) {
-              return (
-                <span key={page} className="px-2 text-muted-foreground">
-                  ...
-                </span>
-              );
+                setCategories(categoriesRes.data || []);
+                setBrands(brandsRes.data || []);
+            } catch (err) {
+                console.error('❌ Fetch filters error:', err);
             }
-            return null;
-          })}
+        };
 
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="p-2 rounded-lg border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+        fetchFilters();
+    }, []);
+
+    // FETCH PRODUCTS
+    useEffect(() => {
+        const fetchProducts = async () => {
+            setLoading(true);
+            try {
+                const priceQuery = buildPriceQuery();
+                const params = {
+                    page: currentPage,
+                    limit: itemsPerPage,
+                    sort: sortBy,
+                    category: Array.from(selectedCategories).join(','), // ✅
+                    brand: Array.from(selectedBrands).join(','),
+                    ...priceQuery,
+                };
+
+                const res = await getProducts(params);
+
+                setProducts(res.data || []);
+                setTotal(res.pagination?.total || 0);
+                setTotalPages(res.pagination?.totalPages || 1);
+            } catch (err) {
+                console.error('❌ Fetch products error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, [currentPage, sortBy, selectedCategories, selectedBrands, selectedPriceRange]);
+
+    // HELPERS
+    const toggleFilter = (setFn, value) => {
+        setFn((prev) => {
+            const next = new Set(prev);
+            next.has(value) ? next.delete(value) : next.add(value);
+            return next;
+        });
+    };
+
+    const toggleSection = (section) => {
+        setExpandedSections((prev) => {
+            const next = new Set(prev);
+            next.has(section) ? next.delete(section) : next.add(section);
+            return next;
+        });
+    };
+
+    const clearAllFilters = () => {
+        setSelectedCategories(new Set());
+        setSelectedBrands(new Set());
+        setSelectedPriceRange(null);
+        setCurrentPage(1);
+    };
+
+    return (
+        <div className="flex min-h-screen bg-background">
+            {/* Sidebar */}
+            <aside className="w-72 border-r border-border bg-card p-6 overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-foreground">Bộ Lọc</h2>
+                    <button onClick={clearAllFilters} className="text-sm text-primary hover:underline">
+                        Xóa Tất Cả
+                    </button>
+                </div>
+
+                {/* Category Filter */}
+                <div className="mb-4">
+                    <button
+                        onClick={() => toggleSection('category')}
+                        className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
+                    >
+                        <span className="font-medium text-foreground">Danh Mục</span>
+                        {expandedSections.has('category') ? (
+                            <ChevronDown className="w-4 h-4" />
+                        ) : (
+                            <ChevronRight className="w-4 h-4" />
+                        )}
+                    </button>
+
+                    {expandedSections.has('category') && (
+                        <div className="mt-2 space-y-2 pl-2">
+                            {categories.length === 0 ? (
+                                <p className="text-xs text-muted-foreground pl-2">Đang tải...</p>
+                            ) : (
+                                categories.map((cat) => (
+                                    <label
+                                        key={cat._id}
+                                        className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedCategories.has(cat.slug)}
+                                            onChange={() => toggleFilter(setSelectedCategories, cat.slug)}
+                                            className="w-4 h-4 rounded border-gray-300"
+                                        />
+                                        <span className="text-sm text-muted-foreground flex-1">{cat.name}</span>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Price Filter */}
+                <div className="mb-4">
+                    <button
+                        onClick={() => toggleSection('price')}
+                        className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
+                    >
+                        <span className="font-medium text-foreground">Khoảng Giá</span>
+                        {expandedSections.has('price') ? (
+                            <ChevronDown className="w-4 h-4" />
+                        ) : (
+                            <ChevronRight className="w-4 h-4" />
+                        )}
+                    </button>
+
+                    {expandedSections.has('price') && (
+                        <div className="mt-2 space-y-2 pl-2">
+                            {PRICE_RANGES.map((range) => (
+                                <label
+                                    key={range.key}
+                                    className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedPriceRange === range.key}
+                                        onChange={() => {
+                                            setSelectedPriceRange((prev) => (prev === range.key ? null : range.key));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="w-4 h-4 rounded border-gray-300"
+                                    />
+                                    <span className="text-sm text-muted-foreground">{range.label}</span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Brand Filter */}
+                <div className="mb-4">
+                    <button
+                        onClick={() => toggleSection('brand')}
+                        className="w-full flex items-center justify-between py-2 hover:bg-sidebar-accent/30 rounded-lg px-2 transition"
+                    >
+                        <span className="font-medium text-foreground">Thương Hiệu</span>
+                        {expandedSections.has('brand') ? (
+                            <ChevronDown className="w-4 h-4" />
+                        ) : (
+                            <ChevronRight className="w-4 h-4" />
+                        )}
+                    </button>
+
+                    {expandedSections.has('brand') && (
+                        <div className="mt-2 space-y-2 pl-2">
+                            {brands.length === 0 ? (
+                                <p className="text-xs text-muted-foreground pl-2">Đang tải...</p>
+                            ) : (
+                                brands.map((brand) => (
+                                    <label
+                                        key={brand._id}
+                                        className="flex items-center space-x-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedBrands.has(brand.slug)}
+                                            onChange={() => toggleFilter(setSelectedBrands, brand.slug)}
+                                            className="w-4 h-4 rounded border-gray-300"
+                                        />
+                                        <span className="text-sm text-muted-foreground">{brand.name}</span>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 p-8">
+                {/* Section Header */}
+                <div className="mb-6">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">Linh Kiện PC</h1>
+                    <div className="flex items-center justify-between">
+                        <p className="text-muted-foreground">Tìm thấy {total} sản phẩm</p>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-muted-foreground">Sắp xếp:</label>
+                            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                                <option value="newest">Mới Nhất</option>
+                                <option value="price_asc">Giá: Thấp đến Cao</option>
+                                <option value="price_desc">Giá: Cao đến Thấp</option>
+                                <option value="rating">Đánh Giá Cao</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Products Grid */}
+                <div className="mb-8">
+                    {loading ? (
+                        <div className="text-center py-16 text-muted-foreground">Đang tải sản phẩm...</div>
+                    ) : products.length === 0 ? (
+                        <div className="text-center py-16">
+                            <div className="text-6xl mb-4">😢</div>
+                            <h3 className="text-xl font-semibold text-foreground mb-2">
+                                Không tìm thấy sản phẩm phù hợp
+                            </h3>
+                            <p className="text-muted-foreground">Hãy thử thay đổi bộ lọc hoặc khoảng giá khác</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {products.map((product) => (
+                                <ProductCard key={product._id} {...product} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Pagination */}
+                <div className="flex justify-center items-center gap-2">
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 rounded-lg border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    {Array.from({ length: totalPages }).map((_, i) => {
+                        const page = i + 1;
+                        if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
+                            return (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-10 h-10 rounded-lg font-medium transition ${
+                                        currentPage === page
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'border border-border hover:bg-secondary text-foreground'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            );
+                        } else if (
+                            (page === currentPage - 2 && currentPage > 3) ||
+                            (page === currentPage + 2 && currentPage < totalPages - 2)
+                        ) {
+                            return (
+                                <span key={page} className="px-2 text-muted-foreground">
+                                    ...
+                                </span>
+                            );
+                        }
+                        return null;
+                    })}
+
+                    <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 rounded-lg border border-border hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
