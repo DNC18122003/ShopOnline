@@ -8,16 +8,15 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const { passportConfig } = require("./configs/passport");
-app.use(express.json());
 app.use(
   cors({
     credentials: true,
     origin: [process.env.FRONTEND_URL, "http://localhost:5173"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   })
-
 );
 app.use(cookieParser());
+app.use(express.json());
 // === CẤU HÌNH PASSPORT TẠI ĐÂY ===
 app.use(passport.initialize());
 passportConfig(passport);

@@ -161,6 +161,7 @@ export default function ProductListingPage() {
             next.has(value) ? next.delete(value) : next.add(value);
             return next;
         });
+        setCurrentPage(1); // Reset to page 1 when filter changes
     };
 
     const toggleSection = (section) => {

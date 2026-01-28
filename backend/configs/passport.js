@@ -4,27 +4,47 @@ const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const User = require('../models/User'); // Import model User của bạn
 require('dotenv').config();
 
-const opts = {
-    // Lấy token từ Header: Authorization: Bearer <token>
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: process.env.JWT_SECRET,
-};
+// trích xuất cookie từ request
+const cookieExtractor = (req) => {
+  let token = null;
 
+  // check req có cookie không
+  //console.log("Request cookies:", req.cookies);
+  if (req && req.cookies) {
+    token = req.cookies['accessToken'];
+  } else {
+    console.log('No cookies object found');
+  }
+
+
+  return token;
+}
+// cấu hình otps
+const opts = {
+  jwtFromRequest: cookieExtractor,
+  secretOrKey: process.env.JWT_SECRET,
+}
+
+
+// Giai cookie lấy user data gán vào " cau hinh passport"
 const passportConfig = (passport) => {
-    passport.use(
-        new JwtStrategy(opts, async (jwt_payload, done) => {
-            try {
-                // check jwt => get _id => find data user by _id => return 
-                const user = await User.findById(jwt_payload.id);
-                if (user) {
-                    return done(null, user);
-                }
-                return done(null, false);
-            } catch (err) {
-                return done(err, false);
-            }
-        })
-    );
+  passport.use(
+    new JwtStrategy(opts, async (jwt_payload, done) => {
+      try {
+        // jwt_payload chứa dữ liệu bạn đã mã hóa (thường là { id: ..., email: ... })
+        const user = await User.findById(jwt_payload.id);
+
+        if (user) {
+          // Tìm thấy user -> Cho qua và gán vào req.user
+          return done(null, user);
+        }
+        // Không tìm thấy user (dù token đúng format) -> Chặn
+        return done(null, false);
+      } catch (err) {
+        return done(err, false);
+      }
+    })
+  );
 };
 
 module.exports = { passportConfig };

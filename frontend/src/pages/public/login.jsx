@@ -44,6 +44,7 @@ const login = () => {
     };
     const handleSubmit = async (e) => {
         e.preventDefault();
+          console.log('SUBMIT FORM ĐƯỢC GỌI');
         const errors = validateForm(formLogin);
         setMessageError(errors);
 
@@ -55,6 +56,7 @@ const login = () => {
             const response = await login_service(formLogin.email, formLogin.password);
             // console.log('Login successful api:', response.data);
             if (response.status === 200) {
+               
                 // set data in auth context
                 setUser(response.data.user);
                 // set data in local storage
