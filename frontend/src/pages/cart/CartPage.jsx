@@ -5,7 +5,9 @@ import { useAuth } from '@/context/authContext';
 import CartItem from '@/components/layouts/customer/CartItem';
 
 const CartPage = () => {
-    const { user } = useAuth();
+    // const { user } = useAuth();
+    const user = localStorage.getItem('data_ui');
+    console.log('usser', user);
     const { cart, loading, removeItem, updateQuantity, clearCart } = useCart();
 
     if (!user) {

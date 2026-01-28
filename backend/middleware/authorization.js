@@ -3,23 +3,19 @@ const jwt = require("jsonwebtoken");
 
 // 1. Middleware xác thực jwt
 const isAuth = (req, res, next) => {
-  //console.log('=== isAuth Middleware ===');
-  // console.log('Headers:', req.headers);
-  // console.log('Cookies:', req.cookies);
-  
-  passport.authenticate('jwt', { session: false }, (err, user, info) => {
+  passport.authenticate("jwt", { session: false }, (err, user, info) => {
     if (err) {
-      console.log('Authentication error:', err);
-      return res.status(500).json({ message: 'Internal error' });
+      console.error("JWT error:", err);
+      return res.status(500).json({ message: "Authentication error" });
     }
-    
+
     if (!user) {
-      console.log('Authentication failed:', info.message);
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({
+        message: info?.message || "Unauthorized",
+      });
     }
-    
-    console.log('Authentication successful:', user.email);
-    req.user = user;
+
+    req.user = user; // chứa _id, role, email...
     next();
   })(req, res, next);
 };
@@ -32,7 +28,7 @@ const checkRoleAndStatus = (roles) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Unauthorized - User not authenticated'
+          message: "Unauthorized - User not authenticated",
         });
       }
 
@@ -40,7 +36,7 @@ const checkRoleAndStatus = (roles) => {
       if (!req.user.isActive) {
         return res.status(403).json({
           success: false,
-          message: 'Forbidden - User account is inactive'
+          message: "Forbidden - User account is inactive",
         });
       }
 
@@ -51,7 +47,9 @@ const checkRoleAndStatus = (roles) => {
       if (!allowedRoles.includes(req.user.role)) {
         return res.status(403).json({
           success: false,
-          message: `Forbidden - User role must be one of: ${allowedRoles.join(', ')}`
+          message: `Forbidden - User role must be one of: ${allowedRoles.join(
+            ", "
+          )}`,
         });
       }
 
@@ -59,12 +57,11 @@ const checkRoleAndStatus = (roles) => {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Internal server error',
-        error: error.message
+        message: "Internal server error",
+        error: error.message,
       });
     }
   };
-  
 };
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -88,4 +85,4 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = { isAuth, checkRoleAndStatus,authenticateToken };
+module.exports = { isAuth, checkRoleAndStatus, authenticateToken };

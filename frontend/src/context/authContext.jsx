@@ -1,28 +1,35 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
-// 1. Tạo Context
 export const AuthContext = createContext(null);
 
-// 2. Tạo Provider
 export const AuthProvider = ({ children }) => {
-    // State lưu thông tin user (null là chưa đăng nhập)
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const value = {
-        user,
-        setUser,
-    };
+    // Ví dụ: load user từ localStorage / API
+   useEffect(() => {
+       const fetchMe = async () => {
+           try {
+               const res = await getMe();
+               setUser(res.user);
+           } catch (error) {
+               setUser(null);
+           } finally {
+               setLoading(false);
+           }
+       };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+       fetchMe();
+   }, []);
+
+
+    return <AuthContext.Provider value={{ user, setUser, loading }}>{children}</AuthContext.Provider>;
 };
 
-// Thêm custom hook useAuth
 export const useAuth = () => {
     const context = useContext(AuthContext);
-
     if (!context) {
         throw new Error('useAuth phải được dùng bên trong AuthProvider');
     }
-
     return context;
 };

@@ -2,9 +2,12 @@ const Cart = require("../../models/order/Cart");
 const Product = require("../../models/Products/Product");
 const getCart = async (req, res) => {
     try {
+       if (!req.user?._id) {
+         return res.status(401).json({ message: "Unauthorized" });
+       }
         const userId = req.user?._id;
         const cart = await Cart.findOne({userId}).lean();
-
+        
         if(!cart){
             return res.json({
                 items: [],
@@ -38,8 +41,9 @@ const getCart = async (req, res) => {
 
 const addToCart = async (req, res) => {
     try {
-
-        const userId = req.user._id;
+        console.log("REQ.USER:", req.user); // 👈 BẮT BUỘC
+        console.log("REQ.BODY:", req.body);
+        const userId = req.user?._id;
         const {productId, quantity = 1} = req.body;
         
         if(quantity <= 0){
@@ -179,49 +183,7 @@ const clearCart = async (req, res) => {
   }
 };
 
- const mergeCart = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const guestItems = req.body.items || [];
-
-    let cart = await Cart.findOne({ userId });
-    if (!cart) cart = new Cart({ userId, items: [] });
-
-    for (const guestItem of guestItems) {
-      const product = await Product.findById(guestItem.productId).lean();
-      if (!product || !product.isActive) continue;
-
-      const index = cart.items.findIndex(
-        (i) => i.productId.toString() === guestItem.productId
-      );
-
-      const quantityToAdd = Math.min(guestItem.quantity, product.stock);
-
-      if (quantityToAdd <= 0) continue;
-
-      if (index > -1) {
-        cart.items[index].quantity = Math.min(
-          cart.items[index].quantity + quantityToAdd,
-          product.stock
-        );
-      } else {
-        cart.items.push({
-          productId: product._id,
-          quantity: quantityToAdd,
-          priceSnapshot: product.price,
-          nameSnapshot: product.name,
-          imageSnapshot: product.images?.[0] || "",
-        });
-      }
-    }
-
-    await cart.save();
-   res.json(cart.toObject());
-  } catch (err) {
-    res.status(500).json({ message: "Merge cart failed", error: err.message });
-  }
-};
 
 
 
-module.exports = {getCart , addToCart, updateCart,deleteCart, clearCart, mergeCart};
+module.exports = {getCart , addToCart, updateCart,deleteCart, clearCart};

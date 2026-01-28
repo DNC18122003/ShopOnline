@@ -11,6 +11,17 @@ const customizeAPI = axios.create({
     withCredentials: true,
 });
 
+customizeAPI.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('accessToken'); // đúng key bạn đang dùng
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => Promise.reject(error),
+);
+
 // (xử lý lỗi chung)
 customizeAPI.interceptors.response.use(
     (response) => response.data,

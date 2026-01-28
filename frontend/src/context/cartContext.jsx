@@ -1,102 +1,59 @@
-'use client';
+// context/cartContext.jsx
+import { createContext, useContext, useEffect, useState } from 'react';
+import * as cartApi from '@/services/customer/cart.api';
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/context/authContext';
-import {
-    getCart,
-    addToCart as apiAddToCart,
-    updateCartItem as apiUpdateCartItem,
-    removeCartItem as apiRemoveCartItem,
-    clearCart as apiClearCart,
-} from '@/services/customer/cart.api';
-
-const CartContext = createContext();
+const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-    const { user } = useAuth();
-    const isAuthenticated = !!user;
-    console.log('User: ', isAuthenticated);
+    const [cart, setCart] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    const [cart, setCart] = useState({
-        items: [],
-        totalQuantity: 0,
-        totalPrice: 0,
-    });
-    const [loading, setLoading] = useState(true);
-
-    // Load cart khi login
-    useEffect(() => {
-        const fetchCart = async () => {
-            if (!isAuthenticated) {
-                setCart({ items: [], totalQuantity: 0, totalPrice: 0 });
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const res = await getCart();
-                setCart(res.data);
-            } catch (err) {
-                console.error('Get cart failed:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCart();
-    }, [isAuthenticated]);
-
-    // 🚫 Chặn chưa login
-    const requireAuth = () => {
-        if (!isAuthenticated) {
-            throw new Error('Vui lòng đăng nhập để sử dụng giỏ hàng');
+    // fetch cart
+    const fetchCart = async () => {
+        try {
+            setLoading(true);
+            const res = await cartApi.getCart();
+            setCart(res);
+        } catch (err) {
+            console.error('Fetch cart failed', err);
+            setCart(null);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const addToCart = useCallback(
-        async (productId, quantity = 1) => {
-            requireAuth();
+    useEffect(() => {
+        fetchCart();
+    }, []);
 
-            const res = await apiAddToCart({ productId, quantity });
-            setCart(res.data);
-        },
-        [isAuthenticated],
-    );
+    //  ADD TO CART (NHẬN OBJECT)
+    const addToCart = async (payload) => {
+       
+        await cartApi.addToCart(payload);
+        await fetchCart();
+    };
 
-    const updateQuantity = useCallback(
-        async (productId, quantity) => {
-            requireAuth();
+    const updateQuantity = async (productId, quantity) => {
+        await cartApi.updateCartItem({ productId, quantity });
+        await fetchCart();
+    };
 
-            await apiUpdateCartItem({ productId, quantity });
-            const res = await getCart();
-            setCart(res.data);
-        },
-        [isAuthenticated],
-    );
+    const removeItem = async (productId) => {
+        await cartApi.removeCartItem(productId);
+        await fetchCart();
+    };
 
-    const removeItem = useCallback(
-        async (productId) => {
-            requireAuth();
-
-            await apiRemoveCartItem(productId);
-            const res = await getCart();
-            setCart(res.data);
-        },
-        [isAuthenticated],
-    );
-
-    const clearCart = useCallback(async () => {
-        requireAuth();
-
-        await apiClearCart();
-        setCart({ items: [], totalQuantity: 0, totalPrice: 0 });
-    }, [isAuthenticated]);
+    const clearCart = async () => {
+        await cartApi.clearCart();
+        setCart(null);
+    };
 
     return (
         <CartContext.Provider
             value={{
                 cart,
                 loading,
+                fetchCart,
                 addToCart,
                 updateQuantity,
                 removeItem,
@@ -109,9 +66,9 @@ export const CartProvider = ({ children }) => {
 };
 
 export const useCart = () => {
-    const context = useContext(CartContext);
-    if (!context) {
-        throw new Error('useCart phải được dùng trong CartProvider');
+    const ctx = useContext(CartContext);
+    if (!ctx) {
+        throw new Error('useCart must be used inside CartProvider');
     }
-    return context;
+    return ctx;
 };

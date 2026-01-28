@@ -160,7 +160,7 @@ export default function ProductDetailPage() {
     // Hàm test add to cart
     // add to cart
     const handleAddToCart = async () => {
-        console.log('Adding to cart:', id);
+        console.log('Adding to cart by dan:', id);
         try {
             const response = await customizeAPI.post(
                 '/cart/add',
@@ -440,7 +440,10 @@ export default function ProductDetailPage() {
                                     <div
                                         className="w-full h-full"
                                         style={{
-                                            backgroundImage: `url(${similarProduct.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'})`,
+                                            backgroundImage: `url(${
+                                                similarProduct.imageUrl ||
+                                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
+                                            })`,
                                             backgroundSize: 'cover',
                                             backgroundPosition: 'center',
                                         }}
