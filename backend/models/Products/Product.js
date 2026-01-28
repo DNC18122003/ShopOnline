@@ -43,6 +43,20 @@ const productSchema = new Schema(
 
     price_history: [priceHistorySchema],
 
+    averageRating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+      index: true,
+    },
+
+    reviewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     // Hình ảnh (mảng URL)
     images: [
       {
@@ -129,7 +143,7 @@ const productSchema = new Schema(
     },
   },
   {
-    timestamps: true, 
+    timestamps: true,
   },
 );
- module.exports = mongoose.model("Product", productSchema);
+module.exports = mongoose.model("Product", productSchema);

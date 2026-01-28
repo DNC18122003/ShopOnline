@@ -38,8 +38,8 @@ const getCart = async (req, res) => {
 
 const addToCart = async (req, res) => {
     try {
+
         const userId = req.user._id;
-        
         const {productId, quantity = 1} = req.body;
         
         if(quantity <= 0){
@@ -81,9 +81,11 @@ const addToCart = async (req, res) => {
              imageSnapshot: product.images?.[0] || "",
            });
          }
-
+         
          await cart.save();
-         res.json(cart);
+         console.log("CART SAVED:", cart._id);
+
+        res.json(cart.toObject());
 
     } catch (error) {
         res.status(500).json({ message: "Add to cart failed", error: error.message });
@@ -112,7 +114,7 @@ const updateCart = async (req, res) => {
           if (quantity === 0) {
             cart.items.splice(itemIndex, 1);
             await cart.save();
-            return res.json(cart);
+            return res.json(cart.toObject());
           }
 
           const product = await Product.findById(productId).lean();
@@ -123,7 +125,7 @@ const updateCart = async (req, res) => {
           cart.items[itemIndex].quantity = quantity;
           await cart.save();
 
-          res.json(cart);
+         res.json(cart.toObject());
         
     } catch (error) {
         res.status(500).json({ message: "Update to cart failed", error: error.message });
@@ -141,20 +143,40 @@ const deleteCart = async (req, res) => {
            { new: true }
          );
 
-         res.json(cart || { items: [] });
+       res.json(cart ? cart.toObject() : { items: [] });
     } catch (error) {
        res.status(500).json({ message: "Delete to cart failed", error: error.message });          
     }
 };
 
 const clearCart = async (req, res) => {
-    try {
-          await Cart.findOneAndUpdate({ userId: req.user._id }, { items: [] });
+  try {
+    const userId = req.user._id;
 
-          res.json({ message: "Cart cleared" });
-    } catch (error) {
-         res.status(500).json({ message: "Clear to cart failed", error: error.message });
+    const updatedCart = await Cart.findOneAndUpdate(
+      { userId },
+      { $set: { items: [] } },
+      { new: true } 
+    );
+
+    if (!updatedCart) {
+      return res.json({
+        items: [],
+        totalQuantity: 0,
+        totalPrice: 0,
+      });
     }
+
+    
+    res.json(updatedCart.toObject());
+  } catch (error) {
+    console.error("Clear cart error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Clear cart failed",
+      error: error.message,
+    });
+  }
 };
 
  const mergeCart = async (req, res) => {
@@ -194,7 +216,7 @@ const clearCart = async (req, res) => {
     }
 
     await cart.save();
-    res.json(cart);
+   res.json(cart.toObject());
   } catch (err) {
     res.status(500).json({ message: "Merge cart failed", error: err.message });
   }

@@ -18,11 +18,11 @@ export const AuthProvider = ({ children }) => {
 
 // Thêm custom hook useAuth
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  
-  if (!context) {
-    throw new Error('useAuth phải được dùng bên trong AuthProvider');
-  }
-  
-  return context;
+    const context = useContext(AuthContext);
+
+    if (!context) {
+        throw new Error('useAuth phải được dùng bên trong AuthProvider');
+    }
+
+    return context;
 };

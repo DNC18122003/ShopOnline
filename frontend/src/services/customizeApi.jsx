@@ -7,6 +7,7 @@ const customizeAPI = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true,
 });
 
 //  (gắn token)

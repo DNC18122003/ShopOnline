@@ -42,9 +42,10 @@ const hashPassword = require('../utils/hash-password');
             // Thêm các field khác nếu cần
         };
 
-        return res.status(200).json({ 
-            message: 'Login successful',
-            user: userResponse,
+        return res.status(200).json({
+          message: "Login successful",
+          user: userResponse,
+          accessToken: token,
         });
     } catch (error) {
         console.error(error);
@@ -103,7 +104,24 @@ const logoutController = async (req, res) => {
         return res.status(500).json({ message: 'Server error' });
     }
 };
+// get
+const getMeController = async (req, res) => {
+    try {
+        const token = req.cookies.accessToken;
+        if (!token) return res.status(401).json({ message: 'Not authenticated' });
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded._id).select('-password');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        return res.status(200).json({ user });
+    } catch (err) {
+        return res.status(401).json({ message: 'Invalid token' });
+    }
+};
+
+module.exports = { getMeController };
 
 // controller for login with google 
  const loginWithGoogleController = async (req, res) => {};
- module.exports = { loginController, loginWithGoogleController, registerController, logoutController };   
+ module.exports = { loginController, loginWithGoogleController, registerController, logoutController,getMeController };   

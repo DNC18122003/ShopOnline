@@ -1,32 +1,20 @@
-// middlewares/auth.js
-const passport = require('passport');
+const passport = require("passport");
 const jwt = require("jsonwebtoken");
-// 1. Middleware xác thực jwt
-const isAuth = passport.authenticate('jwt', { session: false });
 
-// 2. Middleware phân quyền (Currying function)
+// 1. Middleware xác thực jwt (passport)
+const isAuth = passport.authenticate("jwt", { session: false });
+
+// 2. Middleware phân quyền
 const checkRoleAndStatus = (roles) => {
   return (req, res, next) => {
-    next(); 
+    next();
   };
 };
 
-const optionalAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split(" ")[1];
-
-  if (!token) return next();
-
-  jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) => {
-    if (!err) req.user = decoded;
-    next(); 
-  });
-};
-
-
+// 3. Auth
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization; 
+  const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({ message: "Missing or invalid token" });
   }
@@ -47,9 +35,8 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-module.exports = authenticateToken;
-
-
-
-
-module.exports = { isAuth, checkRoleAndStatus, optionalAuth, authenticateToken };
+module.exports = {
+  isAuth,
+  checkRoleAndStatus,
+  authenticateToken,
+};

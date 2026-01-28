@@ -1,6 +1,5 @@
 import React, { useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-
 import { AuthContext } from '@/context/authContext';
 import { useCart } from '@/context/cartContext';
 
@@ -26,12 +25,16 @@ import { toast } from 'react-toastify';
 
 import { logout_service } from '@/services/authService';
 
-
 const header = () => {
     const { setUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const data_ui = localStorage.getItem('data_ui');
-
+    const NAV_ITEMS = [
+        { name: 'Trang chủ', url: '/home' },
+        { name: 'Sản phẩm', url: '/product' },
+        { name: 'Về chúng tôi', url: '/about' },
+        { name: 'Liên hệ', url: '/contact' },
+    ];
     const handleLogut = async () => {
         try {
             await logout_service();
@@ -60,13 +63,8 @@ const header = () => {
                 {/* Navigation Menu: Home, Products, About us, Support */}
                 <NavigationMenu>
                     <NavigationMenuList className="gap-6">
-                        {[
-                            { name: 'Trang chủ', url: '/home' },
-                            { name: 'Sản phẩm', url: '/product' },
-                            { name: 'Về chúng tôi', url: '/about' },
-                            { name: 'Liên hệ', url: '/contact' },
-                        ].map((item) => (
-                            <NavigationMenuItem key={item}>
+                        {NAV_ITEMS.map((item) => (
+                            <NavigationMenuItem key={item.url}>
                                 <NavigationMenuLink
                                     href={item.url}
                                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
@@ -80,10 +78,14 @@ const header = () => {
                 {/* Action Cart + Avatar */}
                 <div className="flex items-center gap-6">
                     {/* Cart */}
-                    <Link to={'/cart'} className="relative cursor-pointer">
+                    <Link to="/cart" className="relative cursor-pointer">
                         <div className="relative cursor-pointer">
                             <ShoppingCart className="h-6 w-6 text-gray-700" />
-                            <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs">0</Badge>
+                            {cart?.totalQuantity > 0 && (
+                                <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs bg-red-500 text-white">
+                                    {cart.totalQuantity}
+                                </Badge>
+                            )}
                         </div>
                     </Link>
 

@@ -18,7 +18,7 @@ const brandSchema = new Schema(
       type: String,
       default: "",
     },
-   
+
     isActive: {
       type: Boolean,
       default: true,
@@ -26,8 +26,7 @@ const brandSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
-
 
 module.exports = mongoose.model("Brand", brandSchema);
