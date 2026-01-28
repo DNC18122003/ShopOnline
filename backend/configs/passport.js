@@ -4,12 +4,29 @@ const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
 const User = require('../models/User'); // Import model User của bạn
 require('dotenv').config();
 
-const opts = {
-    // Lấy token từ Header: Authorization: Bearer <token>
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: process.env.JWT_SECRET,
-};
+// trích xuất cookie từ request
+const cookieExtractor = (req) => {
+  let token = null;
 
+  // check req có cookie không
+  //console.log("Request cookies:", req.cookies);
+  if (req && req.cookies) {
+    token = req.cookies['accessToken'];
+  } else {
+    console.log('No cookies object found');
+  }
+
+
+  return token;
+}
+// cấu hình otps
+const opts = {
+  jwtFromRequest: cookieExtractor,
+  secretOrKey: process.env.JWT_SECRET,
+}
+
+
+// Giai cookie lấy user data gán vào " cau hinh passport"
 const passportConfig = (passport) => {
   passport.use(
     new JwtStrategy(opts, async (jwt_payload, done) => {

@@ -1,5 +1,5 @@
 const uploadRouter = require("./upload");
-const authRouter = require("./auth-router");
+const authRouter = require("./auth.route")
 const cartRouter = require("./order/cart.route");
 const orderRouter = require("./order/order.route");
 const productRouter = require("./product/product.route");

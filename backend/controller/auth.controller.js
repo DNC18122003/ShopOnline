@@ -28,7 +28,8 @@ const hashPassword = require('../utils/hash-password');
             httpOnly: true,
             secure: false,
             sameSite: 'lax',
-            maxAge: 24 * 60 * 60 * 1000 
+            maxAge: 24 * 60 * 60 * 1000,
+            path: '/'
         })
         // set data use to response
         const userResponse = {
