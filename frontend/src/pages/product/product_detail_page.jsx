@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, Eye, RotateCw, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
-
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import customizeAPI from '@/services/customizeApi';
 export default function ProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -155,6 +157,38 @@ export default function ProductDetailPage() {
         },
     ];
 
+    // Hàm test add to cart
+    // add to cart
+    const handleAddToCart = async () => {
+        console.log('Adding to cart:', id);
+        try {
+            const response = await customizeAPI.post(
+                '/cart/add',
+                {
+                    productId: '69781f14a989906b4c9c0846',
+                    quantity: 1,
+                },
+                {
+                    withCredentials: true,
+                },
+            );
+            console.log(response.data);
+            toast.success('Thêm vào giỏ hàng thành công!');
+        } catch (error) {
+            // toast lỗi 401
+            // if (error.response && error.response.status === 401) {
+            //     toast.error('Bé yêu vui lòng đăng nhập để sử dụng dịch vụ này nhé!');
+            // }
+            // // toast lỗi 403
+            // else if (error.response && error.response.status === 403) {
+            //     toast.error('Bé yêu không có quyền thực hiện hành động này nhé!');
+            // }
+            console.error('Error adding to cart:', error);
+        }
+    };
+
+    ///
+
     // Loading state
     if (loading) {
         return (
@@ -300,7 +334,10 @@ export default function ProductDetailPage() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 mb-6">
-                            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center">
+                            <button
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center"
+                                onClick={handleAddToCart}
+                            >
                                 <ShoppingCart className="w-4 h-4 mr-2" />
                                 Thêm vào giỏ hàng
                             </button>
@@ -348,9 +385,7 @@ export default function ProductDetailPage() {
                                         <span className="text-lg font-bold text-gray-900">
                                             {product.averageRating || '0'}
                                         </span>
-                                        <span className="text-lg text-gray-400">
-                                            /5
-                                        </span>
+                                        <span className="text-lg text-gray-400">/5</span>
                                         <span className="text-base text-gray-600">
                                             ({product.reviewCount || 0} đánh giá)
                                         </span>

@@ -1,5 +1,5 @@
 const express = require('express');
-const { loginController, registerController, loginWithGoogleController, logoutController } = require('../controller/authController');
+const { loginController, registerController, loginWithGoogleController, logoutController } = require('../controller/auth.controller');
 const router = express.Router();
 
 // api login

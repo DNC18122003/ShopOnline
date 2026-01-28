@@ -2,38 +2,29 @@
 const passport = require('passport');
 
 // 1. Middleware xác thực jwt
-const isAuth = passport.authenticate('jwt', { session: false });
-
-// 2. Middleware kiểm tra user có active không
-const checkStatus = (req, res, next) => {
-  try {
-    // Kiểm tra user có tồn tại không (từ passport jwt)
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Unauthorized - User not authenticated'
-      });
+const isAuth = (req, res, next) => {
+  //console.log('=== isAuth Middleware ===');
+  // console.log('Headers:', req.headers);
+  // console.log('Cookies:', req.cookies);
+  
+  passport.authenticate('jwt', { session: false }, (err, user, info) => {
+    if (err) {
+      console.log('Authentication error:', err);
+      return res.status(500).json({ message: 'Internal error' });
     }
-
-    // Kiểm tra user có active không
-    if (!req.user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden - User account is inactive'
-      });
+    
+    if (!user) {
+      console.log('Authentication failed:', info.message);
+      return res.status(401).json({ message: 'Unauthorized' });
     }
-
+    
+    console.log('Authentication successful:', user.email);
+    req.user = user;
     next();
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
+  })(req, res, next);
 };
 
-// 3. Middleware phân quyền (Currying function)
+// 2. Middleware phân quyền (Currying function)
 const checkRoleAndStatus = (roles) => {
   return (req, res, next) => {
     try {
@@ -75,4 +66,4 @@ const checkRoleAndStatus = (roles) => {
   };
 };
 
-module.exports = { isAuth, checkStatus, checkRoleAndStatus };
+module.exports = { isAuth, checkRoleAndStatus };

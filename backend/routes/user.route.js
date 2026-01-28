@@ -1,10 +1,7 @@
 const express = require('express');
-const { loginController } = require('../controller/authController');
+const { loginController } = require('../controller/auth.controller');
 const router = express.Router();
 
-// Tạo middleware chặn (Guard)
-// session: false vì dùng JWT không lưu session
-const isAuth = passport.authenticate('jwt', { session: false });
 
 // api profile 
 // middleware => router.post('/profile', isAuth, checkRoleAndStatus(['User']),  loginController);
