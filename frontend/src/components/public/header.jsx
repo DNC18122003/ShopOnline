@@ -83,6 +83,17 @@ const header = () => {
                         <NavigationMenuItem>
                             <NavigationMenuLink asChild>
                                 <Link
+                                    to="/build-pc"
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                >
+                                    Build PC
+                                </Link>
+                            </NavigationMenuLink>
+                        </NavigationMenuItem>
+
+                        <NavigationMenuItem>
+                            <NavigationMenuLink asChild>
+                                <Link
                                     to="/about"
                                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                                 >
