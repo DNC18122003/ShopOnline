@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { getMe } from '@/services/authService';
 
 export const AuthContext = createContext(null);
 
@@ -6,22 +7,21 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Ví dụ: load user từ localStorage / API
-   useEffect(() => {
-       const fetchMe = async () => {
-           try {
-               const res = await getMe();
-               setUser(res.user);
-           } catch (error) {
-               setUser(null);
-           } finally {
-               setLoading(false);
-           }
-       };
+    useEffect(() => {
+        const fetchMe = async () => {
+            try {
+                const res = await getMe();
+                // res CHÍNH LÀ response.data
+                setUser(res.user ?? res);
+            } catch (error) {
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-       fetchMe();
-   }, []);
-
+        fetchMe();
+    }, []);
 
     return <AuthContext.Provider value={{ user, setUser, loading }}>{children}</AuthContext.Provider>;
 };

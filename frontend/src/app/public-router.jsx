@@ -7,6 +7,7 @@ import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
 import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
+import CheckoutPage from '@/pages/order/CheckoutPage';
 
 
 
@@ -26,13 +27,16 @@ export const publicRoutes = [
             },
             {
                 path: '/product/:id',
-                element: <ProductDetailPage/>,
+                element: <ProductDetailPage />,
             },
             {
                 path: '/cart',
                 element: <CartPage />,
             },
-           
+            {
+                path: '/checkout',
+                element: <CheckoutPage/>,
+            },
         ],
     },
     {

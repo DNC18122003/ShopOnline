@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate,useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
 import CartItem from '@/components/layouts/customer/CartItem';
@@ -7,9 +7,9 @@ import CartItem from '@/components/layouts/customer/CartItem';
 const CartPage = () => {
     // const { user } = useAuth();
     const user = localStorage.getItem('data_ui');
-    console.log('usser', user);
+  
     const { cart, loading, removeItem, updateQuantity, clearCart } = useCart();
-
+    const navigate = useNavigate();
     if (!user) {
         return <Navigate to="/login" replace />;
     }
@@ -86,8 +86,8 @@ const CartPage = () => {
                         </div>
 
                         <button
-                            className="w-full bg-blue-600 text-white py-3 rounded-lg
-                            hover:bg-blue-700 transition"
+                            onClick={() => navigate('/checkout')}
+                            className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition"
                         >
                             Tiến hành thanh toán
                         </button>

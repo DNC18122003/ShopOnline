@@ -20,7 +20,7 @@ const loginController = async (req, res) => {
     // Create jwt token
     const token = jwt.sign(
       {
-        id: user._id,
+        _id: user._id,
         role: user.role,
       },
       process.env.JWT_SECRET,
@@ -121,17 +121,25 @@ const loginWithGoogleController = async (req, res) => {};
 
 // check user
 const getMe = async (req, res) => {
-  return res.json({
-    success: true,
-    user: {
-      _id: req.user._id,
-      email: req.user.email,
-      userName: req.user.userName,
-      role: req.user.role,
-      isActive: req.user.isActive,
-    },
-  });
+  try {
+    const userId = req.user._id; 
+
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("GET ME ERROR:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
+
+
 module.exports = {
   loginController,
   loginWithGoogleController,

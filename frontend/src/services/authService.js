@@ -28,3 +28,6 @@ export const logout_service = async () => {
         throw error;
     }
 };
+export const getMe = async () => {
+    return customizeAPI.get('/auth/me');
+};
