@@ -2,13 +2,13 @@ import { useState, Suspense } from "react"
 import { Search, ChevronDown, Calendar, Filter, Plus } from "lucide-react"
 
 // Đảm bảo đường dẫn import đúng với cấu trúc dự án của bạn
-import { Sidebar } from "@/components/layouts/Discount/sidebar"
-import { VoucherTable } from "@/components/layouts/Discount/voucher-table"
+import { Sidebar } from "@/components/Discount/sidebar"
+import { VoucherTable } from "@/components/Discount/voucher-table"
 import { BlogTable } from "@/components/layouts/Blog/blog-table" 
-import { Pagination } from "@/components/layouts/Discount/pagination"
+import { Pagination } from "@/components/Discount/pagination"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loading } from "@/components/layouts/Discount/loading"
+import { Loading } from "@/components/Discount/loading"
 
 const initialBlogPosts = [
   {
