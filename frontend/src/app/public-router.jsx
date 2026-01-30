@@ -31,7 +31,7 @@ export const publicRoutes = [
             {
                 path: '/product/:id',
                 element: <ProductDetailPage />,
-                element: <ProductDetailPage />,
+            
             },
             {
                 path: '/cart',
