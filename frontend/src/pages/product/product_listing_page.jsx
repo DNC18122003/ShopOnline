@@ -4,6 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ShoppingCart, Star } from 'luci
 import { getProducts } from '@/services/product/product.api';
 import { getCategories } from '@/services/category/category.api';
 import { getBrands } from '@/services/brand/brand.api';
+import AddToCartButton from '@/components/layouts/customer/AddToCartButton';
 
 function ProductCard({ _id, name, price, averageRating, reviewCount, images, badge }) {
     const navigate = useNavigate();
@@ -15,37 +16,46 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images, bad
     };
 
     return (
-        <div
-            onClick={() => navigate(`/product/${_id}`)}
-            className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300"
-        >
-            <div className="relative bg-muted p-6">
-                <div className="relative bg-muted p-6 flex items-center justify-center h-48">
-                    {images ? (
-                        <img src={images} alt={name} className="max-h-full max-w-full object-contain" />
-                    ) : (
-                        <div className="text-6xl">🖥️</div>
-                    )}
+        <div className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            <div onClick={() => navigate(`/product/${_id}`)} className="cursor-pointer">
+                <div className="relative bg-muted p-6">
+                    <div className="relative bg-muted p-6 flex items-center justify-center h-48">
+                        {images ? (
+                            <img src={images} alt={name} className="max-h-full max-w-full object-contain" />
+                        ) : (
+                            <div className="text-6xl">🖥️</div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-2 line-clamp-2 h-12">{name}</h3>
+
+                    <div className="flex items-center gap-1 mb-3">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                                key={i}
+                                className={`w-4 h-4 ${
+                                    i < averageRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                                }`}
+                            />
+                        ))}
+                        <span className="text-xs text-muted-foreground ml-1">({reviewCount})</span>
+                    </div>
+
+                    <div className="flex items-baseline gap-2 mb-4">
+                        <span className="text-xl font-bold text-primary">{formatVND(price)}</span>
+                    </div>
                 </div>
             </div>
-            <div className="p-4">
-                <h3 className="font-semibold text-foreground mb-2 line-clamp-2 h-12">{name}</h3>
-                <div className="flex items-center gap-1 mb-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                            key={i}
-                            className={`w-4 h-4 ${i < averageRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                        />
-                    ))}
-                    <span className="text-xs text-muted-foreground ml-1">({reviewCount})</span>
-                </div>
-                <div className="flex items-baseline gap-2 mb-4">
-                    <span className="text-xl font-bold text-primary">{formatVND(price)}</span>
-                </div>
-                <button className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2">
-                    <ShoppingCart className="w-4 h-4" />
-                    Thêm Vào Giỏ
-                </button>
+
+            <div className="px-4 pb-4">
+                <AddToCartButton
+                    productId={_id}
+                    name={name} 
+                    price={price}
+                    image={images?.[0]?.url || images}
+                />
             </div>
         </div>
     );

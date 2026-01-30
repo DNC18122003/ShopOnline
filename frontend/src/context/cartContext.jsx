@@ -1,20 +1,19 @@
+// context/cartContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getCart, addToCart, updateCartItem, removeCartItem, clearCart } from '../services/customer/cart.api';
+import * as cartApi from '@/services/customer/cart.api';
 
-//  Tạo Context
 const CartContext = createContext(null);
 
-//  Provider
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(false);
 
-    // Load cart khi app start / user login
+    // fetch cart
     const fetchCart = async () => {
         try {
             setLoading(true);
-            const res = await getCart();
-            setCart(res.data);
+            const res = await cartApi.getCart();
+            setCart(res);
         } catch (err) {
             console.error('Fetch cart failed', err);
             setCart(null);
@@ -27,46 +26,49 @@ export const CartProvider = ({ children }) => {
         fetchCart();
     }, []);
 
-    // Actions
-    const handleAddToCart = async (productId, quantity = 1) => {
-        await addToCart({ productId, quantity });
+    //  ADD TO CART (NHẬN OBJECT)
+    const addToCart = async (payload) => {
+       
+        await cartApi.addToCart(payload);
         await fetchCart();
     };
 
-    const handleUpdateQuantity = async (productId, quantity) => {
-        await updateCartItem({ productId, quantity });
+    const updateQuantity = async (productId, quantity) => {
+        await cartApi.updateCartItem({ productId, quantity });
         await fetchCart();
     };
 
-    const handleRemoveItem = async (productId) => {
-        await removeCartItem(productId);
+    const removeItem = async (productId) => {
+        await cartApi.removeCartItem(productId);
         await fetchCart();
     };
 
-    const handleClearCart = async () => {
-        await clearCart();
+    const clearCart = async () => {
+        await cartApi.clearCart();
         setCart(null);
     };
 
-    
-    const value = {
-        cart,
-        loading,
-        fetchCart,
-        addToCart: handleAddToCart,
-        updateQuantity: handleUpdateQuantity,
-        removeItem: handleRemoveItem,
-        clearCart: handleClearCart,
-    };
-
-    return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+    return (
+        <CartContext.Provider
+            value={{
+                cart,
+                loading,
+                fetchCart,
+                addToCart,
+                updateQuantity,
+                removeItem,
+                clearCart,
+            }}
+        >
+            {children}
+        </CartContext.Provider>
+    );
 };
 
-// Custom hook
 export const useCart = () => {
-    const context = useContext(CartContext);
-    if (!context) {
+    const ctx = useContext(CartContext);
+    if (!ctx) {
         throw new Error('useCart must be used inside CartProvider');
     }
-    return context;
+    return ctx;
 };

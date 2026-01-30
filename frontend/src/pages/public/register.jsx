@@ -6,7 +6,7 @@ import { Cpu, Mail, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import poster from '../../assets/tech_shop_poster.png';
-import { register_service } from '../../services/authService';
+import { register_service } from '../../services/auth/authService';
 import { toast } from 'react-toastify';
 const register = () => {
     const navigate = useNavigate();
@@ -64,12 +64,11 @@ const register = () => {
             setLoadingLogin(true);
             const response = await register_service(formRegister.userName, formRegister.email, formRegister.password);
             // console.log('Register successful api:', response.data);
-            if (response.status === 201) {
-                toast.success('Register successful!');
-                setTimeout(() => {
-                    navigate('/login');
-                }, 1000);
-            }
+
+            toast.success('Register successful!');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1000);
         } catch (error) {
             toast.error(error.response.data.message);
             console.error('Register failed:', error);

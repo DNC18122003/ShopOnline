@@ -2,13 +2,13 @@ import Login from '@/pages/public/login';
 import HomePage from '@/pages/public/homePage';
 import Register from '@/pages/public/register';
 import ProductListingPage from '@/pages/product/product_listing_page';
+import BuildPcPage from '@/pages/product/build_pc';
 import UserLayout from '@/components/layouts/user-layout';
 import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
 import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
-
-
+import CheckoutPage from '@/pages/order/CheckoutPage';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
@@ -25,14 +25,22 @@ export const publicRoutes = [
                 element: <ProductListingPage />,
             },
             {
+                path: '/build-pc',
+                element: <BuildPcPage />,
+            },
+            {
                 path: '/product/:id',
-                element: <ProductDetailPage/>,
+                element: <ProductDetailPage />,
+                element: <ProductDetailPage />,
             },
             {
                 path: '/cart',
                 element: <CartPage />,
             },
-           
+            {
+                path: '/checkout',
+                element: <CheckoutPage />,
+            },
         ],
     },
     {

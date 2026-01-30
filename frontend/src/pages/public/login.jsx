@@ -1,16 +1,15 @@
 import React, { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 
 import { Cpu, Mail } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 
 import poster from '../../assets/tech_shop_poster.png';
 
-import { login_service } from '../../services/authService';
+import { login_service } from '../../services/auth/authService';
 const login = () => {
     const navigate = useNavigate();
     const { setUser } = useContext(AuthContext);
@@ -44,36 +43,40 @@ const login = () => {
         return errors;
     };
     const handleSubmit = async (e) => {
+        console.log('start');
         e.preventDefault();
         const errors = validateForm(formLogin);
         setMessageError(errors);
 
         if (errors.emailError || errors.passwordError) {
+            console.log('flow 1.1');
             return;
         }
         try {
             setLoadingLogin(true);
+            console.log('start 1');
             const response = await login_service(formLogin.email, formLogin.password);
-            // console.log('Login successful api:', response.data);
-            if (response.status === 200) {
-                // set data in auth context
-                setUser(response.data.user);
-                // set data in local storage
-                const data_ui = {
-                    fullName: response.data.user.fullName,
-                    email: response.data.user.email,
-                    userName: response.data.user.userName,
-                    avatar: response.data.user.avatar,
-                };
-                localStorage.setItem('data_ui', JSON.stringify(data_ui));
-                // alert('Login successful!');
-                toast.success('Đăng nhập thành công, chào ' + response.data.user.userName);
-                setTimeout(() => {
-                    navigate('/');
-                }, 1000);
-            }
+            console.log('Login successful api:', response);
+            console.log('start 2');
+            // set data in auth context
+            setUser(response.user);
+            // set data in local storage
+            const data_ui = {
+                fullName: response.user.fullName,
+                email: response.user.email,
+                userName: response.user.userName,
+                avatar: response.user.avatar,
+            };
+            localStorage.setItem('data_ui', JSON.stringify(data_ui));
+            console.log('start 3');
+            // alert('Login successful!');
+            toast.success('Đăng nhập thành công, chào ' + response.user.userName);
+            console.log('start 4');
+            setTimeout(() => {
+                navigate('/');
+            }, 1000);
         } catch (error) {
-            setMessageError(error.response.data.message);
+            toast.error(error.response?.data?.message || 'Đăng nhập thất bại!');
             console.error('Login failed:', error);
         } finally {
             setLoadingLogin(false);
@@ -161,9 +164,9 @@ const login = () => {
                     <div className="text-center mt-6">
                         <span className="text-gray-600 text-sm">
                             Chưa có tài khoản?{' '}
-                            <a href="/register" className="text-blue-500 hover:text-blue-600 font-semibold">
+                            <Link to="/register" className="text-blue-500 hover:text-blue-600 font-semibold">
                                 Đăng ký ngay
-                            </a>
+                            </Link>
                         </span>
                     </div>
                 </div>

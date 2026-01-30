@@ -1,21 +1,37 @@
-
 // config/passport.js
-const { Strategy: JwtStrategy, ExtractJwt } = require('passport-jwt');
-const User = require('../models/User'); // Import model User của bạn
-require('dotenv').config();
+const { Strategy: JwtStrategy, ExtractJwt } = require("passport-jwt");
+const User = require("../models/User"); // Import model User của bạn
+require("dotenv").config();
 
+// trích xuất cookie từ request
+const cookieExtractor = (req) => {
+  let token = null;
+
+  // check req có cookie không
+  console.log("Request cookies:", req.cookies);
+  if (req && req.cookies) {
+    token = req.cookies["accessToken"];
+    console.log("token", token);
+  } else {
+    console.log("No cookies object found");
+  }
+
+  return token;
+};
+// cấu hình otps
 const opts = {
-    // Lấy token từ Header: Authorization: Bearer <token>
-    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: process.env.JWT_SECRET,
+  jwtFromRequest: cookieExtractor,
+  secretOrKey: process.env.JWT_SECRET,
 };
 
+// Giai cookie lấy user data gán vào " cau hinh passport"
 const passportConfig = (passport) => {
   passport.use(
     new JwtStrategy(opts, async (jwt_payload, done) => {
       try {
         // jwt_payload chứa dữ liệu bạn đã mã hóa (thường là { id: ..., email: ... })
-        const user = await User.findById(jwt_payload.id);
+        console.log("jwt_payload", jwt_payload);
+        const user = await User.findById(jwt_payload._id);
 
         if (user) {
           // Tìm thấy user -> Cho qua và gán vào req.user
@@ -31,7 +47,7 @@ const passportConfig = (passport) => {
 };
 
 module.exports = { passportConfig };
-    /*
+/*
     Mô hình hóa Flow Middleware chuẩn
     Hãy hình dung quy trình xử lý 1 request vào API bảo mật (ví dụ: /admin/dashboard) sẽ đi qua 3 cửa ải:
     

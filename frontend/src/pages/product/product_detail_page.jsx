@@ -2,7 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
+
 import { getReviewByProductId } from '../../services/review/review.api';
+
+
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import customizeAPI from '@/services/customizeApi';
 
 export default function ProductDetailPage() {
     const { id } = useParams();
@@ -150,6 +156,43 @@ export default function ProductDetailPage() {
 
     const specifications = getSpecifications();
 
+
+
+    // Customer Reviews Data
+   
+
+    // Hàm test add to cart
+    // add to cart
+    const handleAddToCart = async () => {
+        console.log('Adding to cart by dan:', id);
+        try {
+            const response = await customizeAPI.post(
+                '/cart/add',
+                {
+                    productId: '69781f14a989906b4c9c0846',
+                    quantity: 1,
+                },
+                {
+                    withCredentials: true,
+                },
+            );
+            console.log(response.data);
+            toast.success('Thêm vào giỏ hàng thành công!');
+        } catch (error) {
+            // toast lỗi 401
+            // if (error.response && error.response.status === 401) {
+            //     toast.error('Bé yêu vui lòng đăng nhập để sử dụng dịch vụ này nhé!');
+            // }
+            // // toast lỗi 403
+            // else if (error.response && error.response.status === 403) {
+            //     toast.error('Bé yêu không có quyền thực hiện hành động này nhé!');
+            // }
+            console.error('Error adding to cart:', error);
+        }
+    };
+
+    ///
+
     // Loading state
     if (loading) {
         return (
@@ -295,7 +338,10 @@ export default function ProductDetailPage() {
 
                         {/* Action Buttons */}
                         <div className="flex gap-3 mb-6">
-                            <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center">
+                            <button
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center"
+                                onClick={handleAddToCart}
+                            >
                                 <ShoppingCart className="w-4 h-4 mr-2" />
                                 Thêm vào giỏ hàng
                             </button>
@@ -409,7 +455,10 @@ export default function ProductDetailPage() {
                                     <div
                                         className="w-full h-full"
                                         style={{
-                                            backgroundImage: `url(${similarProduct.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'})`,
+                                            backgroundImage: `url(${
+                                                similarProduct.imageUrl ||
+                                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
+                                            })`,
                                             backgroundSize: 'cover',
                                             backgroundPosition: 'center',
                                         }}

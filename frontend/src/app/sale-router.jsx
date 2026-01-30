@@ -13,7 +13,7 @@ export const saleRoutes = [
         ),
         children: [
             {
-                path: 'profile',
+                path: '/dashboard',
                 element: <UserProfile />,
             },
         ],

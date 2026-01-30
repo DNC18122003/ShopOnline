@@ -12,8 +12,8 @@ import 'react-toastify/dist/ReactToastify.css';
 createRoot(document.getElementById('root')).render(
     <StrictMode>
         <AuthProvider>
-            <CartProvider>
-                <ContextProvider>
+            <ContextProvider>
+                <CartProvider>
                     <RouterProvider router={router} />
                     <ToastContainer
                         position="top-right"
@@ -24,8 +24,8 @@ createRoot(document.getElementById('root')).render(
                         pauseOnHover
                         draggable
                     />
-                </ContextProvider>
-            </CartProvider>
+                </CartProvider>
+            </ContextProvider>
         </AuthProvider>
     </StrictMode>,
 );

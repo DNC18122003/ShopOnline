@@ -1,39 +1,26 @@
-// middlewares/auth.js
-const passport = require('passport');
+const passport = require("passport");
+const jwt = require("jsonwebtoken");
 
 // 1. Middleware xác thực jwt
-const isAuth = passport.authenticate('jwt', { session: false });
+const isAuth = (req, res, next) => {
+  passport.authenticate("jwt", { session: false }, (err, user, info) => {
+    if (err) {
+      console.error("JWT error:", err);
+      return res.status(500).json({ message: "Authentication error" });
+    }
 
-// 2. Middleware kiểm tra user có active không
-const checkStatus = (req, res, next) => {
-  try {
-    // Kiểm tra user có tồn tại không (từ passport jwt)
-    if (!req.user) {
+    if (!user) {
       return res.status(401).json({
-        success: false,
-        message: 'Unauthorized - User not authenticated'
+        message: info?.message || "Unauthorized",
       });
     }
 
-    // Kiểm tra user có active không
-    if (!req.user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden - User account is inactive'
-      });
-    }
-
+    req.user = user; // chứa _id, role, email...
     next();
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
+  })(req, res, next);
 };
 
-// 3. Middleware phân quyền (Currying function)
+// 2. Middleware phân quyền (Currying function)
 const checkRoleAndStatus = (roles) => {
   return (req, res, next) => {
     try {
@@ -41,7 +28,7 @@ const checkRoleAndStatus = (roles) => {
       if (!req.user) {
         return res.status(401).json({
           success: false,
-          message: 'Unauthorized - User not authenticated'
+          message: "Unauthorized - User not authenticated",
         });
       }
 
@@ -49,7 +36,7 @@ const checkRoleAndStatus = (roles) => {
       if (!req.user.isActive) {
         return res.status(403).json({
           success: false,
-          message: 'Forbidden - User account is inactive'
+          message: "Forbidden - User account is inactive",
         });
       }
 
@@ -60,7 +47,9 @@ const checkRoleAndStatus = (roles) => {
       if (!allowedRoles.includes(req.user.role)) {
         return res.status(403).json({
           success: false,
-          message: `Forbidden - User role must be one of: ${allowedRoles.join(', ')}`
+          message: `Forbidden - User role must be one of: ${allowedRoles.join(
+            ", "
+          )}`,
         });
       }
 
@@ -68,11 +57,32 @@ const checkRoleAndStatus = (roles) => {
     } catch (error) {
       return res.status(500).json({
         success: false,
-        message: 'Internal server error',
-        error: error.message
+        message: "Internal server error",
+        error: error.message,
       });
     }
   };
 };
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Missing or invalid token" });
+  }
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    if (!decoded || !decoded._id) {
+      return res.status(401).json({ message: "Invalid token payload" });
+    }
+    req.user = {
+      _id: decoded._id,
+      email: decoded.email,
+      role: decoded.role,
+    };
+    next();
+  });
+};
 
-module.exports = { isAuth, checkStatus, checkRoleAndStatus };
+module.exports = { isAuth, checkRoleAndStatus, authenticateToken };

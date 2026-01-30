@@ -11,3 +11,4 @@ export const getProductById = (id) => {
 export const getSimilarProducts = (id, params) => {
     return api.get(`/product/${id}/similar`, { params });
 };
+

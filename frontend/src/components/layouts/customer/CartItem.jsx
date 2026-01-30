@@ -2,17 +2,16 @@
 import { useState, useTransition } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { Trash2, Plus, Minus, CheckCircle2, Truck, PackageCheck } from 'lucide-react';
+import { CheckCircle2, Truck, PackageCheck, Minus, Plus } from 'lucide-react';
 
-
-import { Button } from '@/components/ui/button'; 
+import { Button } from '@/components/ui/button';
 const cn = (...inputs) => twMerge(clsx(inputs));
 
 const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
     const [localQty, setLocalQty] = useState(item.quantity);
     const [isPendingLocal, startTransition] = useTransition();
 
-    const isOutOfStock = item.stock < item.quantity; 
+    const isOutOfStock = item.stock < item.quantity;
 
     const handleQuantityChange = (newQty) => {
         if (newQty < 1 || newQty > 99) return;
@@ -26,11 +25,26 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
     return (
         <div
             className={cn(
-                'flex flex-col sm:flex-row items-start sm:items-center gap-4 py-6 border-b last:border-b-0',
+                'relative flex flex-col sm:flex-row items-start sm:items-center gap-6 py-6 border-b last:border-b-0',
                 isPendingLocal && 'opacity-60 pointer-events-none',
             )}
         >
-            {/* Hình ảnh sản phẩm */}
+            <button               
+                type="button"
+                onClick={() => onRemove(item.productId)}
+                disabled={isPending || isPendingLocal}
+                className={cn(
+                    'absolute top-4 right-4 z-10',
+                    'text-gray-500 hover:text-gray-700',
+                    'text-2xl font-bold leading-none',
+                    'transition-colors duration-150',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                )}
+                aria-label="Xóa sản phẩm"
+            >
+                ×
+            </button>
+
             <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border">
                 <img
                     src={item.imageSnapshot || '/placeholder-product.png'}
@@ -42,30 +56,15 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
                 />
             </div>
 
-            {/* Thông tin chính */}
             <div className="flex-1 min-w-0 space-y-2">
-                <div className="flex justify-between items-start gap-4">
-                    <div>
-                        <h3 className="font-medium text-base sm:text-lg line-clamp-2">{item.nameSnapshot}</h3>
-                        {/* Specs ngắn gọn - tùy chỉnh theo dữ liệu bạn có */}
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                            {item.descriptionSnapshot || 'Intel i9 • RTX 4070 • 16GB RAM • 1TB SSD • 16" QHD 240Hz'}
-                        </p>
-                    </div>
+                <div>
+                    <h3 className="font-medium text-base sm:text-lg line-clamp-2 pr-10">{item.nameSnapshot}</h3>
 
-                    {/* Nút xóa trên mobile */}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 sm:hidden"
-                        onClick={() => onRemove(item.productId)}
-                        disabled={isPending || isPendingLocal}
-                    >
-                        <Trash2 className="h-5 w-5" />
-                    </Button>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {item.descriptionSnapshot || item.nameSnapshot || 'Không có mô tả chi tiết'}
+                    </p>
                 </div>
 
-                {/* Trạng thái */}
                 <div className="flex flex-wrap gap-4 text-sm">
                     <div className="flex items-center gap-1.5">
                         {item.stock > 0 ? (
@@ -120,18 +119,6 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
                         </Button>
                     </div>
                 </div>
-
-                {/* Nút xóa trên desktop */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 mt-2 hidden sm:flex items-center gap-1.5 p-0 h-auto"
-                    onClick={() => onRemove(item.productId)}
-                    disabled={isPending || isPendingLocal}
-                >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Xóa</span>
-                </Button>
             </div>
         </div>
     );

@@ -23,13 +23,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'react-toastify';
 
-import { logout_service } from '@/services/authService';
+import { logout_service } from '@/services/auth/authService';
 
 const header = () => {
     const { setUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const data_ui = localStorage.getItem('data_ui');
-
+    const NAV_ITEMS = [
+        { name: 'Trang chủ', url: '/' },
+        { name: 'Sản phẩm', url: '/product' },
+        { name: 'Về chúng tôi', url: '/about' },
+        { name: 'Liên hệ', url: '/contact' },
+    ];
     const handleLogut = async () => {
         try {
             await logout_service();
@@ -58,58 +63,29 @@ const header = () => {
                 {/* Navigation Menu: Home, Products, About us, Support */}
                 <NavigationMenu>
                     <NavigationMenuList className="gap-6">
-                        <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
-                                <Link
-                                    to="/"
+                        {NAV_ITEMS.map((item) => (
+                            <NavigationMenuItem key={item.url}>
+                                <NavigationMenuLink
+                                    href={item.url}
                                     className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
                                 >
-                                    Trang chủ
-                                </Link>
-                            </NavigationMenuLink>
-                        </NavigationMenuItem>
-
-                        <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
-                                <Link
-                                    to="/product"
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
-                                >
-                                    Sản phẩm
-                                </Link>
-                            </NavigationMenuLink>
-                        </NavigationMenuItem>
-
-                        <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
-                                <Link
-                                    to="/about"
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
-                                >
-                                    Về chúng tôi
-                                </Link>
-                            </NavigationMenuLink>
-                        </NavigationMenuItem>
-
-                        <NavigationMenuItem>
-                            <NavigationMenuLink asChild>
-                                <Link
-                                    to="/contact"
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
-                                >
-                                    Liên hệ
-                                </Link>
-                            </NavigationMenuLink>
-                        </NavigationMenuItem>
+                                    {item.name}
+                                </NavigationMenuLink>
+                            </NavigationMenuItem>
+                        ))}
                     </NavigationMenuList>
                 </NavigationMenu>
                 {/* Action Cart + Avatar */}
                 <div className="flex items-center gap-6">
                     {/* Cart */}
-                    <Link to={'/cart'} className="relative cursor-pointer">
+                    <Link to="/cart" className="relative cursor-pointer">
                         <div className="relative cursor-pointer">
                             <ShoppingCart className="h-6 w-6 text-gray-700" />
-                            <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs">0</Badge>
+                            {cart?.totalQuantity > 0 && (
+                                <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs bg-red-500 text-white">
+                                    {cart.totalQuantity}
+                                </Badge>
+                            )}
                         </div>
                     </Link>
 
@@ -129,7 +105,9 @@ const header = () => {
                                 </DropdownMenuTrigger>
 
                                 <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem>Thông tin cá nhân</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                                        Thông tin cá nhân
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
 
                                     <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleLogut}>
