@@ -2,6 +2,7 @@ import Login from '@/pages/public/login';
 import HomePage from '@/pages/public/homePage';
 import Register from '@/pages/public/register';
 import ProductListingPage from '@/pages/product/product_listing_page';
+import BuildPcPage from '@/pages/product/build_pc';
 import UserLayout from '@/components/layouts/user-layout';
 import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
@@ -26,7 +27,12 @@ export const publicRoutes = [
                 element: <ProductListingPage />,
             },
             {
+                path: '/build-pc',
+                element: <BuildPcPage />,
+            },
+            {
                 path: '/product/:id',
+                element: <ProductDetailPage />,
                 element: <ProductDetailPage />,
             },
             {
