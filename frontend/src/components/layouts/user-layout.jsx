@@ -5,10 +5,13 @@ import { Outlet } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 const UserLayout = () => {
     return (
-        <div>
+        <div className="min-h-screen flex flex-col">
             <Header />
-            <Outlet />
+            <main className="flex-1 bg-gray-50">
+                <Outlet />
+            </main>
             <Footer />
+            <ToastContainer />
         </div>
     );
 };

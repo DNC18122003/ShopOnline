@@ -23,14 +23,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'react-toastify';
 
-import { logout_service } from '@/services/authService';
+import { logout_service } from '@/services/auth/authService';
 
 const header = () => {
     const { setUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const data_ui = localStorage.getItem('data_ui');
     const NAV_ITEMS = [
-        { name: 'Trang chủ', url: '/home' },
+        { name: 'Trang chủ', url: '/' },
         { name: 'Sản phẩm', url: '/product' },
         { name: 'Về chúng tôi', url: '/about' },
         { name: 'Liên hệ', url: '/contact' },
@@ -105,7 +105,9 @@ const header = () => {
                                 </DropdownMenuTrigger>
 
                                 <DropdownMenuContent align="end" className="w-48">
-                                    <DropdownMenuItem>Thông tin cá nhân</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                                        Thông tin cá nhân
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
 
                                     <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleLogut}>
