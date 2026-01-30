@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, Eye, RotateCw, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
+import { getReviewByProductId } from '../../services/review/review.api';
 
 export default function ProductDetailPage() {
     const { id } = useParams();
@@ -11,6 +12,7 @@ export default function ProductDetailPage() {
     const [error, setError] = useState(null);
     const [currentImage, setCurrentImage] = useState(0);
     const [similarProducts, setSimilarProducts] = useState([]);
+    const [reviews, setReviews] = useState([]);
 
     // Fetch product data
     useEffect(() => {
@@ -66,6 +68,31 @@ export default function ProductDetailPage() {
         fetchSimilarProducts();
     }, [product]);
 
+    // Fetch reviews based on current product
+    useEffect(() => {
+        const fetchReviews = async () => {
+            if (!product) {
+                return;
+            }
+
+            const productId = product._id || product.id;
+            if (!productId) {
+                return;
+            }
+
+            try {
+                const response = await getReviewByProductId(productId);
+                const reviewsData = response.data?.data || response.data || [];
+                setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+            } catch (err) {
+                console.error('Error fetching reviews:', err);
+                setReviews([]);
+            }
+        };
+
+        fetchReviews();
+    }, [product]);
+
     // Product Gallery Images
     const images = [
         {
@@ -88,13 +115,6 @@ export default function ProductDetailPage() {
             src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23ececec" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3EConnectors%3C/text%3E%3C/svg%3E',
             alt: 'Product connectors',
         },
-    ];
-
-    // Product Specs
-    const specs = [
-        { label: 'Hãng sản xuất:', value: 'ASUS' },
-        { label: 'Sản phẩm:', value: 'VGA' },
-        { label: 'Bảo hành:', value: '36 Tháng' },
     ];
 
     // Get specifications from product.specifications.detail_json
@@ -129,31 +149,6 @@ export default function ProductDetailPage() {
     };
 
     const specifications = getSpecifications();
-
-    // Customer Reviews Data
-    const reviews = [
-        {
-            name: 'Alex Johnson',
-            rating: 5,
-            title: 'Best GPU for gaming',
-            comment:
-                'The RTX 4090 completely transformed my gaming experience. Runs all games at max settings with incredible performance.',
-        },
-        {
-            name: 'Sarah Chen',
-            rating: 5,
-            title: 'Excellent for content creation',
-            comment:
-                'Amazing GPU for 3D rendering and video editing. The performance increase is noticeable compared to previous gen.',
-        },
-        {
-            name: 'Mike Rodriguez',
-            rating: 4,
-            title: 'Great but expensive',
-            comment:
-                'Fantastic performance but the price tag is quite high. Worth it if you need top-tier performance.',
-        },
-    ];
 
     // Loading state
     if (loading) {
@@ -348,9 +343,7 @@ export default function ProductDetailPage() {
                                         <span className="text-lg font-bold text-gray-900">
                                             {product.averageRating || '0'}
                                         </span>
-                                        <span className="text-lg text-gray-400">
-                                            /5
-                                        </span>
+                                        <span className="text-lg text-gray-400">/5</span>
                                         <span className="text-base text-gray-600">
                                             ({product.reviewCount || 0} đánh giá)
                                         </span>
@@ -359,27 +352,38 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
 
-                        {/* Sample Reviews */}
+                        {/* Reviews */}
                         <div className="space-y-4">
-                            {reviews.map((review, i) => (
-                                <div key={i} className="border border-gray-200 rounded p-4 hover:bg-gray-50 transition">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                                            {review.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-gray-900">{review.name}</p>
-                                            <div className="flex gap-0.5">
-                                                {[...Array(review.rating)].map((_, j) => (
-                                                    <Star key={j} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                                ))}
+                            {reviews.length === 0 ? (
+                                <p className="text-gray-600 py-4">Chưa có đánh giá nào cho sản phẩm này.</p>
+                            ) : (
+                                reviews.map((review) => (
+                                    <div
+                                        key={review._id}
+                                        className="border border-gray-200 rounded p-4 hover:bg-gray-50 transition"
+                                    >
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                                                {review.userId?.fullName?.charAt(0) || 'U'}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-900">
+                                                    {review.userId?.fullName || 'Anonymous'}
+                                                </p>
+                                                <div className="flex gap-0.5">
+                                                    {[...Array(review.rating)].map((_, j) => (
+                                                        <Star
+                                                            key={j}
+                                                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                                                        />
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
+                                        <p className="text-sm text-gray-600">{review.comment}</p>
                                     </div>
-                                    <p className="text-sm font-semibold text-gray-900 mb-1">{review.title}</p>
-                                    <p className="text-sm text-gray-600">{review.comment}</p>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
