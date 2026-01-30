@@ -2,9 +2,8 @@ import { useState, Suspense } from "react"
 import { Search, ChevronDown, Calendar, Filter, Plus } from "lucide-react"
 
 // Đảm bảo đường dẫn import đúng với cấu trúc dự án của bạn
-import { Sidebar } from "@/components/Discount/sidebar"
 import { VoucherTable } from "@/components/Discount/voucher-table"
-import { BlogTable } from "@/components/layouts/Blog/blog-table" 
+import { BlogTable } from "@/components/Blog/blog-table"
 import { Pagination } from "@/components/Discount/pagination"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -120,7 +119,7 @@ const initialVouchers = [
 
 export default function VoucherManagement() {
   const [activeMenu, setActiveMenu] = useState("posts")
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  // Đã xóa state isSidebarCollapsed
   const [vouchers, setVouchers] = useState(initialVouchers)
   const [blogPosts, setBlogPosts] = useState(initialBlogPosts)
   const [searchQuery, setSearchQuery] = useState("")
@@ -169,19 +168,33 @@ export default function VoucherManagement() {
 
   return (
     <Suspense fallback={<Loading />}>
-      <div className="flex min-h-screen bg-[#E8F4FC]">
-        <Sidebar 
-          activeItem={activeMenu} 
-          onItemClick={setActiveMenu}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        />
+      {/* Đã xóa class flex vì không còn sidebar */}
+      <div className="min-h-screen bg-[#E8F4FC]">
+        {/* Đã xóa <Sidebar /> */}
 
-        <main className="flex-1 p-8">
+        <main className="p-8">
+          {/* MENU CHUYỂN ĐỔI (Thêm mới để thay thế Sidebar) */}
+          <div className="flex gap-4 mb-6 pb-6 border-b border-gray-200">
+            <Button 
+              variant={activeMenu === "posts" ? "default" : "outline"}
+              onClick={() => { setActiveMenu("posts"); setSearchQuery(""); }}
+              className={activeMenu === "posts" ? "bg-blue-600" : "bg-white"}
+            >
+              Quản lý bài đăng
+            </Button>
+            <Button 
+              variant={activeMenu === "vouchers" ? "default" : "outline"}
+              onClick={() => { setActiveMenu("vouchers"); setSearchQuery(""); }}
+              className={activeMenu === "vouchers" ? "bg-blue-600" : "bg-white"}
+            >
+              Quản lý mã giảm giá
+            </Button>
+          </div>
+
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">
-              {activeMenu === "posts" ? "Quản lý bài đăng" : "Mã giảm giá"}
+              {activeMenu === "posts" ? "Danh sách bài đăng" : "Danh sách mã giảm giá"}
             </h1>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">Nguyễn Thành Trung</span>
