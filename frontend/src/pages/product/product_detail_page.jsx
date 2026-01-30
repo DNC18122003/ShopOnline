@@ -2,11 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
-
 import { getReviewByProductId } from '../../services/review/review.api';
-
-
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 

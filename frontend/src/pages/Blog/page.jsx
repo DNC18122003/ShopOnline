@@ -4,7 +4,7 @@ import { Search, ChevronDown, Calendar, Filter, Plus } from "lucide-react"
 // Đảm bảo đường dẫn import đúng với cấu trúc dự án của bạn
 import { Sidebar } from "@/components/Discount/sidebar"
 import { VoucherTable } from "@/components/Discount/voucher-table"
-import { BlogTable } from "@/components/layouts/Blog/blog-table" 
+import { BlogTable } from "@/components/Blog/blog-table" 
 import { Pagination } from "@/components/Discount/pagination"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
