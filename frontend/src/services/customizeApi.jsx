@@ -10,7 +10,7 @@ const customizeAPI = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    withCredentials: true, // 🔥 cookie auth
+    withCredentials: true, //  cookie auth
 });
 
 
