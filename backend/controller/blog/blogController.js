@@ -1,8 +1,5 @@
-// LƯU Ý QUAN TRỌNG: Kiểm tra kỹ đường dẫn file Model
-// Dựa vào ảnh cũ của bạn thì thư mục tên là 'Blogs' (số nhiều)
 const Blog = require('../../models/Blogs/Blog'); 
 
-// Hàm hỗ trợ tạo slug đơn giản (nếu chưa cài thư viện slugify)
 const generateSlug = (title) => {
   return title
     .toLowerCase()
@@ -12,8 +9,28 @@ const generateSlug = (title) => {
 };
 
 const blogController = {
+  // 1. danh sách bài viết
+  getAllBlogs: async (req, res) => {
+    try {
+      const { status } = req.query;
+      let query = {};
 
-  // 1. Tạo bài viết mới
+      if (status) query.status = status;
+
+      const blogs = await Blog.find(query)
+        .populate('authorId', 'name email') 
+        .sort({ createdAt: -1 }); // 1 = Tăng dần (Giống hiển thị trong MongoDB Compass/Atlas)
+
+      res.status(200).json({
+        success: true,
+        count: blogs.length,
+        data: blogs
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+  // 2. Tạo bài viết mới
   createBlog: async (req, res) => {
     try {
       let { title, slug, content, authorId, thumbnail, status } = req.body;
@@ -48,28 +65,7 @@ const blogController = {
     }
   },
 
-  // 2. Lấy danh sách bài viết (Có lọc theo status và populate author)
-  getAllBlogs: async (req, res) => {
-    try {
-      const { status } = req.query;
-      let query = {};
-
-      // Nếu có truyền status (ví dụ ?status=published) thì lọc
-      if (status) query.status = status;
-
-      const blogs = await Blog.find(query)
-        .populate('authorId', 'name email') // Lấy tên và email tác giả từ bảng User
-        .sort({ createdAt: -1 }); // Mới nhất lên đầu
-
-      res.status(200).json({
-        success: true,
-        count: blogs.length,
-        data: blogs
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
+  
 
   // 3. Lấy chi tiết bài viết (Theo ID) + Tăng View
   getBlogById: async (req, res) => {

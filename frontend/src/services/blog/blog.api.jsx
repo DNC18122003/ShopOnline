@@ -1,5 +1,4 @@
-// services/blogService.js
-import customizeAPI from './customizeAPi'; 
+import customizeAPI from '../customizeApi'; 
 const blogService = {
   // 1. Lấy danh sách
   getAllBlogs: (queryString) => {
