@@ -35,7 +35,7 @@ export function DeleteDiscountModal({
               <span className="font-semibold text-gray-900">{discountCode}</span> không?
             </p>
             <p className="text-sm text-gray-500">
-              Thao tác này sẽ xóa lịch sử và tất cả dữ liệu liên quan đến mã này.
+              Thao tác này sẽ xóa  tất cả dữ liệu liên quan đến mã này.   
             </p>
           </div>
 

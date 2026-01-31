@@ -1,14 +1,9 @@
-'use client'
-
-import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-// Đã xóa "type DiscountFormData"
 import { CreateDiscountForm } from './create-discount-form'
 
 export function CreateDiscountModal({
@@ -16,22 +11,22 @@ export function CreateDiscountModal({
   onOpenChange,
   onSubmit,
 }) {
-  const handleSubmit = (data) => {
-    console.log('Creating discount:', data)
-    // Dấu ?. giúp tránh lỗi nếu không truyền hàm onSubmit
-    onSubmit?.(data)
-    onOpenChange(false)
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* Lưu ý: DialogContent của Shadcn thường cần có DialogTitle bên trong để đảm bảo Accessibility, 
-          nhưng mình giữ nguyên logic như code gốc của bạn */}
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-white">
-        <CreateDiscountForm
-          onSubmit={handleSubmit}
-          onCancel={() => onOpenChange(false)}
-        />
+      {/* THAY ĐỔI QUAN TRỌNG:
+         - Sửa 'max-w-2xl' thành 'max-w-4xl' (để rộng gấp đôi) 
+         - Hoặc 'max-w-5xl' nếu muốn to hơn nữa
+      */}
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
+        <div className="p-6">           
+            <CreateDiscountForm
+              onSubmit={(data) => {
+                onSubmit?.(data)
+                onOpenChange(false)
+              }}
+              onCancel={() => onOpenChange(false)}
+            />
+        </div>
       </DialogContent>
     </Dialog>
   )
