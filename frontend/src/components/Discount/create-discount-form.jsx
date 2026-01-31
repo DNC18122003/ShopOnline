@@ -1,11 +1,6 @@
-// file: src/components/Discount/create-discount-form.jsx
-'use client'
-
 import React, { useState } from 'react'
 import { CalendarIcon } from 'lucide-react'
 import { format } from "date-fns"
-import { vi } from "date-fns/locale"
-
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -118,8 +113,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                     className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
                   />
                 </div>
-
-                {/* --- PHẦN SỬA LỖI ĐÈ CHỮ --- */}
                 <div>
                   <Label className="text-sm font-medium text-gray-700 mb-3 block">Thời hạn</Label>
                   <div className="flex gap-3 items-center">
@@ -136,7 +129,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                               !formData.startDate && "text-muted-foreground"
                             )}
                           >
-                             {/* Đưa icon lên trước chữ để không bị đè */}
                              <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                              {formData.startDate ? (
                                 format(formData.startDate, "dd/MM/yyyy")
@@ -170,7 +162,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                               !formData.endDate && "text-muted-foreground"
                             )}
                           >
-                             {/* Đưa icon lên trước chữ để không bị đè */}
                              <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
                              {formData.endDate ? (
                                 format(formData.endDate, "dd/MM/yyyy")
@@ -192,13 +183,10 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
 
                   </div>
                 </div>
-                {/* --- HẾT PHẦN SỬA --- */}
-
               </div>
             </section>
           </div>
 
-          {/* Right Column */}
           <div className="space-y-6">
             {/* Discount Value */}
             <section>
