@@ -8,8 +8,9 @@ import { Loading } from "@/components/Discount/loading"
 import { toast } from "react-toastify" 
 import discountService from "@/services/discount/discount.api";
 
-// --- IMPORT MODAL XÓA MỚI ---
+// 1. IMPORT CÁC MODAL
 import { DeleteDiscountModal } from "@/components/Discount/delete-discount-form" 
+import { CreateDiscountModal } from "@/components/Discount/create-discount-modal"
 
 export default function VoucherManagement() {
   const [vouchers, setVouchers] = useState([])
@@ -26,11 +27,14 @@ export default function VoucherManagement() {
   const [filterStatus, setFilterStatus] = useState("all") 
   const [filterType, setFilterType] = useState("all")
 
-  // --- STATE CHO MODAL XÓA (MỚI) ---
+  // State cho Modal Xóa
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [voucherToDelete, setVoucherToDelete] = useState(null) // Lưu object voucher cần xóa
+  const [voucherToDelete, setVoucherToDelete] = useState(null) 
 
-  // 1. Hàm lấy dữ liệu từ API
+  // --- 2. STATE CHO MODAL TẠO MỚI ---
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
+  // Hàm lấy dữ liệu từ API
   const fetchVouchers = async () => {
     setLoading(true)
     try {
@@ -84,7 +88,6 @@ export default function VoucherManagement() {
     setCurrentPage(1);
   }
 
-  // 3. Xử lý Toggle
   const handleToggle = async (id) => {
     try {
         const voucher = vouchers.find(v => v.id === id);
@@ -98,9 +101,6 @@ export default function VoucherManagement() {
     } catch (error) { toast.error("Lỗi cập nhật"); }
   }
 
-  // --- 4. XỬ LÝ XÓA (ĐÃ SỬA ĐỔI) ---
-
-  // Bước 4.1: Khi bấm nút thùng rác -> Mở Modal
   const handleDeleteClick = (id) => {
     const targetVoucher = vouchers.find(v => v.id === id);
     if (targetVoucher) {
@@ -109,15 +109,12 @@ export default function VoucherManagement() {
     }
   }
 
-  // Bước 4.2: Khi bấm xác nhận trong Modal -> Gọi API xóa
   const handleConfirmDelete = async () => {
     if (!voucherToDelete) return;
-
     try {
         const res = await discountService.deleteDiscount(voucherToDelete.id);
         if(res && res.success) {
             toast.success("Đã xóa mã giảm giá");
-            // Logic lùi trang nếu xóa hết item ở trang cuối
             if (vouchers.length === 1 && currentPage > 1) {
                 setCurrentPage(currentPage - 1);
             } else {
@@ -127,8 +124,28 @@ export default function VoucherManagement() {
     } catch (error) { 
         toast.error("Xóa thất bại"); 
     } finally {
-        // Reset state sau khi xóa xong
         setVoucherToDelete(null);
+    }
+  }
+
+  // --- 3. LOGIC XỬ LÝ KHI SUBMIT FORM TẠO MỚI ---
+  // Modal của bạn trả về `data` qua prop onSubmit, nên ta gọi API tại đây
+  const handleCreateSubmit = async (formData) => {
+    try {
+        // Gọi API tạo mới (giả sử bạn có hàm createDiscount trong service)
+        const res = await discountService.createDiscount(formData);
+        
+        if (res && res.success) {
+            toast.success("Tạo mã giảm giá thành công!");
+            fetchVouchers(); // Load lại bảng dữ liệu
+            // Modal tự đóng nhờ logic trong component CreateDiscountModal (onOpenChange(false))
+        } else {
+             // Nếu API trả về lỗi
+             toast.error(res?.message || "Tạo thất bại");
+        }
+    } catch (error) {
+        console.error(error);
+        toast.error("Đã có lỗi xảy ra khi tạo mã.");
     }
   }
 
@@ -143,20 +160,24 @@ export default function VoucherManagement() {
     <Suspense fallback={<Loading />}>
       <div className="min-h-screen bg-gray-100"> 
         <main className="p-8">
-          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold text-gray-900">Mã giảm giá</h1>
             <div className="flex items-center gap-4">
-              <Button className="bg-[#3B82F6] hover:bg-[#2563EB] text-white gap-2">
+              
+              {/* Nút bật Modal */}
+              <Button 
+                onClick={() => setIsCreateModalOpen(true)}
+                className="bg-[#3B82F6] hover:bg-[#2563EB] text-white gap-2"
+              >
                 <Plus className="w-4 h-4" />
                 Tạo mã giảm giá
               </Button>
+
             </div>
           </div>
 
-          {/* Filter Area */}
+          {/* Filter Area (Giữ nguyên) */}
           <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-lg shadow-sm">
-            {/* Search */}
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
@@ -166,7 +187,7 @@ export default function VoucherManagement() {
                 className="pl-10 border-gray-200"
               />
             </div>
-            {/* Filter Type */}
+            {/* ... Các select filter giữ nguyên ... */}
             <div className="relative min-w-[150px]">
                 <select 
                     className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -178,7 +199,6 @@ export default function VoucherManagement() {
                     <option value="fixed">Tiền cố định (VND)</option>
                 </select>
             </div>
-            {/* Filter Status */}
             <div className="relative min-w-[150px]">
                 <select 
                     className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -190,8 +210,6 @@ export default function VoucherManagement() {
                     <option value="inactive">Ngưng hoạt động</option>
                 </select>
             </div>
-
-             {/* Reset Filter Button */}
              {(filterStatus !== 'all' || filterType !== 'all' || searchQuery) && (
                 <Button 
                     variant="ghost" 
@@ -216,15 +234,11 @@ export default function VoucherManagement() {
                 vouchers={vouchers}
                 onToggle={handleToggle}
                 onEdit={handleEdit}
-                
-                // QUAN TRỌNG: Thay handleDelete bằng handleDeleteClick để mở Modal
                 onDelete={handleDeleteClick} 
-                
                 onCopyCode={handleCopyCode}
              />
           )}
 
-          {/* Pagination */}
           {!loading && totalItems > 0 && (
               <Pagination
                 currentPage={currentPage}
@@ -235,12 +249,20 @@ export default function VoucherManagement() {
               />
           )}
 
-          {/* --- RENDER MODAL XÓA TẠI ĐÂY --- */}
+          {/* --- KHU VỰC CÁC MODAL --- */}
+          
           <DeleteDiscountModal 
             isOpen={isDeleteModalOpen}
             onOpenChange={setIsDeleteModalOpen}
             discountCode={voucherToDelete?.code || ""}
             onConfirm={handleConfirmDelete}
+          />
+
+          {/* --- 4. SỬ DỤNG COMPONENT CreateDiscountModal --- */}
+          <CreateDiscountModal 
+            isOpen={isCreateModalOpen}
+            onOpenChange={setIsCreateModalOpen}
+            onSubmit={handleCreateSubmit}
           />
 
         </main>

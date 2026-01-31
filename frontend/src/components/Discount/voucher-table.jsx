@@ -67,10 +67,10 @@ export function VoucherTable({
               </TableCell>
               <TableCell className="text-center">
                 <span className="text-gray-600">
-                  Giới hạn: {voucher.usageLimit} uses
+                  Giới hạn: {voucher.usageLimit} người dùng
                 </span>
                 <span className="text-gray-400 text-sm ml-1">
-                  ({voucher.usedCount} used)
+                  ({voucher.usedCount} người dùng)
                 </span>
               </TableCell>
               <TableCell className="text-center text-gray-600">
