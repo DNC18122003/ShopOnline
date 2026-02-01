@@ -23,7 +23,7 @@ const getCart = async (req, res) => {
             (sum, item) => sum + item.quantity * item.priceSnapshot, 0
         );
 
-        res.json({
+        res.json({ 
           ...cart,
           totalQuantity,
           totalPrice
@@ -41,8 +41,7 @@ const getCart = async (req, res) => {
 
 const addToCart = async (req, res) => {
     try {
-        console.log("REQ.USER:", req.user); // 👈 BẮT BUỘC
-        console.log("REQ.BODY:", req.body);
+        
         const userId = req.user?._id;
         const {productId, quantity = 1} = req.body;
         

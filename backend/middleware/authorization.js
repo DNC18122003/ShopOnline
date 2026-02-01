@@ -15,7 +15,7 @@ const isAuth = (req, res, next) => {
       });
     }
 
-    req.user = user; // chứa _id, role, email...
+    req.user = user; 
     next();
   })(req, res, next);
 };
@@ -64,7 +64,7 @@ const checkRoleAndStatus = (roles) => {
   };
 };
 const authenticateToken = (req, res, next) => {
-  // Đọc token từ cookie thay vì header
+  // Đọc token từ cookie 
   const token = req.cookies?.accessToken;
 
   if (!token) {
