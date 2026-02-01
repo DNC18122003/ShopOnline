@@ -32,6 +32,7 @@ const header = () => {
     const NAV_ITEMS = [
         { name: 'Trang chủ', url: '/' },
         { name: 'Sản phẩm', url: '/product' },
+        { name: 'Build PC', url: '/build-pc' },
         { name: 'Về chúng tôi', url: '/about' },
         { name: 'Liên hệ', url: '/contact' },
     ];
@@ -65,11 +66,13 @@ const header = () => {
                     <NavigationMenuList className="gap-6">
                         {NAV_ITEMS.map((item) => (
                             <NavigationMenuItem key={item.url}>
-                                <NavigationMenuLink
-                                    href={item.url}
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
-                                >
-                                    {item.name}
+                                <NavigationMenuLink asChild>
+                                    <Link
+                                        to={item.url}
+                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+                                    >
+                                        {item.name}
+                                    </Link>
                                 </NavigationMenuLink>
                             </NavigationMenuItem>
                         ))}
