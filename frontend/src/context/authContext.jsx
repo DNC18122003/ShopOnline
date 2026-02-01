@@ -6,20 +6,21 @@ export const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
+    // console.log('user in authContext:', user);
     useEffect(() => {
         const fetchMe = async () => {
+            //console.log('get me test');
             try {
                 const res = await getMe();
                 // res CHÍNH LÀ response.data
-                setUser(res.user ?? res);
+                //console.log('get me res:', res.data.user);
+                setUser(res.data.user);
             } catch (error) {
                 setUser(null);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchMe();
     }, []);
 

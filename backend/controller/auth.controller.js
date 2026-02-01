@@ -44,7 +44,6 @@ const loginController = async (req, res) => {
       fullName: user.fullName,
       phone: user.phone,
       avatar: user.avatar,
-      // Thêm các field khác nếu cần
     };
 
     return res.status(200).json({
@@ -95,6 +94,11 @@ const registerController = async (req, res) => {
         id: newUser._id,
         userName: newUser.userName,
         email: newUser.email,
+        googleId: null,      // Trả về null cho FE biết là chưa liên kết
+        fullName: null,      // Trả về null cho FE biết là chưa có tên
+        phone: null,
+        avatar: null,
+        role: newUser.role,
       },
     });
   } catch (error) {
@@ -117,13 +121,22 @@ const logoutController = async (req, res) => {
 };
 
 // controller for login with google
-const loginWithGoogleController = async (req, res) => {};
+const loginWithGoogleController = async (req, res) => {
+/*
+trước khi kết hợp với passport thì flow như sau :
+
+*/ 
+
+
+
+
+
+};
 
 // check user
 const getMe = async (req, res) => {
   try {
     const userId = req.user._id; 
-
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });

@@ -12,10 +12,10 @@ export const CartProvider = ({ children }) => {
     const fetchCart = async () => {
         try {
             setLoading(true);
-            const res = await cartApi.getCart();
-            setCart(res);
+            const res = await cartApi.getCartByAxios();
+            setCart(res.data);
         } catch (err) {
-            console.error('Fetch cart failed', err);
+            //console.error('Fetch cart failed', err);
             setCart(null);
         } finally {
             setLoading(false);
@@ -28,7 +28,6 @@ export const CartProvider = ({ children }) => {
 
     //  ADD TO CART (NHẬN OBJECT)
     const addToCart = async (payload) => {
-       
         await cartApi.addToCart(payload);
         await fetchCart();
     };
