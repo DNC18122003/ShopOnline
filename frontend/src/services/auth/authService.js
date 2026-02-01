@@ -29,5 +29,5 @@ export const logout_service = async () => {
     }
 };
 export const getMe = async () => {
-    return customizeAPI.get('/auth/me');
+    return axios.get(`${API_BASE_URL}/auth/me`, { withCredentials: true });
 };
