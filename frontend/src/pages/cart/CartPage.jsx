@@ -1,13 +1,13 @@
 import React from 'react';
-import { Link, Navigate,useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
-import CartItem from '@/components/layouts/customer/CartItem';
+import CartItem from '@/components/customer/CartItem';
 
 const CartPage = () => {
     // const { user } = useAuth();
     const user = localStorage.getItem('data_ui');
-  
+
     const { cart, loading, removeItem, updateQuantity, clearCart } = useCart();
     const navigate = useNavigate();
     if (!user) {

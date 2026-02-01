@@ -15,7 +15,7 @@ const isAuth = (req, res, next) => {
       });
     }
 
-    req.user = user; // chứa _id, role, email...
+    req.user = user; 
     next();
   })(req, res, next);
 };
@@ -64,25 +64,34 @@ const checkRoleAndStatus = (roles) => {
   };
 };
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ message: "Missing or invalid token" });
+  // Đọc token từ cookie 
+  const token = req.cookies?.accessToken;
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: "Không tìm thấy token (cookie accessToken)",
+    });
   }
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    if (!decoded || !decoded._id) {
-      return res.status(401).json({ message: "Invalid token payload" });
-    }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = {
       _id: decoded._id,
-      email: decoded.email,
       role: decoded.role,
+      
     };
     next();
-  });
+  } catch (err) {
+    console.error("Token verify error:", err.message);
+    return res.status(403).json({
+      success: false,
+      message:
+        err.name === "TokenExpiredError"
+          ? "Token đã hết hạn"
+          : "Token không hợp lệ",
+    });
+  }
 };
 
 module.exports = { isAuth, checkRoleAndStatus, authenticateToken };

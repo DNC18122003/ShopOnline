@@ -3,8 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
 import axios from 'axios';
-import { getAddress } from '@/services/customer/order.api';
-import { toast } from 'react-toastify'; // ← import từ react-toastify
+import { createOrder, getAddress } from '@/services/customer/order.api';
+import { toast } from 'react-toastify';
 
 const CheckoutPage = () => {
     const { cart, clearCart } = useCart();
@@ -16,8 +16,8 @@ const CheckoutPage = () => {
         phone: '',
         email: '',
         street: '',
-        province: '', // Tự nhập tên tỉnh/thành phố
-        ward: '', // Tự nhập tên xã/phường
+        province: '',
+        ward: '',
         note: '',
         discountCode: '',
         paymentMethod: 'COD',
@@ -52,16 +52,6 @@ const CheckoutPage = () => {
                         lat: coords.latitude,
                         lon: coords.longitude,
                     });
-
-                    // LOG RA TOÀN BỘ DATA ĐỂ DEBUG
-                    console.log('=== DEBUG: Dữ liệu địa chỉ từ getAddress ===');
-                    console.log('Latitude:', coords.latitude);
-                    console.log('Longitude:', coords.longitude);
-                    console.log('Dữ liệu trả về từ backend:', data);
-                    console.log('Street:', data.street);
-                    console.log('Ward:', data.ward);
-                    console.log('Province:', data.province);
-                    console.log('Các trường khác:', data);
 
                     setFormData((prev) => ({
                         ...prev,
@@ -130,11 +120,9 @@ const CheckoutPage = () => {
         };
 
         try {
-            const res = await axios.post('/api/order/create', payload, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-            });
-
+            const result = await createOrder(payload);
             clearCart();
+
             toast.success('Đặt hàng thành công!', {
                 position: 'top-right',
                 autoClose: 5000,
@@ -143,9 +131,12 @@ const CheckoutPage = () => {
                 pauseOnHover: true,
                 draggable: true,
             });
-            navigate(`/order-success?orderId=${res.data.order._id}`);
+
+            //quay về giỏ hàng
+            navigate('/cart');
         } catch (err) {
-            const msg = err.response?.data?.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
+            const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
+
             setError(msg);
             toast.error(msg);
             console.error('Lỗi đặt hàng:', err);
@@ -174,9 +165,7 @@ const CheckoutPage = () => {
                                 onClick={getCurrentLocation}
                                 disabled={fetchingLocation}
                                 className={`flex items-center gap-2 px-4 py-2 border border-blue-400 rounded-lg font-medium transition ${
-                                    fetchingLocation
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-white hover:bg-blue-200'
+                                    fetchingLocation ? 'bg-gray-400 cursor-not-allowed' : 'bg-white hover:bg-blue-200'
                                 }`}
                             >
                                 {fetchingLocation ? (

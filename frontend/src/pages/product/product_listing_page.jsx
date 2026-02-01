@@ -4,7 +4,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, ShoppingCart, Star } from 'luci
 import { getProducts } from '@/services/product/product.api';
 import { getCategories } from '@/services/category/category.api';
 import { getBrands } from '@/services/brand/brand.api';
-import AddToCartButton from '@/components/layouts/customer/AddToCartButton';
+import AddToCartButton from '@/components/customer/AddToCartButton';
 
 function ProductCard({ _id, name, price, averageRating, reviewCount, images, badge }) {
     const navigate = useNavigate();
@@ -50,12 +50,7 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images, bad
             </div>
 
             <div className="px-4 pb-4">
-                <AddToCartButton
-                    productId={_id}
-                    name={name} 
-                    price={price}
-                    image={images?.[0]?.url || images}
-                />
+                <AddToCartButton productId={_id} name={name} price={price} image={images?.[0]?.url || images} />
             </div>
         </div>
     );
