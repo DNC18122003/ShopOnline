@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
-
+import { useCart } from '@/context/cartContext';
 import { Cpu, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { login_service } from '../../services/auth/authService';
 const login = () => {
     const navigate = useNavigate();
     const { setUser } = useContext(AuthContext);
-
+    const { fetchCart } = useCart(); 
     const [formLogin, setFormLogin] = React.useState({
         email: '',
         password: '',
@@ -60,6 +60,7 @@ const login = () => {
             console.log('start 2');
             // set data in auth context
             setUser(response.user);
+             await fetchCart();
             // set data in local storage
             const data_ui = {
                 fullName: response.user.fullName,
