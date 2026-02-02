@@ -19,7 +19,6 @@ const discountController = {
       }
 
       // 2. Lọc theo Loại giảm giá (MỚI)
-      // Giả sử DB lưu là 'percent' hoặc 'fixed'
       if (discountType && discountType !== 'all') {
         query.discountType = discountType;
       }
