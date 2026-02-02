@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Loader2 } from 'lucide-react';
 import { useCart } from '@/context/cartContext';
+import { toast } from 'react-toastify';
 
 export default function AddToCartButton({
     productId,
@@ -10,7 +11,7 @@ export default function AddToCartButton({
     image,
     quantity = 1,
     className = '',
-    disabled = false, 
+    disabled = false,
 }) {
     const { addToCart } = useCart();
     const [loading, setLoading] = useState(false);
@@ -18,12 +19,12 @@ export default function AddToCartButton({
     const isDisabled = loading || disabled || !productId;
 
     const handleClick = async () => {
-        console.log('CLICK ADD TO CART BUTTON'); 
+        console.log('CLICK ADD TO CART BUTTON');
         if (isDisabled) return;
 
         setLoading(true);
         try {
-            console.log('CALLING addToCart FUNCTION'); 
+            console.log('CALLING addToCart FUNCTION');
             await addToCart({
                 productId,
                 quantity,
@@ -31,7 +32,7 @@ export default function AddToCartButton({
                 priceSnapshot: price || 0,
                 imageSnapshot: image || '/placeholder-product.png',
             });
-           
+            toast.success('Thêm giỏ hàng thành công !');
         } catch (err) {
             console.error('Add to cart error:', err);
             alert('Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại!');
@@ -65,7 +66,6 @@ export default function AddToCartButton({
         ${className}
       `}
         >
-           
             <span className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
             {loading ? (

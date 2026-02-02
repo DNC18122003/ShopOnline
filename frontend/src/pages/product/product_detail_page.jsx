@@ -5,6 +5,7 @@ import { getProductById, getSimilarProducts } from '../../services/product/produ
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
+import AddToCartButton from '@/components/customer/AddToCartButton';
 export default function ProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -333,15 +334,9 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="flex gap-3 mb-6">
-                            <button
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center"
-                                onClick={handleAddToCart}
-                            >
-                                <ShoppingCart className="w-4 h-4 mr-2" />
-                                Thêm vào giỏ hàng
-                            </button>
-                        </div>
+                       <div className="px-4 pb-4">
+                <AddToCartButton productId={id} name={name} price={product.price} image={product.images?.[0]?.url || images} />
+            </div>
                     </div>
                 </div>
             </section>
