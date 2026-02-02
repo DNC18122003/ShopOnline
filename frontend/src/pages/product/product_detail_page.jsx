@@ -6,17 +6,90 @@ import { getReviewByProductId } from '../../services/review/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 
+// ============================================
+// CONSTANTS - Các hằng số cố định
+// ============================================
+
+// Ảnh mẫu cho gallery (placeholder)
+const PLACEHOLDER_IMAGES = [
+    {
+        id: 1,
+        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e5e5e5" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ERTX 4090 Main View%3C/text%3E%3C/svg%3E',
+        alt: 'Product main view',
+    },
+    {
+        id: 2,
+        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23f0f0f0" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ETop View%3C/text%3E%3C/svg%3E',
+        alt: 'Product top view',
+    },
+    {
+        id: 3,
+        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e8e8e8" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ESide View%3C/text%3E%3C/svg%3E',
+        alt: 'Product side view',
+    },
+    {
+        id: 4,
+        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23ececec" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3EConnectors%3C/text%3E%3C/svg%3E',
+        alt: 'Product connectors',
+    },
+];
+
+// ============================================
+// HELPER FUNCTIONS - Các hàm tiện ích
+// ============================================
+
+// Format tiêu đề specification từ key (vd: "ram_capacity" -> "Ram Capacity")
+const formatSpecTitle = (key) => {
+    return key
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+// Format giá trị specification
+const formatSpecValue = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+};
+
+// Lấy danh sách specifications từ product.specifications.detail_json
+const getSpecifications = (product) => {
+    if (!product?.specifications?.detail_json) {
+        return [];
+    }
+
+    const detailJson = product.specifications.detail_json;
+
+    // Chuyển đổi object thành array của { title, value }
+    return Object.entries(detailJson).map(([key, value]) => ({
+        title: formatSpecTitle(key),
+        value: formatSpecValue(value),
+    }));
+};
+
+// ============================================
+// MAIN COMPONENT - ProductDetailPage
+// ============================================
 export default function ProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+
+    // --- STATE: Dữ liệu sản phẩm ---
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // --- STATE: Gallery ảnh ---
     const [currentImage, setCurrentImage] = useState(0);
+
+    // --- STATE: Sản phẩm tương tự và đánh giá ---
     const [similarProducts, setSimilarProducts] = useState([]);
     const [reviews, setReviews] = useState([]);
 
-    // Fetch product data
+    // ============================================
+    // EFFECT: Lấy thông tin sản phẩm
+    // ============================================
     useEffect(() => {
         const fetchProduct = async () => {
             try {
@@ -37,7 +110,9 @@ export default function ProductDetailPage() {
         }
     }, [id]);
 
-    // Fetch similar products based on current product
+    // ============================================
+    // EFFECT: Lấy sản phẩm tương tự
+    // ============================================
     useEffect(() => {
         const fetchSimilarProducts = async () => {
             if (!product) {
@@ -57,7 +132,7 @@ export default function ProductDetailPage() {
                 const response = await getSimilarProducts(productId, { limit: 4 });
                 console.log('Similar products API response:', response);
 
-                // Handle response structure { success: true, data: [...] }
+                // Xử lý cấu trúc response { success: true, data: [...] }
                 const products = response.data?.data || response.data || [];
                 console.log('Similar products found:', products.length, products);
                 setSimilarProducts(products);
@@ -70,7 +145,9 @@ export default function ProductDetailPage() {
         fetchSimilarProducts();
     }, [product]);
 
-    // Fetch reviews based on current product
+    // ============================================
+    // EFFECT: Lấy danh sách đánh giá
+    // ============================================
     useEffect(() => {
         const fetchReviews = async () => {
             if (!product) {
@@ -95,70 +172,11 @@ export default function ProductDetailPage() {
         fetchReviews();
     }, [product]);
 
-    // Product Gallery Images
-    const images = [
-        {
-            id: 1,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e5e5e5" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ERTX 4090 Main View%3C/text%3E%3C/svg%3E',
-            alt: 'Product main view',
-        },
-        {
-            id: 2,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23f0f0f0" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ETop View%3C/text%3E%3C/svg%3E',
-            alt: 'Product top view',
-        },
-        {
-            id: 3,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e8e8e8" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ESide View%3C/text%3E%3C/svg%3E',
-            alt: 'Product side view',
-        },
-        {
-            id: 4,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23ececec" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3EConnectors%3C/text%3E%3C/svg%3E',
-            alt: 'Product connectors',
-        },
-    ];
+    // ============================================
+    // HANDLERS - Các hàm xử lý sự kiện
+    // ============================================
 
-    // Get specifications from product.specifications.detail_json
-    // This is the ONLY source for displaying technical specifications
-    const getSpecifications = () => {
-        if (!product?.specifications?.detail_json) {
-            return [];
-        }
-
-        const detailJson = product.specifications.detail_json;
-
-        // Convert detail_json object to array of { title, value } pairs
-        return Object.entries(detailJson).map(([key, value]) => ({
-            title: formatSpecTitle(key),
-            value: formatSpecValue(value),
-        }));
-    };
-
-    // Format specification key to readable title
-    const formatSpecTitle = (key) => {
-        return key
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
-
-    // Format specification value
-    const formatSpecValue = (value) => {
-        if (value === null || value === undefined) return 'N/A';
-        if (typeof value === 'object') return JSON.stringify(value);
-        return String(value);
-    };
-
-    const specifications = getSpecifications();
-
-
-
-    // Customer Reviews Data
-   
-
-    // Hàm test add to cart
-    // add to cart
+    // Thêm sản phẩm vào giỏ hàng
     const handleAddToCart = async () => {
         console.log('Adding to cart by dan:', id);
         try {
@@ -187,9 +205,30 @@ export default function ProductDetailPage() {
         }
     };
 
-    ///
+    // Chuyển ảnh trước
+    const goToPreviousImage = () => {
+        setCurrentImage((prev) => (prev === 0 ? PLACEHOLDER_IMAGES.length - 1 : prev - 1));
+    };
 
-    // Loading state
+    // Chuyển ảnh sau
+    const goToNextImage = () => {
+        setCurrentImage((prev) => (prev === PLACEHOLDER_IMAGES.length - 1 ? 0 : prev + 1));
+    };
+
+    // Điều hướng đến sản phẩm tương tự
+    const navigateToProduct = (productId) => {
+        navigate(`/product/${productId}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ============================================
+    // COMPUTED VALUES - Các giá trị tính toán
+    // ============================================
+    const specifications = getSpecifications(product);
+
+    // ============================================
+    // RENDER: Loading state
+    // ============================================
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -201,7 +240,9 @@ export default function ProductDetailPage() {
         );
     }
 
-    // Error state
+    // ============================================
+    // RENDER: Error state
+    // ============================================
     if (error) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -218,7 +259,9 @@ export default function ProductDetailPage() {
         );
     }
 
-    // No product found
+    // ============================================
+    // RENDER: No product found
+    // ============================================
     if (!product) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -229,43 +272,46 @@ export default function ProductDetailPage() {
         );
     }
 
+    // ============================================
+    // RENDER: Main UI
+    // ============================================
     return (
         <div className="min-h-screen bg-white">
-            {/* Main Product Section */}
+            {/* ========== PRODUCT GALLERY & INFO ========== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Product Gallery */}
+                    {/* Gallery ảnh sản phẩm */}
                     <div>
-                        {/* Main Image */}
+                        {/* Ảnh chính */}
                         <div className="relative bg-gray-100 rounded mb-4 aspect-square overflow-hidden group">
                             <div
                                 className="w-full h-full flex items-center justify-center"
                                 style={{
-                                    backgroundImage: `url(${images[currentImage].src})`,
+                                    backgroundImage: `url(${PLACEHOLDER_IMAGES[currentImage].src})`,
                                     backgroundSize: 'contain',
                                     backgroundRepeat: 'no-repeat',
                                     backgroundPosition: 'center',
                                 }}
                             />
 
-                            {/* Navigation Arrows */}
+                            {/* Nút điều hướng ảnh */}
                             <button
-                                onClick={() => setCurrentImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                                onClick={goToPreviousImage}
                                 className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition"
                             >
                                 <ChevronLeft className="w-5 h-5 text-gray-900" />
                             </button>
                             <button
-                                onClick={() => setCurrentImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                                onClick={goToNextImage}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition"
                             >
                                 <ChevronRight className="w-5 h-5 text-gray-900" />
                             </button>
                         </div>
 
-                        {/* Thumbnail Images */}
+                        {/* Ảnh thumbnail */}
                         <div className="grid grid-cols-4 gap-3">
-                            {images.map((image, index) => (
+                            {PLACEHOLDER_IMAGES.map((image, index) => (
                                 <button
                                     key={image.id}
                                     onClick={() => setCurrentImage(index)}
@@ -288,8 +334,9 @@ export default function ProductDetailPage() {
                         </div>
                     </div>
 
-                    {/* Product Info */}
+                    {/* Thông tin sản phẩm */}
                     <div>
+                        {/* Tên và đánh giá */}
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name || 'Tên sản phẩm'}</h1>
                         <div className="flex items-center gap-4 mb-6">
                             <div className="flex items-center gap-1">
@@ -302,7 +349,7 @@ export default function ProductDetailPage() {
                             <span className="text-sm text-green-600 font-semibold">Còn hàng</span>
                         </div>
 
-                        {/* Price */}
+                        {/* Giá */}
                         <div className="mb-6">
                             <div className="text-4xl font-bold text-gray-900">
                                 {product.price ? `${product.price.toLocaleString('vi-VN')} ₫` : 'Liên hệ'}
@@ -316,7 +363,7 @@ export default function ProductDetailPage() {
                             )}
                         </div>
 
-                        {/* Key Specs */}
+                        {/* Thông tin cơ bản */}
                         <div className="space-y-2 mb-6 pb-6 border-b border-gray-200">
                             {product.brand && (
                                 <div className="grid grid-cols-[140px_1fr] items-center">
@@ -332,7 +379,7 @@ export default function ProductDetailPage() {
                             )}
                         </div>
 
-                        {/* Action Buttons */}
+                        {/* Nút hành động */}
                         <div className="flex gap-3 mb-6">
                             <button
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center"
@@ -346,9 +393,10 @@ export default function ProductDetailPage() {
                 </div>
             </section>
 
-            {/* Tabs Section */}
+            {/* ========== TABS: MÔ TẢ, THÔNG SỐ, ĐÁNH GIÁ ========== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="border-t border-gray-200 pt-8">
+                    {/* Mô tả sản phẩm */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">MÔ TẢ SẢN PHẨM</h2>
                         <p className="text-gray-600 leading-relaxed">
@@ -356,6 +404,7 @@ export default function ProductDetailPage() {
                         </p>
                     </div>
 
+                    {/* Thông số kỹ thuật */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">THÔNG SỐ KỸ THUẬT</h2>
                         {specifications.length === 0 ? (
@@ -375,8 +424,11 @@ export default function ProductDetailPage() {
                         )}
                     </div>
 
+                    {/* Đánh giá và bình luận */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">ĐÁNH GIÁ VÀ BÌNH LUẬN</h2>
+
+                        {/* Tổng quan đánh giá */}
                         <div className="bg-gray-100 rounded p-6 mb-6">
                             <div className="flex items-center gap-4">
                                 <div>
@@ -394,7 +446,7 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
 
-                        {/* Reviews */}
+                        {/* Danh sách đánh giá */}
                         <div className="space-y-4">
                             {reviews.length === 0 ? (
                                 <p className="text-gray-600 py-4">Chưa có đánh giá nào cho sản phẩm này.</p>
@@ -431,7 +483,7 @@ export default function ProductDetailPage() {
                 </div>
             </section>
 
-            {/* Similar Products */}
+            {/* ========== SẢN PHẨM TƯƠNG TỰ ========== */}
             {similarProducts.length > 0 && (
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Sản phẩm tương tự</h2>
@@ -440,13 +492,9 @@ export default function ProductDetailPage() {
                             <div
                                 key={similarProduct._id || similarProduct.id}
                                 className="border border-gray-200 rounded overflow-hidden hover:shadow-lg transition cursor-pointer"
-                                onClick={() => {
-                                    const productId = similarProduct._id || similarProduct.id;
-                                    navigate(`/product/${productId}`);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
+                                onClick={() => navigateToProduct(similarProduct._id || similarProduct.id)}
                             >
-                                {/* Product Image */}
+                                {/* Ảnh sản phẩm */}
                                 <div className="aspect-square bg-gray-100 overflow-hidden">
                                     <div
                                         className="w-full h-full"
@@ -461,7 +509,7 @@ export default function ProductDetailPage() {
                                     />
                                 </div>
 
-                                {/* Product Info */}
+                                {/* Thông tin sản phẩm */}
                                 <div className="p-4">
                                     <p className="text-sm font-semibold text-gray-900 truncate">
                                         {similarProduct.name}
