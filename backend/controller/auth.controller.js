@@ -10,12 +10,12 @@ const loginController = async (req, res) => {
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ message: "Không tìm thấy tài khoản" });
     }
     // Check password using bcrypt.compare
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Mật khẩu không đúng" });
     }
     // Create jwt token
     const token = jwt.sign(
@@ -68,18 +68,18 @@ const registerController = async (req, res) => {
   );
   // validate data in backend
   if (!userName || !email || !password) {
-    return res.status(400).json({ message: "Missing required fields" });
+    return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
   try {
     // check emai exist
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email already in use" });
+      return res.status(400).json({ message: "Email đã được sử dụng" });
     }
     // check userName exist
     const existingUserName = await User.findOne({ userName });
     if (existingUserName) {
-      return res.status(400).json({ message: "User name already in use" });
+      return res.status(400).json({ message: "Tên người dùng đã được sử dụng" });
     }
     //hash password
     const hash_Password = await hashPassword(password);
@@ -91,7 +91,7 @@ const registerController = async (req, res) => {
     //create new user
     await newUser.save();
     return res.status(201).json({
-      message: "User registered successfully",
+      message: "Tài khoản đã được tạo thành công",
       user: {
         id: newUser._id,
         userName: newUser.userName,
@@ -110,7 +110,7 @@ const logoutController = async (req, res) => {
     console.log("Logout controller called in backend");
     console.log("accessToken:", req.cookies.accessToken);
     res.clearCookie("accessToken");
-    return res.status(200).json({ message: "Logout successful" });
+    return res.status(200).json({ message: "Đăng xuất thành công" });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Server error" });

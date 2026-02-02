@@ -1,9 +1,9 @@
 import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-import customizeAPI from './customizeApi';
+import customizeAPI from '../customizeApi';
 export const login_service = async (email, password) => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/auth/login`, { email, password }, { withCredentials: true });
+        const response = await customizeAPI.post(`${API_BASE_URL}/auth/login`, { email, password });
         return response;
     } catch (error) {
         throw error;

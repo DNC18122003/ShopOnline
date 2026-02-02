@@ -10,8 +10,6 @@ import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
 
-
-
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -33,7 +31,7 @@ export const publicRoutes = [
             {
                 path: '/product/:id',
                 element: <ProductDetailPage />,
-                element: <ProductDetailPage />,
+            
             },
             {
                 path: '/cart',
@@ -41,7 +39,7 @@ export const publicRoutes = [
             },
             {
                 path: '/checkout',
-                element: <CheckoutPage/>,
+                element: <CheckoutPage />,
             },
         ],
     },

@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9999/api';
 
+const url_need_hidden_toast_erro = [];
+
 const customizeAPI = axios.create({
     baseURL: BASE_URL,
     timeout: 10000,
@@ -12,8 +14,6 @@ const customizeAPI = axios.create({
     },
     withCredentials: true, //  cookie auth
 });
-
-
 
 customizeAPI.interceptors.response.use(
     (response) => response.data,

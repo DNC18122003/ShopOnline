@@ -5,8 +5,13 @@ const orderRouter = require("./order/order.route");
 const productRouter = require("./product/product.route");
 const brandRouter = require("./brand.route");
 const categoryRouter = require("./category.route");
+
+const reviewRouter = require("./review.route");
+
+
 const blogRouter = require("./Blog/blog-router");
 const discountRouter = require('./discount/discount-router');
+
 module.exports = (app) => {
   const api = "/api";
   app.use(api + "/upload", uploadRouter);//Test upload
@@ -16,6 +21,7 @@ module.exports = (app) => {
   app.use(api + "/product", productRouter);
   app.use(api + "/brands", brandRouter);
   app.use(api + "/categories", categoryRouter);
+  app.use(api + "/reviews", reviewRouter);
 
   app.use(api + "/blog", blogRouter);
   app.use(api + "/discount", discountRouter);

@@ -15,7 +15,7 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between mt-4 px-2">
       <p className="text-sm text-gray-500">
-        Showing {startItem}-{endItem} of {totalItems} vouchers
+        Hiển thị {startItem}-{endItem} của {totalItems} mã giảm giá
       </p>
       <div className="flex items-center gap-1">
         <button
