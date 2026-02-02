@@ -18,6 +18,9 @@ router.post("/", categoryController.createCategory);
 // PUT /api/categories/:id - Cập nhật danh mục
 router.put("/:id", categoryController.updateCategory);
 
+// PATCH /api/categories/:id/toggle-status - Toggle trạng thái danh mục
+router.patch("/:id/toggle-status", categoryController.toggleCategoryStatus);
+
 // DELETE /api/categories/:id - Xóa danh mục
 router.delete("/:id", categoryController.deleteCategory);
 

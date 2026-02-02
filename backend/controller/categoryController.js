@@ -217,10 +217,10 @@ const updateCategory = async (req, res) => {
 };
 
 /**
- * DELETE /api/categories/:id
- * Xóa danh mục (soft delete)
+ * PATCH /api/categories/:id/toggle-status
+ * Toggle trạng thái active/inactive của danh mục
  */
-const deleteCategory = async (req, res) => {
+const toggleCategoryStatus = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -232,9 +232,39 @@ const deleteCategory = async (req, res) => {
             });
         }
 
-        // Soft delete: set isActive = false
-        category.isActive = false;
+        // Toggle status
+        category.isActive = !category.isActive;
         await category.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Danh mục đã được ${category.isActive ? 'kích hoạt' : 'vô hiệu hóa'}`,
+            data: category,
+        });
+    } catch (error) {
+        console.error("Toggle category status error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi server",
+        });
+    }
+};
+
+/**
+ * DELETE /api/categories/:id
+ * Xóa danh mục (hard delete - xóa vĩnh viễn)
+ */
+const deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const category = await Category.findByIdAndDelete(id);
+        if (!category) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy danh mục",
+            });
+        }
 
         res.status(200).json({
             success: true,
@@ -255,5 +285,6 @@ module.exports = {
     getCategoryBySlug,
     createCategory,
     updateCategory,
+    toggleCategoryStatus,
     deleteCategory,
 };
