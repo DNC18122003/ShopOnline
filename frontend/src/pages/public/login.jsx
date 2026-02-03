@@ -71,9 +71,18 @@ const login = () => {
 
             // alert('Login successful!');
             toast.success(`Đăng nhập thành công, chào ${response.user.userName}`);
-
+            console.log('role', response.user.role);
             setTimeout(() => {
-                navigate('/');
+                // check role and navigate
+                if (response.user.role === 'admin') {
+                    navigate('/admin');
+                } else if (response.user.role === 'sale') {
+                    navigate('/discount');
+                } else if (response.user.role === 'staff') {
+                    navigate('/staff/categories');
+                } else {
+                    navigate('/');
+                }
             }, 1000);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Đăng nhập thấ t bại!');
