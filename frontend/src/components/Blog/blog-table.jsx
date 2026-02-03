@@ -1,6 +1,4 @@
-'use client'
 
-import React from "react"
 import {
   Table,
   TableBody,
@@ -9,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Edit, Trash2, FileText, CheckCircle, Clock, Eye, Image as ImageIcon } from "lucide-react"
+import { Edit, Trash2, CheckCircle, Clock, Eye, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -24,32 +22,20 @@ const formatDate = (dateString) => {
   }
 }
 
-export function BlogTable({ posts = [], onEdit, onDelete }) {
+// 1. Thêm prop onView vào đây
+export function BlogTable({ posts = [], onEdit, onDelete, onView }) {
   return (
     <div className="rounded-md border bg-white shadow-sm">
       <Table>
         <TableHeader className="bg-gray-50">
           <TableRow>
-            {/* Cột 1: Ảnh - Tăng width lên 80px cho thoải mái */}
             <TableHead className="w-[80px] text-center">Ảnh</TableHead>
-            
-            {/* Cột 2: Tiêu đề */}
             <TableHead className="text-left w-[320px]">Tiêu đề bài viết</TableHead>
-            
-            {/* Cột 3: Người tạo */}
             <TableHead className="text-center w-[150px]">Người tạo</TableHead>
-            
-            {/* Cột 4: Ngày đăng */}
             <TableHead className="text-center w-[120px]">Ngày đăng</TableHead>
-
-             {/* Cột 5: Lượt xem */}
-             <TableHead className="text-center w-[100px]">Lượt xem</TableHead>
-            
-            {/* Cột 6: Trạng thái */}
+            <TableHead className="text-center w-[100px]">Lượt xem</TableHead>
             <TableHead className="text-center w-[150px]">Trạng thái</TableHead>
-            
-            {/* Cột 7: Hành động */}
-            <TableHead className="text-right w-[100px] pr-6">Hành động</TableHead>
+            <TableHead className="text-right w-[140px] pr-6">Hành động</TableHead> {/* Tăng width nhẹ cho cột hành động */}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -63,17 +49,15 @@ export function BlogTable({ posts = [], onEdit, onDelete }) {
             posts.map((post) => (
               <TableRow key={post._id || post.id} className="hover:bg-gray-50 transition-colors">
                 
-                {/* 1. SỬA: Hiển thị Thumbnail */}
+                {/* 1. Ảnh Thumbnail */}
                 <TableCell className="text-center p-2">
                    <div className="flex justify-center items-center">
                      {post.thumbnail ? (
-                        // Nếu có ảnh -> Hiển thị ảnh
                         <div className="w-10 h-10 rounded-md overflow-hidden border border-gray-200">
                           <img 
                             src={post.thumbnail} 
                             alt="thumb" 
                             className="w-full h-full object-cover"
-                            // Xử lý nếu ảnh lỗi thì ẩn đi hoặc hiện placeholder (tùy chọn)
                             onError={(e) => {
                               e.target.onerror = null; 
                               e.target.src = "https://placehold.co/40x40?text=No+Img";
@@ -81,7 +65,6 @@ export function BlogTable({ posts = [], onEdit, onDelete }) {
                           />
                         </div>
                      ) : (
-                        // Nếu không có ảnh -> Hiện icon mặc định
                         <div className="w-10 h-10 flex items-center justify-center bg-blue-50 rounded-md text-blue-600">
                            <ImageIcon size={20} />
                         </div>
@@ -89,20 +72,24 @@ export function BlogTable({ posts = [], onEdit, onDelete }) {
                    </div>
                 </TableCell>
 
+                {/* 2. Tiêu đề */}
                 <TableCell className="text-left">
                   <div className="font-semibold text-gray-900 line-clamp-2">
                     {post.title || "Không có tiêu đề"}
                   </div>
                 </TableCell>
 
+                {/* 3. Người tạo */}
                 <TableCell className="text-center font-medium text-gray-700">
                   {post.authorName || (post.authorId ? "User " + post.authorId : "Admin")}
                 </TableCell>
 
+                {/* 4. Ngày đăng */}
                 <TableCell className="text-center text-gray-600">
                   {formatDate(post.createdAt)}
                 </TableCell>
 
+                {/* 5. Lượt xem (Số liệu) */}
                  <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-1 text-gray-600 font-medium">
                         <Eye size={14} className="text-gray-400" />
@@ -110,6 +97,7 @@ export function BlogTable({ posts = [], onEdit, onDelete }) {
                     </div>
                 </TableCell>
 
+                {/* 6. Trạng thái */}
                 <TableCell className="text-center">
                   <div className="flex justify-center">
                     {post.status === 'published' ? (
@@ -124,14 +112,43 @@ export function BlogTable({ posts = [], onEdit, onDelete }) {
                   </div>
                 </TableCell>
 
+                {/* 7. Hành động (Đã thêm nút View) */}
                 <TableCell className="text-right pr-4">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => onEdit(post)} className="text-gray-500 hover:text-orange-600 h-8 w-8">
+                  <div className="flex justify-end gap-1">
+                    
+                    {/* NÚT VIEW - MỚI */}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => onView && onView(post)} 
+                        className="text-gray-500 hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
+                        title="Xem chi tiết"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+
+                    {/* NÚT EDIT */}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => onEdit(post)} 
+                        className="text-gray-500 hover:text-orange-600 hover:bg-orange-50 h-8 w-8"
+                        title="Chỉnh sửa"
+                    >
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => onDelete(post._id || post.id)} className="text-gray-500 hover:text-red-600 hover:bg-red-50 h-8 w-8">
+
+                    {/* NÚT DELETE */}
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => onDelete(post._id || post.id)} 
+                        className="text-gray-500 hover:text-red-600 hover:bg-red-50 h-8 w-8"
+                        title="Xóa"
+                    >
                       <Trash2 className="w-4 h-4" />
                     </Button>
+
                   </div>
                 </TableCell>
               </TableRow>
