@@ -188,9 +188,8 @@ export default function BlogManagementPage() {
                         onChange={(e) => setStatusFilter(e.target.value)}
                     >
                         <option value="all">Tất cả trạng thái</option>
-                        <option value="published">Đã xuất bản</option>
+                        <option value="published">Công khai</option>
                         <option value="draft">Nháp</option>
-                        <option value="archived">Lưu trữ</option>
                     </select>
                 </div>
                 <div className="flex items-center gap-2 w-full md:w-auto">
