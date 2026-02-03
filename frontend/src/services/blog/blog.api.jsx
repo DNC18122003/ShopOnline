@@ -1,8 +1,8 @@
 import customizeAPI from '../customizeApi'; 
 const blogService = {
   // 1. Lấy danh sách
-  getAllBlogs: (queryString) => {
-    return customizeAPI.get(`/blog${queryString ? `?${queryString}` : ''}`); 
+  getAllBlogs: (params) => {
+    return customizeAPI.get('/blog', { params }); 
   },
 
   // 2. Lấy chi tiết
