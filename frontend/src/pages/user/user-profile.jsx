@@ -51,8 +51,7 @@ const UserProfile = () => {
     if (loading) {
         return <div>Loading...</div>;
     }
-    //console.log('Rendering UserProfile with data:', data.isActive);
-
+    //console.log('Rendering UserProfile with data:', data.isActive)
     return (
         <div className="p-8">
             {/* Header */}

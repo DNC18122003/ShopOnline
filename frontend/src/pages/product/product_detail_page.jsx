@@ -6,6 +6,7 @@ import { getReviewByProductId } from '../../services/review/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 
+
 // ============================================
 // CONSTANTS - Các hằng số cố định
 // ============================================
@@ -62,24 +63,19 @@ const getProductImages = (product) => {
 // ============================================
 // MAIN COMPONENT - ProductDetailPage
 // ============================================
+=======
+import AddToCartButton from '@/components/customer/AddToCartButton';
+
 export default function ProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
-
-    // --- STATE: Dữ liệu sản phẩm ---
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // --- STATE: Gallery ảnh --
-
-    // --- STATE: Sản phẩm tương tự và đánh giá ---
     const [similarProducts, setSimilarProducts] = useState([]);
     const [reviews, setReviews] = useState([]);
 
-    // ============================================
-    // EFFECT: Lấy thông tin sản phẩm
-    // ============================================
+    // Fetch product data
     useEffect(() => {
         const fetchProduct = async () => {
             try {
@@ -100,9 +96,7 @@ export default function ProductDetailPage() {
         }
     }, [id]);
 
-    // ============================================
-    // EFFECT: Lấy sản phẩm tương tự
-    // ============================================
+    // Fetch similar products based on current product
     useEffect(() => {
         const fetchSimilarProducts = async () => {
             if (!product) {
@@ -122,7 +116,7 @@ export default function ProductDetailPage() {
                 const response = await getSimilarProducts(productId, { limit: 4 });
                 console.log('Similar products API response:', response);
 
-                // Xử lý cấu trúc response { success: true, data: [...] }
+                // Handle response structure { success: true, data: [...] }
                 const products = response.data?.data || response.data || [];
                 console.log('Similar products found:', products.length, products);
                 setSimilarProducts(products);
@@ -135,9 +129,7 @@ export default function ProductDetailPage() {
         fetchSimilarProducts();
     }, [product]);
 
-    // ============================================
-    // EFFECT: Lấy danh sách đánh giá
-    // ============================================
+    // Fetch reviews based on current product
     useEffect(() => {
         const fetchReviews = async () => {
             if (!product) {
@@ -162,11 +154,70 @@ export default function ProductDetailPage() {
         fetchReviews();
     }, [product]);
 
-    // ============================================
-    // HANDLERS - Các hàm xử lý sự kiện
-    // ============================================
+    // Product Gallery Images
+    const images = [
+        {
+            id: 1,
+            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e5e5e5" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ERTX 4090 Main View%3C/text%3E%3C/svg%3E',
+            alt: 'Product main view',
+        },
+        {
+            id: 2,
+            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23f0f0f0" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ETop View%3C/text%3E%3C/svg%3E',
+            alt: 'Product top view',
+        },
+        {
+            id: 3,
+            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e8e8e8" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ESide View%3C/text%3E%3C/svg%3E',
+            alt: 'Product side view',
+        },
+        {
+            id: 4,
+            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23ececec" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3EConnectors%3C/text%3E%3C/svg%3E',
+            alt: 'Product connectors',
+        },
+    ];
 
-    // Thêm sản phẩm vào giỏ hàng
+    // Get specifications from product.specifications.detail_json
+    // This is the ONLY source for displaying technical specifications
+    const getSpecifications = () => {
+        if (!product?.specifications?.detail_json) {
+            return [];
+        }
+
+        const detailJson = product.specifications.detail_json;
+
+        // Convert detail_json object to array of { title, value } pairs
+        return Object.entries(detailJson).map(([key, value]) => ({
+            title: formatSpecTitle(key),
+            value: formatSpecValue(value),
+        }));
+    };
+
+    // Format specification key to readable title
+    const formatSpecTitle = (key) => {
+        return key
+            .split('_')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    };
+
+    // Format specification value
+    const formatSpecValue = (value) => {
+        if (value === null || value === undefined) return 'N/A';
+        if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+    };
+
+    const specifications = getSpecifications();
+
+
+
+    // Customer Reviews Data
+   
+
+    // Hàm test add to cart
+    // add to cart
     const handleAddToCart = async () => {
         console.log('Adding to cart by dan:', id);
         try {
@@ -195,6 +246,7 @@ export default function ProductDetailPage() {
         }
     };
 
+
     // Điều hướng đến sản phẩm tương tự
     const navigateToProduct = (productId) => {
         navigate(`/product/${productId}`);
@@ -207,9 +259,10 @@ export default function ProductDetailPage() {
     const specifications = getSpecifications(product);
     const productImages = getProductImages(product)[0];
 
-    // ============================================
-    // RENDER: Loading state
-    // ============================================
+    ///
+
+
+    // Loading state
     if (loading) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -221,9 +274,7 @@ export default function ProductDetailPage() {
         );
     }
 
-    // ============================================
-    // RENDER: Error state
-    // ============================================
+    // Error state
     if (error) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -240,9 +291,7 @@ export default function ProductDetailPage() {
         );
     }
 
-    // ============================================
-    // RENDER: No product found
-    // ============================================
+    // No product found
     if (!product) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
@@ -253,11 +302,8 @@ export default function ProductDetailPage() {
         );
     }
 
-    // ============================================
-    // RENDER: Main UI
-    // ============================================
     return (
-        <div className="min-h-screen bg-white">
+          <div className="min-h-screen bg-white">
             {/* ========== PRODUCT GALLERY & INFO ========== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -280,9 +326,10 @@ export default function ProductDetailPage() {
                         )}
                     </div>
 
-                    {/* Thông tin sản phẩm */}
+                  
+
+                    {/* Product Info */}
                     <div>
-                        {/* Tên và đánh giá */}
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name || 'Tên sản phẩm'}</h1>
                         <div className="flex items-center gap-4 mb-6">
                             <div className="flex items-center gap-1">
@@ -295,7 +342,7 @@ export default function ProductDetailPage() {
                             <span className="text-sm text-green-600 font-semibold">Còn hàng</span>
                         </div>
 
-                        {/* Giá */}
+                        {/* Price */}
                         <div className="mb-6">
                             <div className="text-4xl font-bold text-gray-900">
                                 {product.price ? `${product.price.toLocaleString('vi-VN')} ₫` : 'Liên hệ'}
@@ -309,7 +356,7 @@ export default function ProductDetailPage() {
                             )}
                         </div>
 
-                        {/* Thông tin cơ bản */}
+                        {/* Key Specs */}
                         <div className="space-y-2 mb-6 pb-6 border-b border-gray-200">
                             {product.brand && (
                                 <div className="grid grid-cols-[140px_1fr] items-center">
@@ -325,24 +372,17 @@ export default function ProductDetailPage() {
                             )}
                         </div>
 
-                        {/* Nút hành động */}
-                        <div className="flex gap-3 mb-6">
-                            <button
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-semibold rounded flex items-center justify-center"
-                                onClick={handleAddToCart}
-                            >
-                                <ShoppingCart className="w-4 h-4 mr-2" />
-                                Thêm vào giỏ hàng
-                            </button>
-                        </div>
+                        {/* Action Buttons */}
+                       <div className="px-4 pb-4">
+                <AddToCartButton productId={id} name={name} price={product.price} image={product.images?.[0]?.url || images} />
+            </div>
                     </div>
                 </div>
             </section>
 
-            {/* ========== TABS: MÔ TẢ, THÔNG SỐ, ĐÁNH GIÁ ========== */}
+            {/* Tabs Section */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="border-t border-gray-200 pt-8">
-                    {/* Mô tả sản phẩm */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">MÔ TẢ SẢN PHẨM</h2>
                         <p className="text-gray-600 leading-relaxed">
@@ -350,7 +390,6 @@ export default function ProductDetailPage() {
                         </p>
                     </div>
 
-                    {/* Thông số kỹ thuật */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">THÔNG SỐ KỸ THUẬT</h2>
                         {specifications.length === 0 ? (
@@ -370,11 +409,8 @@ export default function ProductDetailPage() {
                         )}
                     </div>
 
-                    {/* Đánh giá và bình luận */}
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">ĐÁNH GIÁ VÀ BÌNH LUẬN</h2>
-
-                        {/* Tổng quan đánh giá */}
                         <div className="bg-gray-100 rounded p-6 mb-6">
                             <div className="flex items-center gap-4">
                                 <div>
@@ -392,7 +428,7 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
 
-                        {/* Danh sách đánh giá */}
+                        {/* Reviews */}
                         <div className="space-y-4">
                             {reviews.length === 0 ? (
                                 <p className="text-gray-600 py-4">Chưa có đánh giá nào cho sản phẩm này.</p>
@@ -429,7 +465,7 @@ export default function ProductDetailPage() {
                 </div>
             </section>
 
-            {/* ========== SẢN PHẨM TƯƠNG TỰ ========== */}
+            {/* Similar Products */}
             {similarProducts.length > 0 && (
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Sản phẩm tương tự</h2>
@@ -438,8 +474,13 @@ export default function ProductDetailPage() {
                             <div
                                 key={similarProduct._id || similarProduct.id}
                                 className="border border-gray-200 rounded overflow-hidden hover:shadow-lg transition cursor-pointer"
-                                onClick={() => navigateToProduct(similarProduct._id || similarProduct.id)}
+                                onClick={() => {
+                                    const productId = similarProduct._id || similarProduct.id;
+                                    navigate(`/product/${productId}`);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
                             >
+
                                 {/* Ảnh sản phẩm */}
                                 <div className="aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
                                     {similarProduct.images?.[0] ? (
@@ -455,9 +496,11 @@ export default function ProductDetailPage() {
                                     ) : (
                                         <span className="text-gray-400 text-sm">Không có ảnh</span>
                                     )}
+
+
                                 </div>
 
-                                {/* Thông tin sản phẩm */}
+                                {/* Product Info */}
                                 <div className="p-4">
                                     <p className="text-sm font-semibold text-gray-900 truncate">
                                         {similarProduct.name}

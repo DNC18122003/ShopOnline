@@ -12,7 +12,6 @@ import discountService from "@/services/discount/discount.api";
 import { DeleteDiscountModal } from "@/components/Discount/delete-discount-form" 
 import { CreateDiscountModal } from "@/components/Discount/create-discount-modal"
 import { EditDiscountModal } from "@/components/Discount/edit-discount-modal"
-// --- 1. Import Modal View Mới ---
 import { ViewDiscountModal } from "@/components/Discount/view-discount-modal"
 
 export default function VoucherManagement() {
@@ -23,7 +22,11 @@ export default function VoucherManagement() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
+  
+  // --- SỬA LẠI TẠI ĐÂY ---
+  // Để về 10 thì mới có phân trang (28 bản ghi sẽ chia làm 3 trang)
   const itemsPerPage = 10; 
+  // -----------------------
 
   // --- CÁC STATE FILTER ---
   const [searchQuery, setSearchQuery] = useState("")
@@ -39,7 +42,7 @@ export default function VoucherManagement() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [voucherToEdit, setVoucherToEdit] = useState(null)
 
-  // --- 2. State Modal View Mới ---
+  // State Modal View
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
   const [voucherToView, setVoucherToView] = useState(null)
 
@@ -63,7 +66,7 @@ export default function VoucherManagement() {
     try {
       const params = {
         page: currentPage,
-        limit: itemsPerPage,
+        limit: itemsPerPage, 
         code: searchQuery,
         status: filterStatus !== 'all' ? filterStatus : undefined,
         discountType: filterType !== 'all' ? filterType : undefined,
@@ -86,6 +89,7 @@ export default function VoucherManagement() {
         setVouchers(mappedVouchers);
         const total = res.count || 0;
         setTotalItems(total);
+        // Tính toán tổng số trang
         setTotalPages(Math.ceil(total / itemsPerPage));
       }
     } catch (error) {
@@ -205,11 +209,10 @@ export default function VoucherManagement() {
       }
   }
 
-  // --- 3. Logic View (Mới thêm) ---
+  // Logic View
   const handleView = async (voucherFromTable) => {
     try {
         const id = voucherFromTable.id || voucherFromTable._id;
-        // Gọi API lấy chi tiết để hiển thị đầy đủ thông tin nhất
         const res = await discountService.getDiscountById(id);
         
         if (res && res.success) {
@@ -306,11 +309,12 @@ export default function VoucherManagement() {
                 onEdit={handleEdit} 
                 onDelete={handleDeleteClick} 
                 onCopyCode={handleCopyCode}
-                onView={handleView} // --- 4. Truyền prop onView ---
+                onView={handleView} 
              />
           )}
 
-          {!loading && totalItems > 0 && (
+          {/* Hiển thị Pagination: Nếu có bản ghi VÀ số trang > 1 thì mới hiện */}
+          {!loading && totalItems > 0 && totalPages > 1 && (
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -319,6 +323,13 @@ export default function VoucherManagement() {
                 onPageChange={setCurrentPage}
               />
           )}
+          {/* Hoặc nếu bạn muốn luôn hiện ngay cả khi chỉ có 1 trang thì xóa điều kiện totalPages > 1 đi */}
+          {!loading && totalItems > 0 && totalPages <= 1 && (
+             <div className="text-sm text-gray-500 mt-4 text-center">
+                Hiển thị tất cả {totalItems} kết quả
+             </div>
+          )}
+
 
           {/* Modal Area */}
           <DeleteDiscountModal 
@@ -341,7 +352,6 @@ export default function VoucherManagement() {
             onSubmit={handleUpdateSubmit}
           />
 
-          {/* --- 5. Component View Modal --- */}
           <ViewDiscountModal 
              isOpen={isViewModalOpen}
              onOpenChange={setIsViewModalOpen}

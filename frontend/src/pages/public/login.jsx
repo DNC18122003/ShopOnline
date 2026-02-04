@@ -71,9 +71,18 @@ const login = () => {
 
             // alert('Login successful!');
             toast.success(`Đăng nhập thành công, chào ${response.user.userName}`);
-
+            console.log('role', response.user.role);
             setTimeout(() => {
-                navigate('/');
+                // check role and navigate
+                if (response.user.role === 'admin') {
+                    navigate('/admin');
+                } else if (response.user.role === 'sale') {
+                    navigate('/discount');
+                } else if (response.user.role === 'staff') {
+                    navigate('/staff/categories');
+                } else {
+                    navigate('/');
+                }
             }, 1000);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Đăng nhập thấ t bại!');
@@ -104,17 +113,15 @@ const login = () => {
                             {/* email */}
                             <div>
                                 <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
-                                <div className="relative">
-                                    <Mail className="absolute right-3 top-[50%] translate-y-[-50%] w-5 h-5 text-gray-400" />
-                                    <Input
-                                        type="email"
-                                        placeholder="Nhập địa chỉ email của bạn"
-                                        name="email"
-                                        value={formLogin.email}
-                                        onChange={handleChange}
-                                        className=" border-gray-300 focus:border-blue-500 text-gray-900"
-                                    />
-                                </div>
+                                <Input
+                                    type="email"
+                                    placeholder="Nhập địa chỉ email của bạn"
+                                    name="email"
+                                    value={formLogin.email}
+                                    onChange={handleChange}
+                                    className=" border-gray-300  text-gray-900"
+                                />
+
                                 {messageError?.emailError && (
                                     <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>
                                 )}
@@ -128,7 +135,7 @@ const login = () => {
                                     name="password"
                                     value={formLogin.password}
                                     onChange={handleChange}
-                                    className=" border-gray-300 focus:border-blue-500 text-gray-900"
+                                    className=" border-gray-300  text-gray-900"
                                 />
                                 {messageError?.passwordError && (
                                     <p className="text-red-500 text-sm mt-1">{messageError.passwordError}</p>
@@ -159,12 +166,12 @@ const login = () => {
                             <div className="flex-1 border"></div>
                         </div>
                         {/* Google login */}
-                        <Button
+                        {/* <Button
                             variant="outline"
                             className="w-full border border-gray-300 text-gray-700 font-medium py-2.5 rounded-lg hover:bg-gray-50 bg-transparent first-letter:text-red-500"
                         >
                             <span className="text-red-500 font-bold mr-1 text-2xl ">G</span> Đăng nhập với Google
-                        </Button>
+                        </Button> */}
                         {/* Sign Up Link */}
                         <div className="text-center mt-6">
                             <span className="text-gray-600 text-sm">
