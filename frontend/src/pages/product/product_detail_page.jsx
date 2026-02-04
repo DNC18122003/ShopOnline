@@ -5,14 +5,73 @@ import { getProductById, getSimilarProducts } from '../../services/product/produ
 import { getReviewByProductId } from '../../services/review/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
+
+
+// ============================================
+// CONSTANTS - Các hằng số cố định
+// ============================================
+
+// ============================================
+// HELPER FUNCTIONS - Các hàm tiện ích
+// ============================================
+
+// Format tiêu đề specification từ key (vd: "ram_capacity" -> "Ram Capacity")
+const formatSpecTitle = (key) => {
+    return key
+        .split('_')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+};
+
+// Format giá trị specification
+const formatSpecValue = (value) => {
+    if (value === null || value === undefined) return 'N/A';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+};
+
+// Lấy danh sách specifications từ product.specifications.detail_json
+const getSpecifications = (product) => {
+    if (!product?.specifications?.detail_json) {
+        return [];
+    }
+
+    const detailJson = product.specifications.detail_json;
+
+    // Chuyển đổi object thành array của { title, value }
+    return Object.entries(detailJson).map(([key, value]) => ({
+        title: formatSpecTitle(key),
+        value: formatSpecValue(value),
+    }));
+};
+
+// Lấy danh sách ảnh từ product.images
+const getProductImages = (product) => {
+    // Nếu không có product hoặc không có images, trả về mảng rỗng
+    if (!product?.images || !Array.isArray(product.images) || product.images.length === 0) {
+        return [];
+    }
+
+    // product.images là array of strings (URLs), chuyển đổi thành format phù hợp
+    return product.images.map((imageUrl, index) => ({
+        id: index,
+        src: imageUrl, // imageUrl là string URL trực tiếp
+        alt: `${product.name}`,
+    }));
+};
+
+// ============================================
+// MAIN COMPONENT - ProductDetailPage
+// ============================================
+=======
 import AddToCartButton from '@/components/customer/AddToCartButton';
+
 export default function ProductDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [currentImage, setCurrentImage] = useState(0);
     const [similarProducts, setSimilarProducts] = useState([]);
     const [reviews, setReviews] = useState([]);
 
@@ -187,7 +246,21 @@ export default function ProductDetailPage() {
         }
     };
 
+
+    // Điều hướng đến sản phẩm tương tự
+    const navigateToProduct = (productId) => {
+        navigate(`/product/${productId}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ============================================
+    // COMPUTED VALUES - Các giá trị tính toán
+    // ============================================
+    const specifications = getSpecifications(product);
+    const productImages = getProductImages(product)[0];
+
     ///
+
 
     // Loading state
     if (loading) {
@@ -230,63 +303,30 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
-            {/* Main Product Section */}
+          <div className="min-h-screen bg-white">
+            {/* ========== PRODUCT GALLERY & INFO ========== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Product Gallery */}
-                    <div>
-                        {/* Main Image */}
-                        <div className="relative bg-gray-100 rounded mb-4 aspect-square overflow-hidden group">
+                    {/* Gallery ảnh sản phẩm */}
+                    <div className="relative bg-gray-100 rounded mb-4 aspect-square overflow-hidden flex items-center justify-center">
+                        {productImages?.src ? (
                             <div
-                                className="w-full h-full flex items-center justify-center"
+                                className="w-full h-full"
                                 style={{
-                                    backgroundImage: `url(${images[currentImage].src})`,
+                                    backgroundImage: `url(${productImages.src})`,
                                     backgroundSize: 'contain',
                                     backgroundRepeat: 'no-repeat',
                                     backgroundPosition: 'center',
                                 }}
                             />
-
-                            {/* Navigation Arrows */}
-                            <button
-                                onClick={() => setCurrentImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition"
-                            >
-                                <ChevronLeft className="w-5 h-5 text-gray-900" />
-                            </button>
-                            <button
-                                onClick={() => setCurrentImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition"
-                            >
-                                <ChevronRight className="w-5 h-5 text-gray-900" />
-                            </button>
-                        </div>
-
-                        {/* Thumbnail Images */}
-                        <div className="grid grid-cols-4 gap-3">
-                            {images.map((image, index) => (
-                                <button
-                                    key={image.id}
-                                    onClick={() => setCurrentImage(index)}
-                                    className={`relative aspect-square rounded overflow-hidden border-2 transition ${
-                                        currentImage === index ? 'border-blue-600' : 'border-gray-200'
-                                    }`}
-                                >
-                                    <div
-                                        className="w-full h-full"
-                                        style={{
-                                            backgroundImage: `url(${image.src})`,
-                                            backgroundSize: 'contain',
-                                            backgroundRepeat: 'no-repeat',
-                                            backgroundPosition: 'center',
-                                            backgroundColor: '#f5f5f5',
-                                        }}
-                                    />
-                                </button>
-                            ))}
-                        </div>
+                        ) : (
+                            <span className="text-gray-500 text-lg text-center px-4">
+                                {productImages?.alt || 'Không có hình ảnh'}
+                            </span>
+                        )}
                     </div>
+
+                  
 
                     {/* Product Info */}
                     <div>
@@ -440,19 +480,24 @@ export default function ProductDetailPage() {
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                             >
-                                {/* Product Image */}
-                                <div className="aspect-square bg-gray-100 overflow-hidden">
-                                    <div
-                                        className="w-full h-full"
-                                        style={{
-                                            backgroundImage: `url(${
-                                                similarProduct.imageUrl ||
-                                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
-                                            })`,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'center',
-                                        }}
-                                    />
+
+                                {/* Ảnh sản phẩm */}
+                                <div className="aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
+                                    {similarProduct.images?.[0] ? (
+                                        <div
+                                            className="w-full h-full"
+                                            style={{
+                                                backgroundImage: `url(${similarProduct.images[0]})`,
+                                                backgroundSize: 'contain',
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'center',
+                                            }}
+                                        />
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">Không có ảnh</span>
+                                    )}
+
+
                                 </div>
 
                                 {/* Product Info */}

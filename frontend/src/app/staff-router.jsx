@@ -1,5 +1,4 @@
 import StaffLayout from '@/components/layouts/staff-layout';
-
 import ProtectedRoute from './protected-route';
 import { UserProfile } from '@/pages/user';
 import { CategoryManagement } from '@/pages/Staff/CategoryManagement';
