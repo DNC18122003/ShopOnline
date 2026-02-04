@@ -10,30 +10,6 @@ import customizeAPI from '@/services/customizeApi';
 // CONSTANTS - Các hằng số cố định
 // ============================================
 
-// Ảnh mẫu cho gallery (placeholder)
-const PLACEHOLDER_IMAGES = [
-    {
-        id: 1,
-        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e5e5e5" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ERTX 4090 Main View%3C/text%3E%3C/svg%3E',
-        alt: 'Product main view',
-    },
-    {
-        id: 2,
-        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23f0f0f0" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ETop View%3C/text%3E%3C/svg%3E',
-        alt: 'Product top view',
-    },
-    {
-        id: 3,
-        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e8e8e8" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ESide View%3C/text%3E%3C/svg%3E',
-        alt: 'Product side view',
-    },
-    {
-        id: 4,
-        src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23ececec" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3EConnectors%3C/text%3E%3C/svg%3E',
-        alt: 'Product connectors',
-    },
-];
-
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
 // ============================================
@@ -68,6 +44,21 @@ const getSpecifications = (product) => {
     }));
 };
 
+// Lấy danh sách ảnh từ product.images
+const getProductImages = (product) => {
+    // Nếu không có product hoặc không có images, trả về mảng rỗng
+    if (!product?.images || !Array.isArray(product.images) || product.images.length === 0) {
+        return [];
+    }
+
+    // product.images là array of strings (URLs), chuyển đổi thành format phù hợp
+    return product.images.map((imageUrl, index) => ({
+        id: index,
+        src: imageUrl, // imageUrl là string URL trực tiếp
+        alt: `${product.name}`,
+    }));
+};
+
 // ============================================
 // MAIN COMPONENT - ProductDetailPage
 // ============================================
@@ -80,8 +71,7 @@ export default function ProductDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // --- STATE: Gallery ảnh ---
-    const [currentImage, setCurrentImage] = useState(0);
+    // --- STATE: Gallery ảnh --
 
     // --- STATE: Sản phẩm tương tự và đánh giá ---
     const [similarProducts, setSimilarProducts] = useState([]);
@@ -205,16 +195,6 @@ export default function ProductDetailPage() {
         }
     };
 
-    // Chuyển ảnh trước
-    const goToPreviousImage = () => {
-        setCurrentImage((prev) => (prev === 0 ? PLACEHOLDER_IMAGES.length - 1 : prev - 1));
-    };
-
-    // Chuyển ảnh sau
-    const goToNextImage = () => {
-        setCurrentImage((prev) => (prev === PLACEHOLDER_IMAGES.length - 1 ? 0 : prev + 1));
-    };
-
     // Điều hướng đến sản phẩm tương tự
     const navigateToProduct = (productId) => {
         navigate(`/product/${productId}`);
@@ -225,6 +205,7 @@ export default function ProductDetailPage() {
     // COMPUTED VALUES - Các giá trị tính toán
     // ============================================
     const specifications = getSpecifications(product);
+    const productImages = getProductImages(product)[0];
 
     // ============================================
     // RENDER: Loading state
@@ -281,57 +262,22 @@ export default function ProductDetailPage() {
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Gallery ảnh sản phẩm */}
-                    <div>
-                        {/* Ảnh chính */}
-                        <div className="relative bg-gray-100 rounded mb-4 aspect-square overflow-hidden group">
+                    <div className="relative bg-gray-100 rounded mb-4 aspect-square overflow-hidden flex items-center justify-center">
+                        {productImages?.src ? (
                             <div
-                                className="w-full h-full flex items-center justify-center"
+                                className="w-full h-full"
                                 style={{
-                                    backgroundImage: `url(${PLACEHOLDER_IMAGES[currentImage].src})`,
+                                    backgroundImage: `url(${productImages.src})`,
                                     backgroundSize: 'contain',
                                     backgroundRepeat: 'no-repeat',
                                     backgroundPosition: 'center',
                                 }}
                             />
-
-                            {/* Nút điều hướng ảnh */}
-                            <button
-                                onClick={goToPreviousImage}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition"
-                            >
-                                <ChevronLeft className="w-5 h-5 text-gray-900" />
-                            </button>
-                            <button
-                                onClick={goToNextImage}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition"
-                            >
-                                <ChevronRight className="w-5 h-5 text-gray-900" />
-                            </button>
-                        </div>
-
-                        {/* Ảnh thumbnail */}
-                        <div className="grid grid-cols-4 gap-3">
-                            {PLACEHOLDER_IMAGES.map((image, index) => (
-                                <button
-                                    key={image.id}
-                                    onClick={() => setCurrentImage(index)}
-                                    className={`relative aspect-square rounded overflow-hidden border-2 transition ${
-                                        currentImage === index ? 'border-blue-600' : 'border-gray-200'
-                                    }`}
-                                >
-                                    <div
-                                        className="w-full h-full"
-                                        style={{
-                                            backgroundImage: `url(${image.src})`,
-                                            backgroundSize: 'contain',
-                                            backgroundRepeat: 'no-repeat',
-                                            backgroundPosition: 'center',
-                                            backgroundColor: '#f5f5f5',
-                                        }}
-                                    />
-                                </button>
-                            ))}
-                        </div>
+                        ) : (
+                            <span className="text-gray-500 text-lg text-center px-4">
+                                {productImages?.alt || 'Không có hình ảnh'}
+                            </span>
+                        )}
                     </div>
 
                     {/* Thông tin sản phẩm */}
@@ -495,18 +441,20 @@ export default function ProductDetailPage() {
                                 onClick={() => navigateToProduct(similarProduct._id || similarProduct.id)}
                             >
                                 {/* Ảnh sản phẩm */}
-                                <div className="aspect-square bg-gray-100 overflow-hidden">
-                                    <div
-                                        className="w-full h-full"
-                                        style={{
-                                            backgroundImage: `url(${
-                                                similarProduct.imageUrl ||
-                                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="12" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
-                                            })`,
-                                            backgroundSize: 'cover',
-                                            backgroundPosition: 'center',
-                                        }}
-                                    />
+                                <div className="aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
+                                    {similarProduct.images?.[0] ? (
+                                        <div
+                                            className="w-full h-full"
+                                            style={{
+                                                backgroundImage: `url(${similarProduct.images[0]})`,
+                                                backgroundSize: 'contain',
+                                                backgroundRepeat: 'no-repeat',
+                                                backgroundPosition: 'center',
+                                            }}
+                                        />
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">Không có ảnh</span>
+                                    )}
                                 </div>
 
                                 {/* Thông tin sản phẩm */}
