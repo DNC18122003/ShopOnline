@@ -15,7 +15,7 @@ getAllDiscounts: async (req, res) => {
 
         const skip = limit === 0 ? 0 : (page - 1) * limit;
         // Lấy các tham số filter từ query (thêm discountType)
-        const { status, code, startDate, endDate, discountType } = req.query;
+        const { status, code,  discountType } = req.query;
         let query = {};
         // 1. Lọc theo trạng thái
         if (status && status !== 'all') {
@@ -29,21 +29,9 @@ getAllDiscounts: async (req, res) => {
         if (code) {
             query.code = { $regex: code, $options: 'i' };
         }
-        
-        // 4. Lọc theo khoảng thời gian
-        if (startDate && endDate) {
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999); 
-
-            query.validFrom = { $lte: end };   
-            query.expiredAt = { $gte: start }; 
-        }
-
         // Thực hiện query
       const [discounts, totalCount] = await Promise.all([
         Discount.find(query)
-          // --- SỬA DÒNG NÀY ---
           // Sắp xếp theo ngày tạo giảm dần, NẾU ngày trùng nhau thì sắp xếp theo ID
           .sort({ createdAt: -1, _id: -1 }) 
           // --------------------
