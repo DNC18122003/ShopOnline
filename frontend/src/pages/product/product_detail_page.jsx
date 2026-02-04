@@ -6,7 +6,6 @@ import { getReviewByProductId } from '../../services/review/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 
-
 // ============================================
 // CONSTANTS - Các hằng số cố định
 // ============================================
@@ -63,7 +62,7 @@ const getProductImages = (product) => {
 // ============================================
 // MAIN COMPONENT - ProductDetailPage
 // ============================================
-=======
+
 import AddToCartButton from '@/components/customer/AddToCartButton';
 
 export default function ProductDetailPage() {
@@ -154,67 +153,7 @@ export default function ProductDetailPage() {
         fetchReviews();
     }, [product]);
 
-    // Product Gallery Images
-    const images = [
-        {
-            id: 1,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e5e5e5" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ERTX 4090 Main View%3C/text%3E%3C/svg%3E',
-            alt: 'Product main view',
-        },
-        {
-            id: 2,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23f0f0f0" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ETop View%3C/text%3E%3C/svg%3E',
-            alt: 'Product top view',
-        },
-        {
-            id: 3,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23e8e8e8" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3ESide View%3C/text%3E%3C/svg%3E',
-            alt: 'Product side view',
-        },
-        {
-            id: 4,
-            src: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23ececec" width="400" height="400"/%3E%3Ctext x="50%25" y="50%25" dominantBaseline="middle" textAnchor="middle" fontFamily="sans-serif" fontSize="24" fill="%23999"%3EConnectors%3C/text%3E%3C/svg%3E',
-            alt: 'Product connectors',
-        },
-    ];
-
-    // Get specifications from product.specifications.detail_json
-    // This is the ONLY source for displaying technical specifications
-    const getSpecifications = () => {
-        if (!product?.specifications?.detail_json) {
-            return [];
-        }
-
-        const detailJson = product.specifications.detail_json;
-
-        // Convert detail_json object to array of { title, value } pairs
-        return Object.entries(detailJson).map(([key, value]) => ({
-            title: formatSpecTitle(key),
-            value: formatSpecValue(value),
-        }));
-    };
-
-    // Format specification key to readable title
-    const formatSpecTitle = (key) => {
-        return key
-            .split('_')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
-
-    // Format specification value
-    const formatSpecValue = (value) => {
-        if (value === null || value === undefined) return 'N/A';
-        if (typeof value === 'object') return JSON.stringify(value);
-        return String(value);
-    };
-
-    const specifications = getSpecifications();
-
-
-
     // Customer Reviews Data
-   
 
     // Hàm test add to cart
     // add to cart
@@ -246,7 +185,6 @@ export default function ProductDetailPage() {
         }
     };
 
-
     // Điều hướng đến sản phẩm tương tự
     const navigateToProduct = (productId) => {
         navigate(`/product/${productId}`);
@@ -258,9 +196,6 @@ export default function ProductDetailPage() {
     // ============================================
     const specifications = getSpecifications(product);
     const productImages = getProductImages(product)[0];
-
-    ///
-
 
     // Loading state
     if (loading) {
@@ -303,7 +238,7 @@ export default function ProductDetailPage() {
     }
 
     return (
-          <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-white">
             {/* ========== PRODUCT GALLERY & INFO ========== */}
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -325,8 +260,6 @@ export default function ProductDetailPage() {
                             </span>
                         )}
                     </div>
-
-                  
 
                     {/* Product Info */}
                     <div>
@@ -373,9 +306,14 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Action Buttons */}
-                       <div className="px-4 pb-4">
-                <AddToCartButton productId={id} name={name} price={product.price} image={product.images?.[0]?.url || images} />
-            </div>
+                        <div className="px-4 pb-4">
+                            <AddToCartButton
+                                productId={id}
+                                name={product.name}
+                                price={product.price}
+                                image={product.images?.[0] || ''}
+                            />
+                        </div>
                     </div>
                 </div>
             </section>
@@ -480,7 +418,6 @@ export default function ProductDetailPage() {
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                             >
-
                                 {/* Ảnh sản phẩm */}
                                 <div className="aspect-square bg-gray-100 overflow-hidden flex items-center justify-center">
                                     {similarProduct.images?.[0] ? (
@@ -496,8 +433,6 @@ export default function ProductDetailPage() {
                                     ) : (
                                         <span className="text-gray-400 text-sm">Không có ảnh</span>
                                     )}
-
-
                                 </div>
 
                                 {/* Product Info */}
