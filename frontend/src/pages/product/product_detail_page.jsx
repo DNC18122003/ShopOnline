@@ -5,6 +5,7 @@ import { getProductById, getSimilarProducts } from '../../services/product/produ
 import { getReviewByProductId } from '../../services/review/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
+import AddToCartButton from '@/components/customer/AddToCartButton';
 
 // ============================================
 // CONSTANTS - Các hằng số cố định
@@ -62,8 +63,6 @@ const getProductImages = (product) => {
 // ============================================
 // MAIN COMPONENT - ProductDetailPage
 // ============================================
-
-import AddToCartButton from '@/components/customer/AddToCartButton';
 
 export default function ProductDetailPage() {
     const { id } = useParams();
@@ -445,15 +444,14 @@ export default function ProductDetailPage() {
                                             ? `${similarProduct.price.toLocaleString('vi-VN')} ₫`
                                             : 'Liên hệ'}
                                     </p>
-                                    <button
-                                        className="w-full mt-3 py-2 bg-blue-600 text-white rounded text-sm font-semibold hover:bg-blue-700 transition"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            // Add to cart logic here
-                                        }}
-                                    >
-                                        Thêm vào giỏ
-                                    </button>
+                                    <div onClick={(e) => e.stopPropagation()}>
+                                        <AddToCartButton
+                                            productId={similarProduct._id || similarProduct.id}
+                                            name={similarProduct.name}
+                                            price={similarProduct.price}
+                                            image={similarProduct.images?.[0] || ''}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ))}
