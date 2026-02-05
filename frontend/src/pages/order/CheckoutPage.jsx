@@ -10,7 +10,9 @@ const CheckoutPage = () => {
     const { cart, clearCart } = useCart();
     const { user } = useAuth();
     const navigate = useNavigate();
-
+    const [discountInfo, setDiscountInfo] = useState(null); // null
+    const [discountError, setDiscountError] = useState(null);
+    
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
@@ -92,10 +94,49 @@ const CheckoutPage = () => {
             { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 },
         );
     };
+    const applyDiscount = async () => {
+        const code = formData.discountCode?.trim().toUpperCase();
+        if (!code) {
+            setDiscountError('Vui lòng nhập mã giảm giá');
+            return;
+        }
+
+        setLoading(true); // hoặc dùng loading riêng cho discount
+        setDiscountError(null);
+        setDiscountInfo(null);
+
+        try {
+            // Gọi API validate (tương tự createOrder nhưng endpoint khác)
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_URL}/api/discount/check`,
+                { code, orderValue: subtotal },
+                { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }, // nếu cần auth
+            );
+
+            if (response.data.success) {
+                setDiscountInfo(response.data.data); // backend trả { code, discountType, value, maxDiscountValue, ... }
+                toast.success(
+                    `Áp dụng thành công! Giảm ${response.data.data.calculatedDiscount?.toLocaleString('vi-VN')}đ`,
+                );
+            }
+        } catch (err) {
+            const msg = err.response?.data?.message || 'Mã giảm giá không hợp lệ hoặc đã hết hạn';
+            setDiscountError(msg);
+            toast.error(msg);
+            setDiscountInfo(null);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const subtotal = cart.totalPrice || 0;
     const shippingFee = 0;
-    const discountAmount = (subtotal * discountApplied) / 100;
+    const discountAmount = discountInfo
+        ? Math.min(
+              discountInfo.discountType === 'percent' ? subtotal * (discountInfo.value / 100) : discountInfo.value,
+              discountInfo.maxDiscountValue || Infinity,
+          )
+        : 0;
     const total = subtotal - discountAmount + shippingFee;
 
     const handleSubmit = async (e) => {
@@ -115,7 +156,7 @@ const CheckoutPage = () => {
         const payload = {
             shippingAddress,
             paymentMethod: formData.paymentMethod,
-            discountCode: formData.discountCode || undefined,
+            discountCode: formData.discountCode?.trim() || undefined,
             discountAmount,
         };
 
@@ -322,14 +363,24 @@ const CheckoutPage = () => {
                                 />
                                 <button
                                     type="button"
-                                    //   onClick={applyDiscount}
-                                    className="bg-white px-6 py-3 text-blue-600 font-medium rounded-r-lg hover:bg-blue-50 transition"
+                                    onClick={applyDiscount}
+                                    disabled={loading || !formData.discountCode.trim()}
+                                    className={`px-6 py-3 font-medium rounded-r-lg transition ${
+                                        loading
+                                            ? 'bg-gray-400 cursor-not-allowed text-white'
+                                            : 'bg-white text-blue-600 hover:bg-blue-50'
+                                    }`}
                                 >
-                                    Áp dụng
+                                    {loading ? 'Đang áp dụng...' : 'Áp dụng'}
                                 </button>
                             </div>
-                            {discountApplied > 0 && (
-                                <p className="text-sm mt-2 text-black">Đã giảm {discountApplied}%!</p>
+
+                            {discountError && <p className="text-red-300 text-sm mt-2">{discountError}</p>}
+
+                            {discountInfo && (
+                                <p className="text-sm mt-2 text-green-300">
+                                    Đã áp dụng mã {formData.discountCode}: -{discountAmount.toLocaleString('vi-VN')}đ
+                                </p>
                             )}
                         </div>
 
@@ -368,7 +419,7 @@ const CheckoutPage = () => {
                             </div>
                             {discountAmount > 0 && (
                                 <div className="flex justify-between text-blue-900">
-                                    <span>Giảm giá</span>
+                                    <span>Giảm giá({formData.discountCode})</span>
                                     <span>-{discountAmount.toLocaleString('vi-VN')}đ</span>
                                 </div>
                             )}

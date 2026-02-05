@@ -30,7 +30,7 @@ export default function AddToCartButton({
                 quantity,
                 nameSnapshot: name || 'Sản phẩm',
                 priceSnapshot: price || 0,
-                imageSnapshot: image || '/placeholder-product.png',
+                imageSnapshot: image || 'Không có ảnh',
             });
             toast.success('Thêm giỏ hàng thành công !');
         } catch (err) {

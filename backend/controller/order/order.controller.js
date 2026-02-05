@@ -1,6 +1,7 @@
 const Order = require("../../models/order/Order");
 const Cart = require("../../models/order/Cart");
 const Product = require("../../models/Products/Product");
+const Discount = require("../../models/Discounts/Discount");
 
 const createOrder = async (req, res) => {
   try {
@@ -66,19 +67,56 @@ const createOrder = async (req, res) => {
     let appliedDiscountCode = null;
 
     if (discountCode) {
+      const now = new Date();
+     const discount = await Discount.findOne({ 
+        code: discountCode.toUpperCase(), 
+        status: 'active',
+        validFrom: { $lte: now },
+        expiredAt: { $gte: now },
+        usageLimit: { $gt: 0 } // Pre-check usage >0
+      });
 
-      // const discount = await Discount.findOne({ code: discountCode, isActive: true });
-      // if (discount && new Date() >= discount.startDate && new Date() <= discount.endDate) {
-      //     discountAmount = discount.type === 'PERCENT'
-      //         ? subtotal * (discount.value / 100)
-      //         : discount.value;
-      //     appliedDiscountCode = discountCode;
-      // } else {
-      //     return res.status(400).json({ message: "Mã giảm giá không hợp lệ hoặc đã hết hạn" });
-      // }
+      if (!discount) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mã giảm giá không tồn tại, đã hết hạn hoặc bị vô hiệu hóa' 
+        });
+      }
 
-      // Hiện tại để tạm (demo)
-      discountAmount = 0;
+      // 2. CHECK MIN ORDER VALUE
+      if (subtotal < discount.minOrderValue) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Đơn hàng tối thiểu phải từ ${discount.minOrderValue.toLocaleString()}đ để áp dụng mã ${discountCode}` 
+        });
+      }
+
+      // 3. TÍNH DISCOUNT AMOUNT
+      let calculatedDiscount = 0;
+      if (discount.discountType === 'percent') {
+        calculatedDiscount = subtotal * (discount.value / 100);
+      } else if (discount.discountType === 'fixed') {
+        calculatedDiscount = discount.value;
+      }
+
+      // Cap by maxDiscountValue
+      discountAmount = Math.min(calculatedDiscount, discount.maxDiscountValue || calculatedDiscount);
+      appliedDiscountCode = discount.code;
+
+      // 4. ATOMIC GIẢM USAGE LIMIT (tránh race condition multi-user)
+      const updateUsage = await Discount.findOneAndUpdate(
+        { _id: discount._id, usageLimit: { $gt: 0 } }, // Double-check
+        { $inc: { usageLimit: -1 } },
+        { new: true }
+      );
+
+      if (!updateUsage) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Mã giảm giá đã hết lượt sử dụng trong lúc xử lý!' 
+        });
+      }
+    
     }
 
     const finalAmount = Math.max(0, subtotal - discountAmount);
@@ -92,7 +130,7 @@ const createOrder = async (req, res) => {
       finalAmount,
       shippingAddress,
       paymentMethod,
-      paymentStatus: paymentMethod === "COD" ? "unpaid" : "pending",
+      paymentStatus: paymentMethod === "COD" ? "unpaid" : "paid",
       orderStatus: "pending",
       // createdAt sẽ tự động có nếu schema có timestamps: true
     });
