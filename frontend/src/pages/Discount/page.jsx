@@ -1,95 +1,101 @@
-import { useState, useEffect, Suspense } from "react"
-import { Search, Plus } from "lucide-react"
-import { VoucherTable } from "@/components/Discount/voucher-table"
-import { Pagination } from "@/components/Discount/pagination"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Loading } from "@/components/Discount/loading"
-import { toast } from "react-toastify" 
+import { useState, useEffect, Suspense } from "react";
+import { Search, Plus } from "lucide-react";
+
+import { VoucherTable } from "@/components/Discount/voucher-table";
+import { Pagination } from "@/components/Discount/pagination";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loading } from "@/components/Discount/loading";
+
+import { toast } from "react-toastify";
 import discountService from "@/services/discount/discount.api";
 
 // IMPORT CÁC MODAL
-import { DeleteDiscountModal } from "@/components/Discount/delete-discount-form" 
-import { CreateDiscountModal } from "@/components/Discount/create-discount-modal"
-import { EditDiscountModal } from "@/components/Discount/edit-discount-modal"
-import { ViewDiscountModal } from "@/components/Discount/view-discount-modal"
+import { DeleteDiscountModal } from "@/components/Discount/delete-discount-form";
+import { CreateDiscountModal } from "@/components/Discount/create-discount-modal";
+import { EditDiscountModal } from "@/components/Discount/edit-discount-modal";
+import { ViewDiscountModal } from "@/components/Discount/view-discount-modal";
 
 export default function VoucherManagement() {
-  const [vouchers, setVouchers] = useState([])
-  const [loading, setLoading] = useState(false)
-  
+  const [vouchers, setVouchers] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   // State phân trang
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [totalItems, setTotalItems] = useState(0)
-  
-  // --- SỬA LẠI TẠI ĐÂY ---
-  // Để về 10 thì mới có phân trang (28 bản ghi sẽ chia làm 3 trang)
-  const itemsPerPage = 10; 
-  // -----------------------
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  // --- CÁC STATE FILTER ---
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState("all") 
-  const [filterType, setFilterType] = useState("all")
+  // Để 10 thì mới có phân trang
+  const itemsPerPage = 10;
 
-  // State Modal Delete
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
-  const [voucherToDelete, setVoucherToDelete] = useState(null) 
-  
-  // State Modal Create/Edit
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [voucherToEdit, setVoucherToEdit] = useState(null)
+  // State filter
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterType, setFilterType] = useState("all");
 
-  // State Modal View
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [voucherToView, setVoucherToView] = useState(null)
+  // Modal Delete
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [voucherToDelete, setVoucherToDelete] = useState(null);
 
-  // --- HÀM HELPER: Xử lý hiển thị ngày ---
+  // Modal Create/Edit
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [voucherToEdit, setVoucherToEdit] = useState(null);
+
+  // Modal View
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [voucherToView, setVoucherToView] = useState(null);
+
+  // Format ngày hiển thị
   const formatDateDisplay = (dateString) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
+
     const d = new Date(dateString);
-    if (isNaN(d.getTime())) return '';
+    if (isNaN(d.getTime())) return "";
+
     try {
-        const isoDate = d.toISOString().split('T')[0]; 
-        const [year, month, day] = isoDate.split('-');
-        return `${day}/${month}/${year}`; 
+      const isoDate = d.toISOString().split("T")[0];
+      const [year, month, day] = isoDate.split("-");
+      return `${day}/${month}/${year}`;
     } catch (e) {
-        return '';
+      return "";
     }
   };
 
-  // Hàm lấy dữ liệu từ API
+  // Lấy dữ liệu từ API
   const fetchVouchers = async () => {
-    setLoading(true)
+    setLoading(true);
+
     try {
       const params = {
         page: currentPage,
-        limit: itemsPerPage, 
+        limit: itemsPerPage,
         code: searchQuery,
-        status: filterStatus !== 'all' ? filterStatus : undefined,
-        discountType: filterType !== 'all' ? filterType : undefined,
+        status: filterStatus !== "all" ? filterStatus : undefined,
+        discountType: filterType !== "all" ? filterType : undefined,
       };
 
       const res = await discountService.getAllDiscounts(params);
 
       if (res && res.success) {
-        const mappedVouchers = res.data.map(item => ({
-          id: item._id, 
+        const mappedVouchers = res.data.map((item) => ({
+          id: item._id,
           code: item.code,
-          discountValue: item.discountType === 'percent' ? `${item.value}%` : `${item.value?.toLocaleString()}đ`,
+          discountValue:
+            item.discountType === "percent"
+              ? `${item.value}%`
+              : `${item.value?.toLocaleString()}đ`,
           usageLimit: item.usageLimit,
           usedCount: item.usedCount || 0,
           startDate: formatDateDisplay(item.validFrom),
           endDate: formatDateDisplay(item.expiredAt),
-          isActive: item.status === 'active'
+          isActive: item.status === "active",
         }));
 
         setVouchers(mappedVouchers);
+
         const total = res.count || 0;
         setTotalItems(total);
-        // Tính toán tổng số trang
         setTotalPages(Math.ceil(total / itemsPerPage));
       }
     } catch (error) {
@@ -97,161 +103,186 @@ export default function VoucherManagement() {
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchVouchers();
     }, 500);
+
     return () => clearTimeout(timer);
   }, [currentPage, searchQuery, filterStatus, filterType]);
 
   const handleFilterChange = (setter) => (e) => {
     setter(e.target.value);
     setCurrentPage(1);
-  }
+  };
 
-  // Logic Toggle Status
+  // Toggle status
   const handleToggle = async (id) => {
     try {
-        const voucher = vouchers.find(v => v.id === id);
-        if (!voucher) return;
-        
-        const newStatus = !voucher.isActive ? 'active' : 'inactive';
-        const res = await discountService.updateDiscount(id, { status: newStatus });
-        
-        if(res && res.success) {
-            toast.success("Cập nhật trạng thái thành công");
-            setVouchers((prev) => prev.map((v) => (v.id === id ? { ...v, isActive: !v.isActive } : v)));
-        }
-    } catch (error) { toast.error("Lỗi cập nhật trạng thái"); }
-  }
+      const voucher = vouchers.find((v) => v.id === id);
+      if (!voucher) return;
 
-  // Logic Delete
-  const handleDeleteClick = (id) => {
-    const targetVoucher = vouchers.find(v => v.id === id);
-    if (targetVoucher) {
-        setVoucherToDelete(targetVoucher);
-        setIsDeleteModalOpen(true);
+      const newStatus = !voucher.isActive ? "active" : "inactive";
+      const res = await discountService.updateDiscount(id, {
+        status: newStatus,
+      });
+
+      if (res && res.success) {
+        toast.success("Cập nhật trạng thái thành công");
+
+        setVouchers((prev) =>
+          prev.map((v) =>
+            v.id === id ? { ...v, isActive: !v.isActive } : v
+          )
+        );
+      }
+    } catch (error) {
+      toast.error("Lỗi cập nhật trạng thái");
     }
-  }
+  };
+
+  // Delete
+  const handleDeleteClick = (id) => {
+    const targetVoucher = vouchers.find((v) => v.id === id);
+
+    if (targetVoucher) {
+      setVoucherToDelete(targetVoucher);
+      setIsDeleteModalOpen(true);
+    }
+  };
 
   const handleConfirmDelete = async () => {
     if (!voucherToDelete) return;
-    try {
-        const res = await discountService.deleteDiscount(voucherToDelete.id);
-        if(res && res.success) {
-            toast.success("Đã xóa mã giảm giá");
-            if (vouchers.length === 1 && currentPage > 1) {
-                setCurrentPage(currentPage - 1);
-            } else {
-                fetchVouchers();
-            }
-        }
-    } catch (error) { 
-        toast.error("Xóa thất bại"); 
-    } finally {
-        setVoucherToDelete(null);
-    }
-  }
 
-  // Logic Create
+    try {
+      const res = await discountService.deleteDiscount(
+        voucherToDelete.id
+      );
+
+      if (res && res.success) {
+        toast.success("Đã xóa mã giảm giá");
+
+        if (vouchers.length === 1 && currentPage > 1) {
+          setCurrentPage(currentPage - 1);
+        } else {
+          fetchVouchers();
+        }
+      }
+    } catch (error) {
+      toast.error("Xóa thất bại");
+    } finally {
+      setVoucherToDelete(null);
+    }
+  };
+
   const handleCreateSubmit = async (formData) => {
     try {
-        const res = await discountService.createDiscount(formData);
-        if (res && res.success) {
-            toast.success("Tạo mã giảm giá thành công!");
-            fetchVouchers();
-            setIsCreateModalOpen(false); 
-        } else {
-             toast.error(res?.message || "Tạo thất bại");
-        }
-    } catch (error) {
-        console.error(error);
-        toast.error("Đã có lỗi xảy ra khi tạo mã.");
-    }
-  }
+      // Gọi API ở đây (chỉ gọi 1 lần duy nhất)
+      const res = await discountService.createDiscount(formData);
 
-  // Logic Edit
+      if (res && res.success) {
+        toast.success("Tạo mã giảm giá thành công!");
+        fetchVouchers(); // Load lại bảng
+        setIsCreateModalOpen(false); // Đóng modal
+      } else {
+        // Nếu server trả về success: false nhưng không throw lỗi
+        throw new Error(res?.message || "Tạo thất bại");
+      }
+    } catch (error) {
+      console.error(error);
+      // Toast lỗi chung
+      toast.error("Đã có lỗi xảy ra khi tạo mã.");
+      
+      // QUAN TRỌNG: Ném lỗi tiếp để thằng con (Form) bắt được và hiển thị ErrorAlert
+      throw error; 
+    }
+  };
+
+// ... các phần còn lại giữ nguyên
+
+  // Edit
   const handleEdit = async (voucherFromTable) => {
     try {
-        const id = voucherFromTable.id || voucherFromTable._id;
-        const res = await discountService.getDiscountById(id); 
-        
-        if (res && res.success) {
-            setVoucherToEdit(res.data); 
-            setIsEditModalOpen(true);
-        } else {
-            toast.error("Không thể lấy thông tin chi tiết mã giảm giá");
-        }
+      const id = voucherFromTable.id || voucherFromTable._id;
+      const res = await discountService.getDiscountById(id);
+
+      if (res && res.success) {
+        setVoucherToEdit(res.data);
+        setIsEditModalOpen(true);
+      } else {
+        toast.error("Không thể lấy thông tin chi tiết mã giảm giá");
+      }
     } catch (error) {
-        console.error("Lỗi lấy chi tiết:", error);
-        toast.error("Lỗi khi tải thông tin mã giảm giá");
+      console.error("Lỗi lấy chi tiết:", error);
+      toast.error("Lỗi khi tải thông tin mã giảm giá");
     }
-  }
+  };
 
   const handleUpdateSubmit = async (updatedData) => {
-      try {
-          const id = updatedData._id || updatedData.id;
-          const res = await discountService.updateDiscount(id, updatedData);
-          
-          if (res && res.success) {
-              toast.success("Cập nhật thành công!");
-              setIsEditModalOpen(false);
-              setVoucherToEdit(null);
-              fetchVouchers(); 
-          } else {
-              toast.error(res?.message || "Cập nhật thất bại");
-          }
-      } catch (error) {
-          console.error("Update error:", error);
-          toast.error("Có lỗi xảy ra khi cập nhật");
-      }
-  }
+    try {
+      const id = updatedData._id || updatedData.id;
+      const res = await discountService.updateDiscount(id, updatedData);
 
-  // Logic View
+      if (res && res.success) {
+        toast.success("Cập nhật thành công!");
+        setIsEditModalOpen(false);
+        setVoucherToEdit(null);
+        fetchVouchers();
+      } else {
+        toast.error(res?.message || "Cập nhật thất bại");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      toast.error("Có lỗi xảy ra khi cập nhật");
+    }
+  };
+
+  // View
   const handleView = async (voucherFromTable) => {
     try {
-        const id = voucherFromTable.id || voucherFromTable._id;
-        const res = await discountService.getDiscountById(id);
-        
-        if (res && res.success) {
-            setVoucherToView(res.data);
-            setIsViewModalOpen(true);
-        } else {
-            toast.error("Không thể tải chi tiết mã");
-        }
+      const id = voucherFromTable.id || voucherFromTable._id;
+      const res = await discountService.getDiscountById(id);
+
+      if (res && res.success) {
+        setVoucherToView(res.data);
+        setIsViewModalOpen(true);
+      } else {
+        toast.error("Không thể tải chi tiết mã");
+      }
     } catch (error) {
-        console.error("Lỗi xem chi tiết:", error);
-        toast.error("Lỗi khi tải thông tin");
+      console.error("Lỗi xem chi tiết:", error);
+      toast.error("Lỗi khi tải thông tin");
     }
-  }
+  };
 
   const handleCopyCode = (code) => {
-    navigator.clipboard.writeText(code)
-    toast.success("Đã sao chép mã: " + code)
-  }
+    navigator.clipboard.writeText(code);
+    toast.success("Đã sao chép mã: " + code);
+  };
 
   return (
     <Suspense fallback={<Loading />}>
-      <div className="min-h-screen bg-gray-100"> 
+      <div className="min-h-screen bg-gray-100">
         <main className="p-8">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Mã giảm giá</h1>
-            <div className="flex items-center gap-4">
-              <Button 
-                onClick={() => setIsCreateModalOpen(true)}
-                className="bg-[#3B82F6] hover:bg-[#2563EB] text-white gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                Tạo mã giảm giá
-              </Button>
-            </div>
+            <h1 className="text-2xl font-semibold text-gray-900">
+              Mã giảm giá
+            </h1>
+
+            <Button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Tạo mã giảm giá
+            </Button>
           </div>
 
           {/* Filter Area */}
-          <div className="flex flex-wrap items-center gap-4 mb-6 bg-white p-4 rounded-lg shadow-sm">
-            <div className="relative flex-1 min-w-[200px]">
+          <div className="flex flex-wrap items-center gap-3 mb-6 bg-white p-4 rounded-lg shadow-sm">
+            <div className="relative w-full md:w-[350px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Tìm kiếm mã...."
@@ -260,106 +291,105 @@ export default function VoucherManagement() {
                 className="pl-10 border-gray-200"
               />
             </div>
-            
-            <div className="relative min-w-[150px]">
-                <select 
-                    className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filterType}
-                    onChange={handleFilterChange(setFilterType)}
-                >
-                    <option value="all">Tất cả loại</option>
-                    <option value="percent">Theo phần trăm (%)</option>
-                    <option value="fixed">Tiền cố định (VND)</option>
-                </select>
+
+            <div className="relative min-w-[180px]">
+              <select
+                className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md"
+                value={filterType}
+                onChange={handleFilterChange(setFilterType)}
+              >
+                <option value="all">Tất cả loại</option>
+                <option value="percent">Theo phần trăm (%)</option>
+                <option value="fixed">Tiền cố định (VND)</option>
+              </select>
             </div>
-            <div className="relative min-w-[150px]">
-                <select 
-                    className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={filterStatus}
-                    onChange={handleFilterChange(setFilterStatus)}
-                >
-                    <option value="all">Tất cả trạng thái</option>
-                    <option value="active">Đang hoạt động</option>
-                    <option value="inactive">Ngưng hoạt động</option>
-                </select>
+
+            <div className="relative min-w-[180px]">
+              <select
+                className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md"
+                value={filterStatus}
+                onChange={handleFilterChange(setFilterStatus)}
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="active">Đang hoạt động</option>
+                <option value="inactive">Ngưng hoạt động</option>
+              </select>
             </div>
-             {(filterStatus !== 'all' || filterType !== 'all' || searchQuery) && (
-                <Button 
-                    variant="ghost" 
-                    onClick={() => {
-                        setFilterStatus("all");
-                        setFilterType("all");
-                        setSearchQuery("");
-                        setCurrentPage(1);
-                    }}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                >
-                    Xóa bộ lọc
-                </Button>
-             )}
+
+            {(filterStatus !== "all" ||
+              filterType !== "all" ||
+              searchQuery) && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setFilterStatus("all");
+                  setFilterType("all");
+                  setSearchQuery("");
+                  setCurrentPage(1);
+                }}
+                className="text-red-500"
+              >
+                Xóa bộ lọc
+              </Button>
+            )}
           </div>
 
-          {/* Table */}
           {loading ? (
-             <div className="text-center py-10">Đang tải dữ liệu...</div>
+            <div className="text-center py-10">Đang tải dữ liệu...</div>
           ) : (
-             <VoucherTable
-                vouchers={vouchers}
-                onToggle={handleToggle}
-                onEdit={handleEdit} 
-                onDelete={handleDeleteClick} 
-                onCopyCode={handleCopyCode}
-                onView={handleView} 
-             />
+            <VoucherTable
+              vouchers={vouchers}
+              onToggle={handleToggle}
+              onEdit={handleEdit}
+              onDelete={handleDeleteClick}
+              onCopyCode={handleCopyCode}
+              onView={handleView}
+            />
           )}
 
-          {/* Hiển thị Pagination: Nếu có bản ghi VÀ số trang > 1 thì mới hiện */}
           {!loading && totalItems > 0 && totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                totalItems={totalItems}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-              />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
           )}
-          {/* Hoặc nếu bạn muốn luôn hiện ngay cả khi chỉ có 1 trang thì xóa điều kiện totalPages > 1 đi */}
+
           {!loading && totalItems > 0 && totalPages <= 1 && (
-             <div className="text-sm text-gray-500 mt-4 text-center">
-                Hiển thị tất cả {totalItems} kết quả
-             </div>
+            <div className="text-sm text-gray-500 mt-4 text-center">
+              Hiển thị tất cả {totalItems} kết quả
+            </div>
           )}
 
-
-          {/* Modal Area */}
-          <DeleteDiscountModal 
+          <DeleteDiscountModal
             isOpen={isDeleteModalOpen}
             onOpenChange={setIsDeleteModalOpen}
             discountCode={voucherToDelete?.code || ""}
             onConfirm={handleConfirmDelete}
           />
 
-          <CreateDiscountModal 
+          <CreateDiscountModal
             isOpen={isCreateModalOpen}
             onOpenChange={setIsCreateModalOpen}
             onSubmit={handleCreateSubmit}
           />
 
-          <EditDiscountModal 
+          <EditDiscountModal
             isOpen={isEditModalOpen}
             onOpenChange={setIsEditModalOpen}
             voucherData={voucherToEdit}
             onSubmit={handleUpdateSubmit}
           />
 
-          <ViewDiscountModal 
-             isOpen={isViewModalOpen}
-             onOpenChange={setIsViewModalOpen}
-             voucherData={voucherToView}
+          <ViewDiscountModal
+            isOpen={isViewModalOpen}
+            onOpenChange={setIsViewModalOpen}
+            voucherData={voucherToView}
           />
-
         </main>
       </div>
     </Suspense>
-  )
+  );
 }
