@@ -12,6 +12,7 @@ const reviewRouter = require("./review.route");
 const blogRouter = require("./Blog/blog-router");
 const discountRouter = require('./discount/discount-router');
 const customerRouter = require('./user.route');
+const buildPcTemplateRouter = require('./buildPcTemplate.route');
 module.exports = (app) => {
   const api = "/api";
   app.use(api + "/upload", uploadRouter);//Test upload
@@ -26,6 +27,7 @@ module.exports = (app) => {
   app.use(api + "/blog", blogRouter);
   app.use(api + "/discount", discountRouter);
   app.use(api + "/customer", customerRouter);
+  app.use(api + "/build-pc-template", buildPcTemplateRouter);
 
 };
 
