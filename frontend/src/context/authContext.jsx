@@ -17,6 +17,8 @@ export const AuthProvider = ({ children }) => {
                 setUser(res.data.user);
             } catch (error) {
                 setUser(null);
+                // set null ở local storage
+                localStorage.removeItem('data_ui');
             } finally {
                 setLoading(false);
             }
@@ -29,8 +31,8 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth phải được dùng bên trong AuthProvider');
-    }
+    // if (!context) {
+    //     throw new Error('useAuth phải được dùng bên trong AuthProvider');
+    // }
     return context;
 };
