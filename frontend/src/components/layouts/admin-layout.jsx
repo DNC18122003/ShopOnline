@@ -1,20 +1,15 @@
 import React, { useContext, useMemo } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
 import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu } from 'lucide-react';
 
-import { ToastContainer } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+
+import { logout_service } from '@/services/auth/authService';
 const navLinkItems = [
     {
         href: '/sale/dashboard',
@@ -37,13 +32,16 @@ const AdminLayout = () => {
     //hook
     const { setUser } = useContext(AuthContext);
     // state
-    const data_ui = localStorage.getItem('data_ui');
+    const data_ui = JSON.parse(localStorage.getItem('data_ui'));
+    const navigate = useNavigate();
     const handleLogut = async () => {
         try {
             await logout_service();
             localStorage.removeItem('data_ui');
             setUser(null);
+            console.log('Logging out...');
             toast.success('Đăng xuất thành công !');
+            console.log('end');
             setTimeout(() => {
                 navigate('/login');
             }, 1000);
@@ -101,16 +99,21 @@ const AdminLayout = () => {
                     {/* Profile */}
                     {data_ui && (
                         <div className="p-3">
-                            <div className="flex items-center space-x-3">
-                                <Avatar className="h-10 w-10 cursor-pointer">
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-2">
+                                <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
                                     <AvatarImage src={data_ui.avatar} />
-                                    <AvatarFallback>{data_ui.fullName.charAt(0).toUpperCase()}</AvatarFallback>
+                                    <AvatarFallback>
+                                        {' '}
+                                        {data_ui?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                                    </AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1">
-                                    <p className="text-sm font-semibold text-gray-800">{data_ui.userName}</p>
-                                    <p className="text-xs text-gray-500">{data_ui.email}</p>
+                                    <p className="font-semibold text-gray-800 md:text-sm text-[0.65rem]">
+                                        {data_ui.userName}
+                                    </p>
+                                    <p className="text-xs text-gray-500 md:block hidden">{data_ui.email}</p>
                                 </div>
-                                <button className="text-gray-400 hover:text-gray-600">
+                                <button className="text-gray-400 hover:text-gray-600" onClick={handleLogut}>
                                     <LogOut className="w-5 h-5" />
                                 </button>
                             </div>

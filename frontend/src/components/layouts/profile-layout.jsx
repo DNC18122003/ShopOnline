@@ -104,7 +104,6 @@ const ProfileLayout = () => {
                 </main>
             </div>
             {/* Toast */}
-            <ToastContainer />
         </div>
     );
 };

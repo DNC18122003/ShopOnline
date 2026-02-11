@@ -15,7 +15,7 @@ const finalRoutes = [
     ...staffRoutes,
     ...adminRoutes,
     {
-        path: '/403',
+        path: '/403_unauthorized',
         element: <Page403 />,
     },
     {
