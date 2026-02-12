@@ -1,6 +1,8 @@
 import React, { useContext } from 'react';
 import { Outlet, NavLink, href, useNavigate } from 'react-router-dom';
 
+import { User, ShoppingBag, KeyRound, LogOut } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,18 +10,22 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast, ToastContainer } from 'react-toastify';
 import { logout_service } from '@/services/auth/authService';
 import { AuthContext } from '@/context/authContext';
+
 const navLinkItems = [
     {
         href: '/profile',
         title: 'Thông tin cá nhân',
+        icon: <User size={20} />,
     },
     {
         href: '/profile/orders',
         title: 'Đơn hàng của tôi',
+        icon: <ShoppingBag size={20} />,
     },
     {
         href: '/profile/change-password',
         title: 'Đổi mật khẩu',
+        icon: <KeyRound size={20} />,
     },
 ];
 const ProfileLayout = () => {
@@ -54,23 +60,24 @@ const ProfileLayout = () => {
         <div className="flex-1 bg-gray-50 p-5">
             <div className="flex gap-5 items-start">
                 {/* ===== SIDEBAR ===== */}
-                <aside className=" w-72 bg-white px-6 py-8 flex flex-col shadow-md rounded-lg ">
-                    {/* User info */}
+
+                <aside className="w-20 md:w-72 bg-white px-3 md:px-6 py-8 flex flex-col shadow-md rounded-lg">
+                    {/* 1. User info: Ẩn text trên mobile, chỉ hiện Avatar */}
                     <div className="flex flex-col items-center text-center mb-8">
-                        <Avatar className="w-20 h-20 rounded-full object-cover mb-3">
-                            <AvatarImage
-                                src={userData.avatar}
-                                alt="@shadcn"
-                                className="w-20 h-20 rounded-full object-cover mb-3"
-                            />
-                            <AvatarFallback className="bg-amber-100 font-bold text-black">
-                                {parseName(userData.userName)}
-                            </AvatarFallback>
+                        <Avatar className="w-12 h-12 md:w-20 md:h-20 mb-3 border-2 border-blue-50">
+                            <AvatarImage src={userData.avatar} alt="User" />
+                            <AvatarFallback>{parseName(userData.userName)}</AvatarFallback>
                         </Avatar>
-                        <h3 className="font-semibold text-gray-900">{userData.email ? userData.email : '--'} </h3>
-                        <p className="text-sm text-gray-500">{userData.userName ? userData.userName : '--'}</p>
+
+                        <div>
+                            <h3 className="font-semibold text-gray-900 truncate max-w-45 hidden md:block">
+                                {userData.email || '--'}
+                            </h3>
+                            <p className="text-sm text-gray-500">{userData.userName || '--'}</p>
+                        </div>
                     </div>
-                    {/* Menu */}
+
+                    {/* 2. Menu Navigation */}
                     <nav className="space-y-2">
                         {navLinkItems.map((link, index) => {
                             const isActive = location.pathname === link.href;
@@ -79,21 +86,33 @@ const ProfileLayout = () => {
                                     key={index}
                                     to={link.href}
                                     className={cn(
-                                        'flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium',
+                                        'flex items-center gap-3 px-4 py-3 md:py-2 rounded-lg text-sm font-medium',
+                                        'justify-center md:justify-start',
                                         isActive ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100',
                                     )}
                                 >
-                                    {link.title}
+                                    {/* Luôn hiển thị Icon (Giả sử link.icon chứa component icon) */}
+                                    <span className={cn('text-lg', isActive ? 'text-blue-700' : 'text-gray-500')}>
+                                        {link.icon}
+                                    </span>
+
+                                    {/* Ẩn tiêu đề Nav trên mobile */}
+                                    <span className="hidden md:block">{link.title}</span>
                                 </NavLink>
                             );
                         })}
                     </nav>
-                    {/* Logout */}
+
+                    {/* 3. Logout Button */}
                     <button
-                        className="mt-6 px-4 py-2 rounded-lg flex items-center gap-2 text-red-500 text-sm font-medium hover:text-red-600 hover:bg-gray-100"
+                        className={cn(
+                            'mt-auto px-4 py-2 rounded-lg flex items-center gap-2 text-red-500 text-sm font-medium hover:bg-red-50 transition-colors',
+                            'justify-center md:justify-start', // Căn giữa trên mobile
+                        )}
                         onClick={handleLogut}
                     >
-                        Đăng xuất
+                        <LogOut size={20} />
+                        <span className="hidden md:block">Đăng xuất</span>
                     </button>
                 </aside>
                 <main className="flex-1 p-5 bg-white shadow-md rounded-lg">
