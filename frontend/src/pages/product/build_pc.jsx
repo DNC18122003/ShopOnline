@@ -327,17 +327,15 @@ const isCompatible = (product, groupKey, selectedItems) => {
     }
   }
 
-  // PSU: Kiểm tra công suất (tính tổng công suất các linh kiện)
   if (groupKey === 'psu') {
     let totalWattage = 0;
     
-    // Ước tính công suất tiêu thụ (đơn giản)
-    if (selectedItems.cpu) totalWattage += 100; // CPU ~100W
-    if (selectedItems.gpu) totalWattage += 200; // GPU ~200W
-    if (selectedItems.main) totalWattage += 50; // Mainboard ~50W
-    if (selectedItems.ram) totalWattage += 20; // RAM ~20W
-    if (selectedItems.ssd) totalWattage += 10; // SSD ~10W
-    if (selectedItems.hdd) totalWattage += 15; // HDD ~15W
+    if (selectedItems.cpu) totalWattage += 100; 
+    if (selectedItems.gpu) totalWattage += 200; 
+    if (selectedItems.main) totalWattage += 50; 
+    if (selectedItems.ram) totalWattage += 20; 
+    if (selectedItems.ssd) totalWattage += 10;
+    if (selectedItems.hdd) totalWattage += 15; 
     
     // Thêm 20% buffer
     totalWattage = totalWattage * 1.2;
