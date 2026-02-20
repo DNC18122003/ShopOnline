@@ -14,4 +14,25 @@ const getProfileController = async (req, res) => {
     }
 }
 
+const updateProfileController = async (req, res) => {
+    console.log("Hello")
+    try {
+        const userId = req.user._id;
+        const { fullName, phoneNumber } = req.body;
+        console.log("data: ", fullName, phoneNumber)
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        user.fullName = fullName;
+        user.phone = phoneNumber;
+        const resUp = await user.save();
+        console.log("Updated user:", resUp);
+        res.json({ success: true, message: "Profile updated successfully" });
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        return res.status(500).json({ message: "Error updating profile" });
+    }
+};
+
 module.exports = { getProfileController };

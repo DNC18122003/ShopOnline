@@ -3,3 +3,7 @@ import customizeAPI from '../customizeApi';
 export const getProfile = () => {
     return customizeAPI.get('/customer/profile');
 };
+// update profile
+export const updateProfileService = (data) => {
+    return customizeAPI.put('/customer/profile', data);
+};
