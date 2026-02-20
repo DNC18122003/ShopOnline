@@ -8,7 +8,7 @@ import {
 export function DeleteBlogModal({
   isOpen,
   onOpenChange,
-  blogTitle = '', // Đổi từ discountCode sang blogTitle
+  blogTitle = '', 
   onConfirm,
 }) {
   const handleConfirm = () => {

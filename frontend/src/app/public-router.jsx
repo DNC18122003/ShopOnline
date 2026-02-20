@@ -9,7 +9,7 @@ import BlogPage from '@/pages/Blog/page';
 import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
-
+import BlogDetails from '@/components/Blog/blog-details';
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -58,5 +58,9 @@ export const publicRoutes = [
     {
         path: '/blog',
         element: <BlogPage />,
+    },
+     {
+        path: '/blogDetails',
+        element: <BlogDetails />,
     },
 ];

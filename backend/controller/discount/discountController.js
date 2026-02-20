@@ -149,26 +149,117 @@ getAllDiscounts: async (req, res) => {
     }
   },
 
-  // 4. Hàm cập nhật mã giảm giá 
+// 4. Hàm cập nhật mã giảm giá 
   updateDiscount: async (req, res) => {
     try {
       const { id } = req.params;
-      
-      // Cập nhật và trả về dữ liệu mới nhất (new: true)
-      const updatedDiscount = await Discount.findByIdAndUpdate(id, req.body, { 
-        new: true,
-        runValidators: true 
-      });
+      const { 
+        code, description, discountType, value, 
+        validFrom, expiredAt, minOrderValue, 
+        maxDiscountValue, usageLimit, status 
+      } = req.body;
 
-      if (!updatedDiscount) {
+      // BƯỚC 1: Lấy thông tin mã cũ để đối chiếu
+      const currentDiscount = await Discount.findById(id);
+      if (!currentDiscount) {
         return res.status(404).json({ success: false, message: 'Không tìm thấy mã giảm giá để cập nhật' });
       }
+
+      // BƯỚC 2: VALIDATE DỮ LIỆU
+      // 1. Validate Code
+      if (code) {
+        if(!code) return res.status(400).json({success: false, message:'Mã giảm giá không được để trống'})
+        if (code.length > 30) return res.status(400).json({ success: false, message: 'Mã giảm giá không quá 30 ký tự' });
+        if (code.length < 3) return res.status(400).json({ success: false, message: 'Mã giảm giá phải trên 3 ký tự' });
+        
+        // Kiểm tra trùng code (Trừ chính nó ra)
+        const duplicateDiscount = await Discount.findOne({ 
+            code: code.toUpperCase(), 
+            _id: { $ne: id } // Loại trừ ID hiện tại
+        });
+        if (duplicateDiscount) {
+            return res.status(400).json({ success: false, message: 'Mã giảm giá mới bị trùng với một mã đã tồn tại khác' });
+        }
+      }
+
+      // 2. Validate Description
+      if(!description){
+        return res.status(400).json({success: false, message:"Vui lòng nhập thông tin chi tiết"})
+      }
+      if (description.length > 100) {
+        return res.status(400).json({ success: false, message: "Chi tiết không quá 100 ký tự" });
+      }
+
+      // 3. Validate các chỉ số (minOrder, usageLimit...)
+      if (minOrderValue !== undefined && minOrderValue < 0) {
+        return res.status(400).json({ success: false, message: 'Giá trị tối thiểu để áp dụng mã không âm' });
+      }
+      if (maxDiscountValue !== undefined && maxDiscountValue < 0) {
+        return res.status(400).json({ success: false, message: 'Giá trị tối đa được giảm không âm' });
+      }
+      if (usageLimit !== undefined && usageLimit < 0) {
+        return res.status(400).json({ success: false, message: 'Giới hạn sử dụng của mã không âm' });
+      }
+      if (value !== undefined && value <= 0) {
+        return res.status(400).json({ success: false, message: 'Giá trị giảm giá phải lớn hơn 0' });
+      }
+
+      // 4. Validate Logic Loại giảm giá & Phần trăm
+      // Cần lấy giá trị Mới (nếu có) hoặc dùng giá trị Cũ
+      const typeToCheck = discountType || currentDiscount.discountType;
+      const valueToCheck = value !== undefined ? value : currentDiscount.value;
+      const maxDiscountValueToCheck = maxDiscountValue !== undefined ? maxDiscountValue : currentDiscount.maxDiscountValue;
+
+      // Nếu là phần trăm thì value không quá 100
+      if (typeToCheck === 'percent') {
+        if (valueToCheck > 100) {
+            return res.status(400).json({ success: false, message: 'Phần trăm giảm không được quá 100%' });
+        }
+        // Nếu là phần trăm thì bắt buộc phải có Max Discount (hoặc dữ liệu cũ đã có)
+        if (!maxDiscountValueToCheck && maxDiscountValueToCheck !== 0) {
+             return res.status(400).json({ success: false, message: 'Vui lòng nhập giá trị tối đa được giảm (bắt buộc với loại Phần trăm)' });
+        }
+      }
+
+      // 5. Validate Ngày tháng
+      // Logic: Lấy ngày mới nếu có, không thì dùng ngày cũ
+      let startDateStr = validFrom || currentDiscount.validFrom;
+      let endDateStr = expiredAt || currentDiscount.expiredAt;
+
+      // Chỉ validate nếu có sự thay đổi về ngày tháng
+      if (validFrom || expiredAt) {
+          const start = new Date(startDateStr);
+          const end = new Date(endDateStr);
+          const now = new Date();
+
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({ success: false, message: 'Định dạng ngày tháng không hợp lệ' });
+          }
+
+          if (start >= end) {
+            return res.status(400).json({ success: false, message: 'Ngày kết thúc phải sau ngày bắt đầu' });
+          }
+          
+          // Khi update, đôi khi expiredAt cũ đã ở quá khứ, nếu người dùng muốn mở lại thì expiredAt mới phải > now
+          // Nếu người dùng CHỈ sửa expiredAt, ta cần check nó có tương lai không
+          if (expiredAt && end < now) {
+             return res.status(400).json({ success: false, message: 'Thời gian kết thúc mới không được ở trong quá khứ' });
+          }
+      }
+
+      // BƯỚC 3: THỰC HIỆN UPDATE
+      const updatedDiscount = await Discount.findByIdAndUpdate(
+        id, 
+        req.body, // Update các trường gửi lên
+        { new: true, runValidators: true } // Trả về data mới
+      );
 
       res.status(200).json({
         success: true,
         message: 'Cập nhật thành công',
         data: updatedDiscount
       });
+
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -236,7 +327,7 @@ getAllDiscounts: async (req, res) => {
       res.status(500).json({ success: false, message: error.message });
     }
   }
-  
+
 };
 
 module.exports = discountController;
