@@ -13,16 +13,26 @@ export function CreateDiscountModal({
 }) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      {/* THAY ĐỔI QUAN TRỌNG:
-         - Sửa 'max-w-2xl' thành 'max-w-4xl' (để rộng gấp đôi) 
-         - Hoặc 'max-w-5xl' nếu muốn to hơn nữa
-      */}
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0">
+      <DialogContent 
+        // Thêm pointerEvents để tránh vô tình đóng modal khi click ra ngoài
+        onPointerDownOutside={(e) => e.preventDefault()}
+        className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white p-0"
+      >
         <div className="p-6">           
             <CreateDiscountForm
-              onSubmit={(data) => {
-                onSubmit?.(data)
-                onOpenChange(false)
+              // Sửa lại đoạn này thành async để đợi kết quả từ Page Cha
+              onSubmit={async (data) => {
+                try {
+                  // Đợi hàm handleCreateSubmit ở page cha chạy xong API
+                  await onSubmit?.(data);
+                  
+                  // Nếu API thành công (success: true), mới chạy xuống dòng này để đóng form
+                  onOpenChange(false);
+                } catch (error) {
+                  // Nếu API trả về lỗi (success: false), nó sẽ nhảy vào đây
+                  // Lệnh onOpenChange(false) bị bỏ qua, nên Form sẽ KHÔNG đóng
+                  console.error("Lỗi từ API, giữ nguyên form để sửa:", error);
+                }
               }}
               onCancel={() => onOpenChange(false)}
             />

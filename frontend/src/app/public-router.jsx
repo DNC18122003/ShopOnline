@@ -9,6 +9,7 @@ import BlogPage from '@/pages/Blog/page';
 import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
+import BlogDetails from '@/components/Blog/blog-details';
 import ComponentOtp from '@/components/public/component.otp';
 
 // Chỉ export mảng object, không tạo router tại đây
@@ -59,6 +60,9 @@ export const publicRoutes = [
         path: '/blog',
         element: <BlogPage />,
     },
+     {
+        path: '/blogDetails',
+        element: <BlogDetails />,
     {
         path: '/send_otp',
         element: <ComponentOtp title={'Xác thực tài khoản'} email={'happynewyear@gmail.com'} />,
