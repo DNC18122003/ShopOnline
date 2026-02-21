@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2 } from 'lucide-react';
 import { getProducts } from '@/services/product/product.api';
 import { toast } from 'react-toastify';
+import { useAuth } from '@/context/authContext';
 
 const COMPONENT_GROUPS = [
   { key: 'cpu', label: 'CPU', categorySlug: 'cpu', icon: <Cpu className="w-4 h-4" /> },
@@ -66,6 +67,39 @@ function ProductCard({ product, onSelect, isSelected }) {
 
 function RightSummary({ selectedItems, onRemove }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const getBuildPcStorageKey = () => {
+    const userId = user?._id || user?.id;
+    return userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
+  };
+
+  const handleSaveConfig = () => {
+    if (!user) {
+      toast.info('Vui lòng đăng nhập để lưu cấu hình');
+      navigate('/login', { state: { from: '/build-pc' } });
+      return;
+    }
+
+    const selectedCount = Object.keys(selectedItems).length;
+    if (selectedCount === 0) {
+      toast.warning('Chưa có linh kiện nào để lưu');
+      return;
+    }
+
+    try {
+      const key = getBuildPcStorageKey();
+      const payload = {
+        selectedItems,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(key, JSON.stringify(payload));
+      toast.success('Đã lưu cấu hình theo tài khoản của bạn');
+    } catch (e) {
+      console.error('Save build pc config error:', e);
+      toast.error('Lưu cấu hình thất bại');
+    }
+  };
   const subtotal = useMemo(() => {
     return Object.values(selectedItems).reduce((sum, item) => sum + (item?.price || 0), 0);
   }, [selectedItems]);
@@ -196,7 +230,10 @@ function RightSummary({ selectedItems, onRemove }) {
           >
             Thanh toán ngay
           </button>
-          <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all text-sm">
+          <button
+            onClick={handleSaveConfig}
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all text-sm"
+          >
             Lưu cấu hình
           </button>
         </div>
@@ -206,10 +243,32 @@ function RightSummary({ selectedItems, onRemove }) {
 }
 
 export default function BuildPcPage() {
+  const { user, loading: authLoading } = useAuth();
   const [activeCategory, setActiveCategory] = useState('cpu');
   const [allProducts, setAllProducts] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
+
+  // Tải cấu hình đã lưu của người dùng khi trang web load hoặc user thay đổi
+  useEffect(() => {
+    if (authLoading) return;
+
+    const userId = user?._id || user?.id;
+    const storageKey = userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
+    const savedConfig = localStorage.getItem(storageKey);
+
+    if (savedConfig) {
+      try {
+        const parsed = JSON.parse(savedConfig);
+        if (parsed.selectedItems) {
+          setSelectedItems(parsed.selectedItems);
+          // Không hiển thị toast ở đây để tránh làm phiền người dùng mỗi khi load trang
+        }
+      } catch (e) {
+        console.error('Load saved build pc config error:', e);
+      }
+    }
+  }, [user, authLoading]);
 
   useEffect(() => {
     const fetchAll = async () => {
