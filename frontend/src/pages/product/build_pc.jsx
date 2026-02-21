@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Check, AlertCircle, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { Check, AlertCircle, ChevronDown, ChevronUp, X, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, CreditCard, Save, Trash2 } from 'lucide-react';
 import { getProducts } from '@/services/product/product.api';
 
 const COMPONENT_GROUPS = [
-  { key: 'cpu', label: 'CPU', categorySlug: 'cpu' },
-  { key: 'main', label: 'Mainboard', categorySlug: 'mainboard' },
-  { key: 'ram', label: 'RAM', categorySlug: 'ram' },
-  { key: 'gpu', label: 'Card màn hình (GPU)', categorySlug: 'vga' },
-  { key: 'ssd', label: 'Ổ cứng SSD', categorySlug: 'ssd' },
-  { key: 'hdd', label: 'Ổ cứng HDD', categorySlug: 'hdd' },
-  { key: 'psu', label: 'Nguồn (PSU)', categorySlug: 'psu' },
-  { key: 'case', label: 'Vỏ case', categorySlug: 'case' },
+  { key: 'cpu', label: 'CPU', categorySlug: 'cpu', icon: <Cpu className="w-4 h-4" /> },
+  { key: 'gpu', label: 'GPU', categorySlug: 'vga', icon: <Monitor className="w-4 h-4" /> },
+  { key: 'ram', label: 'RAM', categorySlug: 'ram', icon: <Box className="w-4 h-4" /> },
+  { key: 'storage', label: 'Ổ cứng', categorySlug: 'ssd', icon: <HardDrive className="w-4 h-4" /> },
+  { key: 'mainboard', label: 'Mainboard', categorySlug: 'mainboard', icon: <Layout className="w-4 h-4" /> },
+  { key: 'psu', label: 'PSU', categorySlug: 'psu', icon: <Zap className="w-4 h-4" /> },
+  { key: 'cooling', label: 'Tản nhiệt', categorySlug: 'cooling', icon: <Thermometer className="w-4 h-4" /> },
+  { key: 'case', label: 'Case', categorySlug: 'case', icon: <Box className="w-4 h-4" /> },
 ];
 
 const formatVND = (amount) =>
@@ -19,531 +19,291 @@ const formatVND = (amount) =>
     currency: 'VND',
   }).format(amount || 0);
 
-
-function ComponentSelector({ group, products, selected, onSelect, isExpanded, onToggle }) {
+function ProductCard({ product, onSelect, isSelected }) {
   return (
-    <section className="border border-gray-200 rounded-lg mb-3 overflow-hidden bg-white shadow-sm">
-      <header 
-        className="px-4 py-2.5 border-b border-gray-200 flex items-center justify-between bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-        onClick={onToggle}
+    <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
+      <div className="aspect-square mb-4 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center p-4">
+        <img 
+          src={product.images?.[0] || 'https://via.placeholder.com/200'} 
+          alt={product.name}
+          className="max-w-full max-h-full object-contain mix-blend-multiply"
+        />
+      </div>
+      <div className="flex-1">
+        <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2 min-h-[40px]">
+          {product.name}
+        </h3>
+        {product.specifications && (
+          <p className="text-[10px] text-gray-500 mb-2">
+            {product.specifications.socket || product.specifications.ram_type || product.specifications.wattage || 'Sản phẩm chất lượng cao'}
+          </p>
+        )}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-blue-600 font-bold text-base">
+            {formatVND(product.price)}
+          </span>
+          <div className="flex items-center gap-1 text-yellow-400">
+            <span className="text-xs text-gray-500">★</span>
+            <span className="text-xs font-medium text-gray-700">4.8</span>
+          </div>
+        </div>
+      </div>
+      <button
+        onClick={() => onSelect(product)}
+        className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
+          isSelected 
+            ? 'bg-green-500 text-white hover:bg-green-600' 
+            : 'bg-blue-600 text-white hover:bg-blue-700'
+        }`}
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="flex-shrink-0">
-            {isExpanded ? (
-              <ChevronUp className="w-4 h-4 text-gray-500" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-gray-500" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-sm">{group.label}</h3>
-            {selected ? (
-              <p className="text-xs text-gray-600 mt-0.5 truncate">
-                {selected.name}
-              </p>
-            ) : (
-              <p className="text-xs text-gray-500 mt-0.5">
-                {products.length > 0 ? `${products.length} sản phẩm` : 'Chưa có sản phẩm'}
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {selected && (
-            <>
-              <span className="text-sm font-semibold text-blue-600">
-                {formatVND(selected.price)}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelect(group.key, null);
-                }}
-                className="ml-2 p-1 hover:bg-red-100 rounded transition-colors"
-                title="Xóa lựa chọn"
-              >
-                <X className="w-3 h-3 text-red-500" />
-              </button>
-            </>
-          )}
-        </div>
-      </header>
-
-      {isExpanded && (
-        <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
-          {products.length === 0 ? (
-            <div className="px-4 py-4 text-sm text-gray-500 text-center">
-              <p>Không có sản phẩm tương thích</p>
-              <p className="text-xs mt-1 text-gray-400">
-                Hãy chọn linh kiện khác hoặc thay đổi lựa chọn hiện tại
-              </p>
-            </div>
-          ) : (
-            products.map((p) => (
-              <button
-                key={p._id}
-                type="button"
-                onClick={() => {
-                  onSelect(group.key, p);
-                  onToggle();
-                }}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-blue-50 transition-colors ${
-                  selected?._id === p._id ? 'bg-blue-50 border-l-2 border-blue-500' : ''
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 line-clamp-1">
-                    {p.name}
-                  </p>
-                  {p.specifications && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {p.specifications.socket && `Socket: ${p.specifications.socket} `}
-                      {p.specifications.ram_type && `RAM: ${p.specifications.ram_type} `}
-                      {p.specifications.form_factor && `Form: ${p.specifications.form_factor} `}
-                      {p.specifications.wattage && `${p.specifications.wattage}W`}
-                    </p>
-                  )}
-                </div>
-                <span className="text-sm font-semibold text-blue-600 flex-shrink-0">
-                  {formatVND(p.price)}
-                </span>
-              </button>
-            ))
-          )}
-        </div>
-      )}
-    </section>
+        {isSelected ? 'Đã thêm' : 'Thêm vào cấu hình'}
+      </button>
+    </div>
   );
 }
 
-function OrderSummary({ selectedItems }) {
-  const tax = 10; // %
-
+function RightSummary({ selectedItems, onRemove }) {
   const subtotal = useMemo(() => {
-    return Object.values(selectedItems).reduce((sum, item) => {
-      return sum + (item?.price || 0);
-    }, 0);
+    return Object.values(selectedItems).reduce((sum, item) => sum + (item?.price || 0), 0);
   }, [selectedItems]);
 
-  const taxAmount = Math.round(subtotal * (tax / 100));
-  const total = subtotal + taxAmount;
+  const tax = Math.round(subtotal * 0.1);
+  const total = subtotal + tax;
 
-  // Logic kiểm tra tương thích chi tiết
-  const compatibilityCheck = useMemo(() => {
-    const cpu = selectedItems.cpu;
-    const main = selectedItems.main;
-    const ram = selectedItems.ram;
-    const psu = selectedItems.psu;
-    const caseItem = selectedItems.case;
-
+  const compatibility = useMemo(() => {
     const issues = [];
-
-    // Kiểm tra có đủ linh kiện cơ bản
-    if (!cpu) issues.push('Chưa chọn CPU');
-    if (!main) issues.push('Chưa chọn Mainboard');
-    if (!ram) issues.push('Chưa chọn RAM');
-    if (!psu) issues.push('Chưa chọn Nguồn');
-
-    // Kiểm tra tương thích socket (CPU ↔ Mainboard)
-    if (cpu && main) {
-      const cpuSocket = cpu.specifications?.socket;
-      const mainSocket = main.specifications?.socket;
-      if (cpuSocket && mainSocket && cpuSocket !== mainSocket) {
-        issues.push('CPU và Mainboard không tương thích (socket khác nhau)');
-      }
-    }
-
-    // Kiểm tra tương thích RAM type (Mainboard ↔ RAM)
-    if (main && ram) {
-      const mainRamType = main.specifications?.ram_type;
-      const ramType = ram.specifications?.ram_type;
-      if (mainRamType && ramType && mainRamType !== ramType) {
-        issues.push('Mainboard và RAM không tương thích (loại RAM khác nhau)');
-      }
-    }
-
-    // Kiểm tra tương thích form factor (Mainboard ↔ Case)
-    if (main && caseItem) {
-      const mainFormFactor = main.specifications?.form_factor;
-      const caseFormFactors = caseItem.specifications?.form_factor;
-      if (mainFormFactor && caseFormFactors) {
-        const supportedFormFactors = Array.isArray(caseFormFactors)
-          ? caseFormFactors
-          : [caseFormFactors];
-        if (!supportedFormFactors.includes(mainFormFactor)) {
-          issues.push('Mainboard và Case không tương thích (form factor)');
-        }
-      }
-    }
-
+    if (!selectedItems.cpu) issues.push('CPU');
+    if (!selectedItems.mainboard) issues.push('Mainboard');
+    if (!selectedItems.ram) issues.push('RAM');
+    
     return {
-      isCompatible: issues.length === 0 && cpu && main && ram && psu,
-      issues,
+      isOK: issues.length === 0,
+      missing: issues
     };
   }, [selectedItems]);
 
-  const { isCompatible, issues } = compatibilityCheck;
-
-  const selectedCount = Object.values(selectedItems).filter(Boolean).length;
-
   return (
-    <aside className="w-full lg:w-80 lg:pl-4 mt-6 lg:mt-0">
-      <div className="bg-white rounded-lg shadow-sm p-4 sticky top-20 space-y-4">
-        {/* Compatibility Check */}
-        <div>
-          <div
-            className={`flex items-start gap-2 p-3 rounded-lg ${
-              isCompatible
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-yellow-50 border border-yellow-200'
-            }`}
-          >
-            <div
-              className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                isCompatible ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
-            >
-              {isCompatible ? (
-                <Check size={12} className="text-white" />
-              ) : (
-                <AlertCircle size={12} className="text-white" />
-              )}
-            </div>
-            <span
-              className={`text-xs font-medium ${
-                isCompatible ? 'text-green-700' : 'text-yellow-700'
-              }`}
-            >
-              {isCompatible
-                ? 'Cấu hình tương thích'
-                : 'Cần: CPU, Main, RAM, PSU'}
-            </span>
+    <div className="space-y-4 sticky top-6">
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <h2 className="font-bold text-gray-900 mb-4 text-base">Kiểm tra tương thích</h2>
+        <div className={`flex items-center gap-3 p-3 rounded-xl ${compatibility.isOK ? 'bg-green-50' : 'bg-blue-50'}`}>
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${compatibility.isOK ? 'bg-green-500' : 'bg-blue-500'}`}>
+            {compatibility.isOK ? <Check size={14} className="text-white" /> : <AlertCircle size={14} className="text-white" />}
           </div>
-        </div>
-
-        {/* Selected Items Summary */}
-        {selectedCount > 0 && (
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-2">
-              Đã chọn ({selectedCount}/{COMPONENT_GROUPS.length})
-            </h3>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {COMPONENT_GROUPS.map((g) => {
-                const item = selectedItems[g.key];
-                if (!item) return null;
-                return (
-                  <div
-                    key={g.key}
-                    className="flex items-start justify-between p-2 bg-gray-50 rounded text-xs"
-                  >
-                    <div className="flex-1 min-w-0 pr-2">
-                      <p className="font-medium text-gray-700 truncate">{g.label}</p>
-                      <p className="text-gray-500 truncate">{item.name}</p>
-                    </div>
-                    <span className="font-semibold text-blue-600 flex-shrink-0">
-                      {formatVND(item.price)}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+            <p className={`text-xs font-bold ${compatibility.isOK ? 'text-green-700' : 'text-blue-700'}`}>
+              {compatibility.isOK ? 'Tương thích hoàn toàn' : 'Đang xây dựng cấu hình'}
+            </p>
+            <p className="text-[10px] text-gray-500">
+              {compatibility.isOK ? 'Tất cả linh kiện hoạt động tốt' : `Còn thiếu: ${compatibility.missing.join(', ')}`}
+            </p>
           </div>
-        )}
+        </div>
+      </div>
 
-        {/* Price Summary */}
-        <div className="border-t border-gray-200 pt-3 space-y-2">
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-600">Tạm tính:</span>
-            <span className="text-gray-900 font-semibold">
-              {formatVND(subtotal)}
-            </span>
+      <div className="bg-white rounded-xl shadow-sm p-4">
+        <h2 className="font-bold text-gray-900 mb-4 text-base">Cấu hình hiện tại</h2>
+        <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+          {COMPONENT_GROUPS.map((group) => {
+            const item = selectedItems[group.key];
+            return (
+              <div key={group.key} className="flex items-center gap-3 p-2 rounded-lg border border-gray-50 bg-gray-50/30 group">
+                <div className="w-10 h-10 bg-white rounded border border-gray-100 flex items-center justify-center p-1 flex-shrink-0">
+                  {item?.images?.[0] ? (
+                    <img src={item.images[0]} alt="" className="max-w-full max-h-full object-contain" />
+                  ) : (
+                    <div className="text-gray-300">{group.icon}</div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{group.label}</p>
+                  <p className="text-xs font-bold text-gray-800 truncate">
+                    {item ? item.name : 'Chưa chọn ' + group.label}
+                  </p>
+                </div>
+                {item && (
+                  <div className="text-right flex flex-col items-end gap-1">
+                    <p className="text-xs font-bold text-gray-900">{formatVND(item.price).replace('₫', '')}₫</p>
+                    <button 
+                      onClick={() => onRemove(group.key)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded text-red-500 transition-all"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="space-y-2 border-t border-gray-100 pt-4">
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>Tổng phụ:</span>
+            <span className="font-medium">{formatVND(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-600">Thuế (10%):</span>
-            <span className="text-gray-900 font-semibold">
-              {formatVND(taxAmount)}
-            </span>
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>Thuế (10%):</span>
+            <span className="font-medium">{formatVND(tax)}</span>
           </div>
-          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-            <span className="font-bold text-gray-900 text-sm">Tổng:</span>
-            <span className="text-xl font-bold text-blue-600">
-              {formatVND(total)}
-            </span>
+          <div className="flex justify-between items-center pt-2">
+            <span className="font-bold text-gray-900">Tổng cộng:</span>
+            <span className="text-xl font-black text-blue-600">{formatVND(total)}</span>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-2">
-          <button 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-            disabled={!isCompatible || selectedCount === 0}
-          >
+        <div className="mt-6 space-y-2">
+          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-200 text-sm">
             Thanh toán ngay
           </button>
-          <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-colors text-sm">
-            Thêm vào giỏ hàng
+          <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all text-sm">
+            Lưu cấu hình
           </button>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
-// Hàm kiểm tra tương thích giữa các linh kiện
-const isCompatible = (product, groupKey, selectedItems) => {
-  if (!product?.specifications) return true;
-
-  const specs = product.specifications;
-
-  // Mainboard phải tương thích với CPU (socket) - kiểm tra cả 2 chiều
-  if (groupKey === 'main' && selectedItems.cpu) {
-    const cpuSocket = selectedItems.cpu.specifications?.socket;
-    if (cpuSocket && specs.socket && specs.socket !== cpuSocket) {
-      return false;
-    }
-  }
-
-  // CPU phải tương thích với Mainboard đã chọn (socket) - kiểm tra cả 2 chiều
-  if (groupKey === 'cpu' && selectedItems.main) {
-    const mainSocket = selectedItems.main.specifications?.socket;
-    if (mainSocket && specs.socket && specs.socket !== mainSocket) {
-      return false;
-    }
-  }
-
-  // RAM phải tương thích với Mainboard (ram_type)
-  if (groupKey === 'ram' && selectedItems.main) {
-    const mainRamType = selectedItems.main.specifications?.ram_type;
-    if (mainRamType && specs.ram_type && specs.ram_type !== mainRamType) {
-      return false;
-    }
-  }
-
-  // Case phải tương thích với Mainboard (form_factor)
-  if (groupKey === 'case' && selectedItems.main) {
-    const mainFormFactor = selectedItems.main.specifications?.form_factor;
-    if (mainFormFactor && specs.form_factor && specs.form_factor !== mainFormFactor) {
-      return false;
-    }
-  }
-
-  if (groupKey === 'psu') {
-    let totalWattage = 0;
-    
-    if (selectedItems.cpu) totalWattage += 100; 
-    if (selectedItems.gpu) totalWattage += 200; 
-    if (selectedItems.main) totalWattage += 50; 
-    if (selectedItems.ram) totalWattage += 20; 
-    if (selectedItems.ssd) totalWattage += 10;
-    if (selectedItems.hdd) totalWattage += 15; 
-    
-    // Thêm 20% buffer
-    totalWattage = totalWattage * 1.2;
-    
-    if (specs.wattage && specs.wattage < totalWattage) {
-      return false;
-    }
-  }
-
-  return true;
-};
-
-// Hàm lọc sản phẩm tương thích
-const filterCompatibleProducts = (allProducts, selectedItems) => {
-  const filtered = {};
-  
-  COMPONENT_GROUPS.forEach((group) => {
-    const products = allProducts[group.key] || [];
-    filtered[group.key] = products.filter((product) =>
-      isCompatible(product, group.key, selectedItems)
-    );
-  });
-  
-  return filtered;
-};
-
 export default function BuildPcPage() {
+  const [activeCategory, setActiveCategory] = useState('cpu');
   const [allProducts, setAllProducts] = useState({});
-  const [productsByGroup, setProductsByGroup] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
-  const [expandedGroups, setExpandedGroups] = useState(new Set());
 
-  // Fetch tất cả sản phẩm ban đầu
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
         const responses = await Promise.all(
           COMPONENT_GROUPS.map((g) =>
-            getProducts({ category: g.categorySlug, limit: 50 }),
+            getProducts({ category: g.categorySlug, limit: 20 }),
           ),
         );
 
         const mapped = {};
         COMPONENT_GROUPS.forEach((g, index) => {
-          const res = responses[index];
-          mapped[g.key] = res?.data || [];
+          mapped[g.key] = responses[index]?.data || [];
         });
 
         setAllProducts(mapped);
-        setProductsByGroup(mapped);
       } catch (err) {
         console.error('Fetch build PC products error:', err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchAll();
   }, []);
 
-  // Filter sản phẩm khi selectedItems thay đổi
-  useEffect(() => {
-    const filtered = filterCompatibleProducts(allProducts, selectedItems);
-    setProductsByGroup(filtered);
-  }, [selectedItems, allProducts]);
+  const handleSelect = (product) => {
+    setSelectedItems(prev => ({ ...prev, [activeCategory]: product }));
+  };
 
-  const handleSelect = (groupKey, product) => {
-    setSelectedItems((prev) => {
-      if (product === null) {
-        // Khi xóa một linh kiện, xóa các linh kiện phụ thuộc
-        const next = { ...prev };
-        delete next[groupKey];
-        
-        // Nếu xóa CPU, xóa Mainboard (vì mainboard phụ thuộc CPU socket)
-        if (groupKey === 'cpu') {
-          delete next.main;
-        }
-        
-        // Nếu xóa Mainboard, xóa RAM và Case (vì phụ thuộc mainboard)
-        if (groupKey === 'main') {
-          delete next.ram;
-          delete next.case;
-        }
-        
-        return next;
-      }
-      
-      // Khi chọn sản phẩm mới, kiểm tra và xóa các linh kiện không tương thích
-      const next = { ...prev, [groupKey]: product };
-      
-      // Nếu chọn CPU mới, kiểm tra mainboard hiện tại
-      if (groupKey === 'cpu' && next.main) {
-        const cpuSocket = product.specifications?.socket;
-        const mainSocket = next.main.specifications?.socket;
-        if (cpuSocket && mainSocket && cpuSocket !== mainSocket) {
-          delete next.main;
-          delete next.ram; // RAM cũng phụ thuộc mainboard
-          delete next.case; // Case cũng phụ thuộc mainboard
-        }
-      }
-      
-      // Nếu chọn Mainboard mới, kiểm tra CPU, RAM, Case hiện tại
-      if (groupKey === 'main') {
-        const mainSocket = product.specifications?.socket;
-        const mainRamType = product.specifications?.ram_type;
-        const mainFormFactor = product.specifications?.form_factor;
-        
-        // Kiểm tra CPU
-        if (next.cpu) {
-          const cpuSocket = next.cpu.specifications?.socket;
-          if (mainSocket && cpuSocket && mainSocket !== cpuSocket) {
-            delete next.cpu;
-          }
-        }
-        
-        // Kiểm tra RAM
-        if (next.ram) {
-          const ramType = next.ram.specifications?.ram_type;
-          if (mainRamType && ramType && mainRamType !== ramType) {
-            delete next.ram;
-          }
-        }
-        
-        // Kiểm tra Case
-        if (next.case) {
-          const caseFormFactor = next.case.specifications?.form_factor;
-          if (mainFormFactor && caseFormFactor && mainFormFactor !== caseFormFactor) {
-            delete next.case;
-          }
-        }
-      }
-      
-      // Nếu chọn RAM mới, kiểm tra mainboard
-      if (groupKey === 'ram' && next.main) {
-        const mainRamType = next.main.specifications?.ram_type;
-        const ramType = product.specifications?.ram_type;
-        if (mainRamType && ramType && mainRamType !== ramType) {
-          // Không nên xóa mainboard, chỉ cảnh báo (hoặc không cho chọn)
-          // Nhưng để đơn giản, ta sẽ xóa mainboard
-          delete next.main;
-          delete next.case;
-        }
-      }
-      
-      // Nếu chọn Case mới, kiểm tra mainboard
-      if (groupKey === 'case' && next.main) {
-        const mainFormFactor = next.main.specifications?.form_factor;
-        const caseFormFactor = product.specifications?.form_factor;
-        if (mainFormFactor && caseFormFactor && mainFormFactor !== caseFormFactor) {
-          delete next.main;
-          delete next.ram;
-        }
-      }
-      
+  const handleRemove = (key) => {
+    setSelectedItems(prev => {
+      const next = { ...prev };
+      delete next[key];
       return next;
     });
   };
 
-  const toggleGroup = (groupKey) => {
-    setExpandedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupKey)) {
-        next.delete(groupKey);
-      } else {
-        next.add(groupKey);
-      }
-      return next;
-    });
-  };
+  const activeGroup = COMPONENT_GROUPS.find(g => g.key === activeCategory);
+  const displayProducts = allProducts[activeCategory] || [];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <header className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-            Build PC
-          </h1>
-          <p className="text-xs sm:text-sm text-gray-600">
-            Chọn linh kiện phù hợp với ngân sách và nhu cầu của bạn
-          </p>
-        </header>
+    <div className="min-h-screen bg-[#f8fafc] py-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Left Sidebar: Categories */}
+          <aside className="lg:w-64 flex-shrink-0">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sticky top-6">
+              <h2 className="px-4 py-2 text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Chọn linh kiện</h2>
+              <nav className="space-y-1">
+                {COMPONENT_GROUPS.map((group) => (
+                  <button
+                    key={group.key}
+                    onClick={() => setActiveCategory(group.key)}
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+                      activeCategory === group.key
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-100'
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {group.icon}
+                      <span>{group.label}</span>
+                    </div>
+                    {selectedItems[group.key] && (
+                      <Check size={14} className={activeCategory === group.key ? 'text-white' : 'text-green-500'} />
+                    )}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </aside>
 
-        <div className="flex flex-col lg:flex-row lg:items-start gap-4">
-          <main className="flex-1 lg:max-w-2xl">
-            {loading && (
-              <div className="mb-4 text-sm text-gray-500 text-center py-4">
-                Đang tải danh sách linh kiện...
+          {/* Center: Product List */}
+          <main className="flex-1">
+            <div className="mb-6">
+              <h1 className="text-2xl font-black text-gray-900 mb-1">{activeGroup?.label} - Bộ vi xử lý</h1>
+              <p className="text-sm text-gray-500 font-medium">Chọn {activeGroup?.label} phù hợp cho cấu hình của bạn</p>
+            </div>
+
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 animate-pulse">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="h-80 bg-gray-200 rounded-2xl"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {displayProducts.length > 0 ? (
+                  displayProducts.map((product) => (
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      onSelect={handleSelect}
+                      isSelected={selectedItems[activeCategory]?._id === product._id}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                    <div className="text-gray-300 mb-4 flex justify-center">{activeGroup?.icon}</div>
+                    <p className="text-gray-500 font-bold">Không tìm thấy sản phẩm {activeGroup?.label}</p>
+                  </div>
+                )}
               </div>
             )}
-
-            {COMPONENT_GROUPS.map((group) => (
-              <ComponentSelector
-                key={group.key}
-                group={group}
-                products={productsByGroup[group.key] || []}
-                selected={selectedItems[group.key]}
-                onSelect={handleSelect}
-                isExpanded={expandedGroups.has(group.key)}
-                onToggle={() => toggleGroup(group.key)}
-              />
-            ))}
           </main>
 
-          <OrderSummary selectedItems={selectedItems} />
+          {/* Right Sidebar: Summary */}
+          <aside className="lg:w-80 flex-shrink-0">
+            <RightSummary 
+              selectedItems={selectedItems} 
+              onRemove={handleRemove}
+            />
+          </aside>
+
         </div>
       </div>
+      
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
+      `}</style>
     </div>
   );
 }

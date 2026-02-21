@@ -63,6 +63,7 @@ export const publicRoutes = [
      {
         path: '/blogDetails',
         element: <BlogDetails />,
+    },
     {
         path: '/send_otp',
         element: <ComponentOtp title={'Xác thực tài khoản'} email={'happynewyear@gmail.com'} />,

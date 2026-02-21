@@ -11,6 +11,12 @@ const CheckoutPage = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
 
+    // Lấy dữ liệu Build PC từ localStorage nếu có
+    const [buildPcData, setBuildPcData] = useState(() => {
+        const saved = localStorage.getItem('buildpc_checkout');
+        return saved ? JSON.parse(saved) : null;
+    });
+
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
