@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Check, AlertCircle, ChevronDown, ChevronUp, X, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, CreditCard, Save, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2 } from 'lucide-react';
 import { getProducts } from '@/services/product/product.api';
+import { toast } from 'react-toastify';
 
 const COMPONENT_GROUPS = [
   { key: 'cpu', label: 'CPU', categorySlug: 'cpu', icon: <Cpu className="w-4 h-4" /> },
@@ -63,6 +65,7 @@ function ProductCard({ product, onSelect, isSelected }) {
 }
 
 function RightSummary({ selectedItems, onRemove }) {
+  const navigate = useNavigate();
   const subtotal = useMemo(() => {
     return Object.values(selectedItems).reduce((sum, item) => sum + (item?.price || 0), 0);
   }, [selectedItems]);
@@ -81,6 +84,40 @@ function RightSummary({ selectedItems, onRemove }) {
       missing: issues
     };
   }, [selectedItems]);
+
+  const handleCheckout = () => {
+    const selectedCount = Object.keys(selectedItems).length;
+    if (selectedCount === 0) {
+      toast.warning('Vui lòng chọn ít nhất một linh kiện để thanh toán');
+      return;
+    }
+
+    if (!compatibility.isOK) {
+      toast.info(`Cấu hình chưa đầy đủ (Thiếu: ${compatibility.missing.join(', ')}). Bạn vẫn có thể tiếp tục thanh toán.`);
+    }
+
+    // Chuyển đổi selectedItems sang định dạng line items cho Checkout
+    const items = Object.entries(selectedItems).map(([key, product]) => ({
+      productId: product._id,
+      nameSnapshot: product.name,
+      priceSnapshot: product.price,
+      imageSnapshot: product.images?.[0] || '',
+      quantity: 1,
+      category: key
+    }));
+
+    const buildPcData = {
+      items,
+      totalPrice: subtotal,
+      isBuildPc: true
+    };
+
+    // Lưu vào localStorage để CheckoutPage có thể đọc được
+    localStorage.setItem('buildpc_checkout', JSON.stringify(buildPcData));
+    
+    // Điều hướng sang trang checkout
+    navigate('/checkout');
+  };
 
   return (
     <div className="space-y-4 sticky top-6">
@@ -153,7 +190,10 @@ function RightSummary({ selectedItems, onRemove }) {
         </div>
 
         <div className="mt-6 space-y-2">
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-200 text-sm">
+          <button 
+            onClick={handleCheckout}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-200 text-sm"
+          >
             Thanh toán ngay
           </button>
           <button className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all text-sm">

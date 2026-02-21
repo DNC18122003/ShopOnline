@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
-import axios from 'axios';
+
 import { createOrder, getAddress } from '@/services/customer/order.api';
 import { toast } from 'react-toastify';
 
@@ -12,7 +12,7 @@ const CheckoutPage = () => {
     const navigate = useNavigate();
 
     // Lấy dữ liệu Build PC từ localStorage nếu có
-    const [buildPcData, setBuildPcData] = useState(() => {
+    const [buildPcData] = useState(() => {
         const saved = localStorage.getItem('buildpc_checkout');
         return saved ? JSON.parse(saved) : null;
     });
@@ -29,13 +29,16 @@ const CheckoutPage = () => {
         paymentMethod: 'COD',
     });
 
-    const [discountApplied, setDiscountApplied] = useState(0);
+    const [discountApplied] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [fetchingLocation, setFetchingLocation] = useState(false);
 
     if (!user) return <Navigate to="/login" replace />;
-    if (!cart || cart.items.length === 0) return <Navigate to="/cart" replace />;
+
+    // Kiểm tra xem có dữ liệu build pc hay giỏ hàng không
+    const hasItems = buildPcData?.items?.length > 0 || (cart?.items?.length > 0);
+    if (!hasItems) return <Navigate to="/cart" replace />;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -99,7 +102,9 @@ const CheckoutPage = () => {
         );
     };
 
-    const subtotal = cart.totalPrice || 0;
+    // Ưu tiên sử dụng buildPcData nếu có
+    const displayItems = buildPcData ? buildPcData.items : (cart.items || []);
+    const subtotal = buildPcData ? buildPcData.totalPrice : (cart.totalPrice || 0);
     const shippingFee = 0;
     const discountAmount = (subtotal * discountApplied) / 100;
     const total = subtotal - discountAmount + shippingFee;
@@ -123,11 +128,21 @@ const CheckoutPage = () => {
             paymentMethod: formData.paymentMethod,
             discountCode: formData.discountCode || undefined,
             discountAmount,
+            // Nếu là build PC, gửi danh sách items từ localStorage
+            ...(buildPcData && { 
+                items: buildPcData.items,
+                isBuildPc: true 
+            })
         };
 
         try {
-            const result = await createOrder(payload);
-            clearCart();
+            await createOrder(payload);
+            
+            if (buildPcData) {
+                localStorage.removeItem('buildpc_checkout');
+            } else {
+                clearCart();
+            }
 
             toast.success('Đặt hàng thành công!', {
                 position: 'top-right',
@@ -138,8 +153,8 @@ const CheckoutPage = () => {
                 draggable: true,
             });
 
-            //quay về giỏ hàng
-            navigate('/cart');
+            // Nếu là build PC thành công, có thể về trang build PC hoặc trang đơn hàng
+            navigate(buildPcData ? '/build-pc' : '/cart');
         } catch (err) {
             const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
 
@@ -153,7 +168,9 @@ const CheckoutPage = () => {
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-            <h1 className="text-3xl font-bold mb-8 text-center md:text-left">Cổng thanh toán</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center md:text-left">
+                {buildPcData ? 'Thanh toán cấu hình PC' : 'Cổng thanh toán'}
+            </h1>
 
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
@@ -341,7 +358,7 @@ const CheckoutPage = () => {
 
                         {/* Danh sách sản phẩm */}
                         <div className="space-y-4 mb-6">
-                            {cart.items.map((item) => (
+                            {displayItems.map((item) => (
                                 <div key={item.productId} className="flex items-center gap-3">
                                     <img
                                         src={item.imageSnapshot || '/placeholder.jpg'}
@@ -349,8 +366,10 @@ const CheckoutPage = () => {
                                         className="w-16 h-16 object-cover rounded bg-white"
                                     />
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{item.nameSnapshot}</p>
-                                        <p className="text-sm text-gray-700">x{item.quantity}</p>
+                                        <p className="font-medium text-gray-900 line-clamp-2">{item.nameSnapshot}</p>
+                                        <p className="text-sm text-gray-700">
+                                            {item.category ? `${item.category.toUpperCase()} x` : 'x'}{item.quantity}
+                                        </p>
                                     </div>
                                     <p className="font-bold text-black">
                                         {(item.priceSnapshot * item.quantity).toLocaleString('vi-VN')}đ
