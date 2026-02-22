@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2 } from 'lucide-react';
-import { getProducts } from '@/services/product/product.api';
+import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2, Info } from 'lucide-react';
+import { getProducts, checkBuildPcCompatibility } from '@/services/product/product.api';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/context/authContext';
 
@@ -22,7 +22,7 @@ const formatVND = (amount) =>
     currency: 'VND',
   }).format(amount || 0);
 
-function ProductCard({ product, onSelect, isSelected }) {
+function ProductCard({ product, onSelect, onRemove, isSelected }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
       <div className="aspect-square mb-4 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center p-4">
@@ -51,21 +51,35 @@ function ProductCard({ product, onSelect, isSelected }) {
           </div>
         </div>
       </div>
-      <button
-        onClick={() => onSelect(product)}
-        className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
-          isSelected 
-            ? 'bg-green-500 text-white hover:bg-green-600' 
-            : 'bg-blue-600 text-white hover:bg-blue-700'
-        }`}
-      >
-        {isSelected ? 'Đã thêm' : 'Thêm vào cấu hình'}
-      </button>
+      {isSelected ? (
+        <div className="flex gap-2">
+          <button
+            disabled
+            className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-100 text-green-600 cursor-default flex items-center justify-center gap-1"
+          >
+            <Check size={14} /> Đã thêm
+          </button>
+          <button
+            onClick={() => onRemove(product)}
+            className="px-3 py-2 rounded-lg text-sm font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors flex items-center justify-center"
+            title="Bỏ chọn linh kiện này"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => onSelect(product)}
+          className="w-full py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+        >
+          Thêm vào cấu hình
+        </button>
+      )}
     </div>
   );
 }
 
-function RightSummary({ selectedItems, onRemove }) {
+function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibilityLoading }) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -107,18 +121,6 @@ function RightSummary({ selectedItems, onRemove }) {
   const tax = Math.round(subtotal * 0.1);
   const total = subtotal + tax;
 
-  const compatibility = useMemo(() => {
-    const issues = [];
-    if (!selectedItems.cpu) issues.push('CPU');
-    if (!selectedItems.mainboard) issues.push('Mainboard');
-    if (!selectedItems.ram) issues.push('RAM');
-    
-    return {
-      isOK: issues.length === 0,
-      missing: issues
-    };
-  }, [selectedItems]);
-
   const handleCheckout = () => {
     const selectedCount = Object.keys(selectedItems).length;
     if (selectedCount === 0) {
@@ -126,8 +128,8 @@ function RightSummary({ selectedItems, onRemove }) {
       return;
     }
 
-    if (!compatibility.isOK) {
-      toast.info(`Cấu hình chưa đầy đủ (Thiếu: ${compatibility.missing.join(', ')}). Bạn vẫn có thể tiếp tục thanh toán.`);
+    if (!compatibilityResult?.isCompatible) {
+      toast.info(`Cấu hình có vấn đề tương thích. Bạn vẫn có thể tiếp tục thanh toán.`);
     }
 
     // Chuyển đổi selectedItems sang định dạng line items cho Checkout
@@ -157,19 +159,81 @@ function RightSummary({ selectedItems, onRemove }) {
     <div className="space-y-4 sticky top-6">
       <div className="bg-white rounded-xl shadow-sm p-4">
         <h2 className="font-bold text-gray-900 mb-4 text-base">Kiểm tra tương thích</h2>
-        <div className={`flex items-center gap-3 p-3 rounded-xl ${compatibility.isOK ? 'bg-green-50' : 'bg-blue-50'}`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${compatibility.isOK ? 'bg-green-500' : 'bg-blue-500'}`}>
-            {compatibility.isOK ? <Check size={14} className="text-white" /> : <AlertCircle size={14} className="text-white" />}
+        
+        {compatibilityLoading ? (
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 animate-pulse">
+            <div className="w-6 h-6 rounded-full bg-gray-200" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 bg-gray-200 rounded w-1/2" />
+              <div className="h-2 bg-gray-200 rounded w-3/4" />
+            </div>
           </div>
-          <div>
-            <p className={`text-xs font-bold ${compatibility.isOK ? 'text-green-700' : 'text-blue-700'}`}>
-              {compatibility.isOK ? 'Tương thích hoàn toàn' : 'Đang xây dựng cấu hình'}
-            </p>
-            <p className="text-[10px] text-gray-500">
-              {compatibility.isOK ? 'Tất cả linh kiện hoạt động tốt' : `Còn thiếu: ${compatibility.missing.join(', ')}`}
-            </p>
+        ) : (
+          <div className={`space-y-3`}>
+            {/* Status Header */}
+            <div className={`flex items-center gap-3 p-3 rounded-xl ${
+              Object.keys(selectedItems || {}).length === 0 
+                ? 'bg-gray-50' 
+                : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-50' : 'bg-red-50')
+            }`}>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                Object.keys(selectedItems || {}).length === 0 
+                  ? 'bg-gray-300' 
+                  : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-500' : 'bg-red-500')
+              }`}>
+                {Object.keys(selectedItems || {}).length === 0 ? (
+                  <Info size={14} className="text-white" />
+                ) : (!compatibilityResult || compatibilityResult.isCompatible ? (
+                  <Check size={14} className="text-white" />
+                ) : (
+                  <AlertCircle size={14} className="text-white" />
+                ))}
+              </div>
+              <div>
+                <p className={`text-xs font-bold ${
+                  Object.keys(selectedItems || {}).length === 0 
+                    ? 'text-gray-600' 
+                    : (!compatibilityResult || compatibilityResult.isCompatible ? 'text-green-700' : 'text-red-700')
+                }`}>
+                  {Object.keys(selectedItems || {}).length === 0
+                    ? 'Chưa chọn linh kiện'
+                    : (!compatibilityResult || compatibilityResult.isCompatible ? 'Tương thích tốt' : 'Phát hiện vấn đề')}
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  {Object.keys(selectedItems || {}).length === 0
+                    ? 'Vui lòng chọn linh kiện để kiểm tra'
+                    : (!compatibilityResult || (compatibilityResult.issues?.length === 0 && compatibilityResult.warnings?.length === 0)
+                      ? 'Cấu hình hiện tại ổn định' 
+                      : `${compatibilityResult.issues?.length || 0} lỗi, ${compatibilityResult.warnings?.length || 0} cảnh báo`)}
+                </p>
+              </div>
+            </div>
+
+            {/* Issues List */}
+            {compatibilityResult?.issues?.length > 0 && (
+              <div className="space-y-2">
+                {compatibilityResult.issues.map((issue, idx) => (
+                  <div key={idx} className="flex gap-2 p-2 rounded-lg bg-red-50/50 border border-red-100">
+                    <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-red-600 leading-tight">{issue.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Warnings List */}
+            {compatibilityResult?.warnings?.length > 0 && (
+              <div className="space-y-2">
+                {compatibilityResult.warnings.map((warn, idx) => (
+                  <div key={idx} className="flex gap-2 p-2 rounded-lg bg-yellow-50/50 border border-yellow-100">
+                    <Info size={12} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-yellow-700 leading-tight">{warn.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-4">
@@ -248,52 +312,139 @@ export default function BuildPcPage() {
   const [allProducts, setAllProducts] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
+  const [compatibilityResult, setCompatibilityResult] = useState(null);
+  const [compatibilityLoading, setCompatibilityLoading] = useState(false);
 
-  // Tải cấu hình đã lưu của người dùng khi trang web load hoặc user thay đổi
+  // Hàm lấy socket/ram_type từ specifications hoặc detail_json (tương tự backend logic)
+  const getSpec = useCallback((product, key) => {
+    if (!product?.specifications) return null;
+    if (product.specifications[key]) return product.specifications[key];
+    const detail = product.specifications.detail_json || {};
+    const aliases = {
+      socket: ["Socket", "socket", "Loại Socket"],
+      ram_type: ["Hỗ trợ RAM", "Loại RAM", "ram_type", "RAM"],
+      form_factor: ["Kích thước mainboard", "Chuẩn mainboard", "form_factor"]
+    };
+    const keys = aliases[key] || [key];
+    for (const k of keys) {
+      if (detail[k]) return detail[k];
+    }
+    return null;
+  }, []);
+
+  // Kiểm tra tương thích mỗi khi selectedItems thay đổi
+  useEffect(() => {
+    const checkCompat = async () => {
+      const keys = Object.keys(selectedItems);
+      if (keys.length === 0) {
+        setCompatibilityResult(null);
+        return;
+      }
+
+      try {
+        setCompatibilityLoading(true);
+        const components = {};
+        keys.forEach(k => {
+          components[k] = selectedItems[k]._id;
+        });
+        const res = await checkBuildPcCompatibility(components);
+        if (res.success) {
+          setCompatibilityResult(res.data);
+        }
+      } catch (err) {
+        console.error('Check compatibility error:', err);
+      } finally {
+        setCompatibilityLoading(false);
+      }
+    };
+
+    const timer = setTimeout(checkCompat, 500);
+    return () => clearTimeout(timer);
+  }, [selectedItems]);
+
+  // Fetch sản phẩm cho category hiện tại kèm theo filter tương thích
+  const fetchProductsForCategory = useCallback(async (categoryKey, constraints = {}) => {
+    try {
+      const group = COMPONENT_GROUPS.find(g => g.key === categoryKey);
+      if (!group) return;
+
+      const params = { 
+        category: group.categorySlug, 
+        limit: 50,
+        ...constraints 
+      };
+      
+      const res = await getProducts(params);
+      setAllProducts(prev => ({ ...prev, [categoryKey]: res?.data || [] }));
+    } catch (err) {
+      console.error(`Fetch ${categoryKey} error:`, err);
+    }
+  }, []);
+
+  // Hiệu ứng fetch ban đầu và refetch khi có ràng buộc mới
+  useEffect(() => {
+    const fetchWithConstraints = async () => {
+      setLoading(true);
+      
+      // Xác định ràng buộc dựa trên linh kiện đã chọn
+      const constraints = {};
+      
+      if (activeCategory === 'mainboard') {
+        const cpuSocket = getSpec(selectedItems.cpu, 'socket');
+        if (cpuSocket) constraints.socket = cpuSocket;
+      } else if (activeCategory === 'ram') {
+        const mainRamType = getSpec(selectedItems.mainboard, 'ram_type');
+        if (mainRamType) constraints.ram_type = mainRamType;
+        else {
+          const cpuRamType = getSpec(selectedItems.cpu, 'ram_type');
+          if (cpuRamType) constraints.ram_type = cpuRamType;
+        }
+      } else if (activeCategory === 'case') {
+        const mainForm = getSpec(selectedItems.mainboard, 'form_factor');
+        if (mainForm) constraints.form_factor = mainForm;
+      } else if (activeCategory === 'cpu' && selectedItems.mainboard) {
+        const mainSocket = getSpec(selectedItems.mainboard, 'socket');
+        if (mainSocket) constraints.socket = mainSocket;
+      }
+
+      await fetchProductsForCategory(activeCategory, constraints);
+      setLoading(false);
+    };
+
+    fetchWithConstraints();
+  }, [activeCategory, selectedItems.cpu, selectedItems.mainboard, fetchProductsForCategory, getSpec]);
+
+  // Tự động lưu cấu hình mỗi khi selectedItems thay đổi
   useEffect(() => {
     if (authLoading) return;
+    const userId = user?._id || user?.id;
+    const storageKey = userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
+    
+    if (Object.keys(selectedItems).length > 0) {
+      const payload = {
+        selectedItems,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem(storageKey, JSON.stringify(payload));
+    } else {
+      // Nếu không còn linh kiện nào, có thể xóa key hoặc để trống
+      localStorage.removeItem(storageKey);
+    }
+  }, [selectedItems, user, authLoading]);
 
+  // Tải cấu hình đã lưu
+  useEffect(() => {
+    if (authLoading) return;
     const userId = user?._id || user?.id;
     const storageKey = userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
     const savedConfig = localStorage.getItem(storageKey);
-
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
-        if (parsed.selectedItems) {
-          setSelectedItems(parsed.selectedItems);
-          // Không hiển thị toast ở đây để tránh làm phiền người dùng mỗi khi load trang
-        }
-      } catch (e) {
-        console.error('Load saved build pc config error:', e);
-      }
+        if (parsed.selectedItems) setSelectedItems(parsed.selectedItems);
+      } catch (e) { console.error('Load saved config error:', e); }
     }
   }, [user, authLoading]);
-
-  useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        setLoading(true);
-        const responses = await Promise.all(
-          COMPONENT_GROUPS.map((g) =>
-            getProducts({ category: g.categorySlug, limit: 20 }),
-          ),
-        );
-
-        const mapped = {};
-        COMPONENT_GROUPS.forEach((g, index) => {
-          mapped[g.key] = responses[index]?.data || [];
-        });
-
-        setAllProducts(mapped);
-      } catch (err) {
-        console.error('Fetch build PC products error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, []);
 
   const handleSelect = (product) => {
     setSelectedItems(prev => ({ ...prev, [activeCategory]: product }));
@@ -346,7 +497,7 @@ export default function BuildPcPage() {
           {/* Center: Product List */}
           <main className="flex-1">
             <div className="mb-6">
-              <h1 className="text-2xl font-black text-gray-900 mb-1">{activeGroup?.label} - Bộ vi xử lý</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-1">{activeGroup?.label} - Bộ vi xử lý</h1>
               <p className="text-sm text-gray-500 font-medium">Chọn {activeGroup?.label} phù hợp cho cấu hình của bạn</p>
             </div>
 
@@ -364,6 +515,7 @@ export default function BuildPcPage() {
                       key={product._id}
                       product={product}
                       onSelect={handleSelect}
+                      onRemove={() => handleRemove(activeCategory)}
                       isSelected={selectedItems[activeCategory]?._id === product._id}
                     />
                   ))

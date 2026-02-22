@@ -24,6 +24,17 @@ const getProducts = async (req, res) => {
       isActive: true,
     };
 
+    // Filter theo Specs (Socket, RAM Type, Form Factor)
+    if (req.query.socket) {
+      filter["specifications.socket"] = req.query.socket;
+    }
+    if (req.query.ram_type) {
+      filter["specifications.ram_type"] = req.query.ram_type;
+    }
+    if (req.query.form_factor) {
+      filter["specifications.form_factor"] = req.query.form_factor;
+    }
+
     // ===== 2. Filter theo CATEGORY SLUG =====
     if (category) {
       const slugs = category.split(","); // ["vga", "cpu"]
