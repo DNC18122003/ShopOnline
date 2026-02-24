@@ -188,7 +188,7 @@ const login = () => {
                     <img src={poster} alt="Poster website" className="h-screen " />
                 </div>
             </div>
-            <ToastContainer />
+            {/* <ToastContainer /> */}
         </div>
     );
 };

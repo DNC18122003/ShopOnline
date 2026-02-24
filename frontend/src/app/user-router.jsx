@@ -8,7 +8,7 @@ export const userRoutes = [
     {
         path: '/',
         element: (
-            <ProtectedRoute requiredRole="User">
+            <ProtectedRoute requiredRole="Customer">
                 <UserLayout />
             </ProtectedRoute>
         ),
