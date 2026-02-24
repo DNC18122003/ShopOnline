@@ -145,12 +145,7 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
     }
 
     const now = new Date();
-    // Lưu ý: endDate < now có thể check cả giờ phút, nên cẩn thận nếu user chọn ngày hôm nay
-    // Ở đây ta so sánh thô, nếu muốn chính xác hơn có thể setHours về 0
     if (endDate < now) {
-         // Check thêm trường hợp endDate là hôm nay nhưng giờ hiện tại đã qua?
-         // Tuy nhiên logic BE: if (end < now) => reject.
-         // Để UX tốt hơn, ta cảnh báo.
          setIsLoading(false); return setErrorMessage("Thời gian kết thúc không được ở trong quá khứ.");
     }
 
@@ -248,7 +243,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                       id="minPurchase"
                       type="number"
                       placeholder="0"
-                      min="0"
                       value={formData.minPurchaseValue}
                       onChange={(e) => handleInputChange('minPurchaseValue', e.target.value)}
                       className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
@@ -264,7 +258,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                     id="usageLimit"
                     type="number"
                     placeholder="100"
-                    min="0"
                     value={formData.usageLimit}
                     onChange={(e) => handleInputChange('usageLimit', e.target.value)}
                     className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
@@ -382,7 +375,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                       type="number"
                       placeholder={formData.discountType === 'percentage' ? 'VD: 10' : 'VD: 50000'}
                       value={formData.discountValue}
-                      min="1"
                       onChange={(e) => handleInputChange('discountValue', e.target.value)}
                       className={cn(
                           "border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]",
@@ -403,7 +395,6 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                                 id="maxDiscount"
                                 type="number"
                                 placeholder="VD: 50000"
-                                min="0"
                                 value={formData.maxDiscountValue}
                                 onChange={(e) => handleInputChange('maxDiscountValue', e.target.value)}
                                 className={cn(
