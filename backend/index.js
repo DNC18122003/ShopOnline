@@ -8,11 +8,25 @@ const app = express();
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const { passportConfig } = require("./configs/passport");
+const session = require("express-session");
 app.use(
   cors({
     credentials: true,
     origin: [process.env.FRONTEND_URL, "http://localhost:5173"],
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  })
+);
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 5 * 60 * 1000,
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    },
   })
 );
 app.use(cookieParser());
