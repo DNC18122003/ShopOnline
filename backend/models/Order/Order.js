@@ -108,6 +108,9 @@ const orderSchema = new Schema(
       default: "pending",
       index: true,
     },
+    momoTransId: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

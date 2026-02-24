@@ -67,3 +67,17 @@ export const updateOrderStatus = async (orderId, newStatus) => {
     throw error;
   }
 };
+
+// 6. Xác nhận thanh toán MoMo (local project)
+export const confirmMomoPayment = async (orderId) => {
+  try {
+    const response = await customizeAPI.post('/order/momo/confirm', {
+      orderId,
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi confirm MoMo:', error);
+    throw error;
+  }
+};

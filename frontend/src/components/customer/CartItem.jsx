@@ -1,13 +1,14 @@
-// src/pages/cart/components/CartItem.jsx
+// src/components/customer/CartItem.jsx
 import { useState, useTransition } from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { CheckCircle2, Truck, PackageCheck, Minus, Plus } from 'lucide-react';
-
+import { Checkbox } from '@/components/ui/checkbox'; // ← import cái bạn đã tạo
 import { Button } from '@/components/ui/button';
+
 const cn = (...inputs) => twMerge(clsx(inputs));
 
-const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
+const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onToggleSelect, isPending = false }) => {
     const [localQty, setLocalQty] = useState(item.quantity);
     const [isPendingLocal, startTransition] = useTransition();
 
@@ -15,7 +16,6 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
 
     const handleQuantityChange = (newQty) => {
         if (newQty < 1 || newQty > 99) return;
-
         setLocalQty(newQty);
         startTransition(() => {
             onUpdateQuantity(item.productId, newQty);
@@ -29,14 +29,22 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
                 isPendingLocal && 'opacity-60 pointer-events-none',
             )}
         >
-            <button               
+            {/* Checkbox chọn để thanh toán */}
+            <div className="absolute top-6 left-0 sm:static sm:mt-2">
+                <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect(item.productId)}
+                    disabled={isPending || isPendingLocal || isOutOfStock}
+                />
+            </div>
+
+            <button
                 type="button"
                 onClick={() => onRemove(item.productId)}
                 disabled={isPending || isPendingLocal}
                 className={cn(
                     'absolute top-4 right-4 z-10',
-                    'text-gray-500 hover:text-gray-700',
-                    'text-2xl font-bold leading-none',
+                    'text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none',
                     'transition-colors duration-150',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                 )}
@@ -45,21 +53,18 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
                 ×
             </button>
 
-            <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border">
+            <div className="w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0 bg-gray-50 rounded-md overflow-hidden border ml-10 sm:ml-0">
                 <img
                     src={item.imageSnapshot || '/placeholder-product.png'}
                     alt={item.nameSnapshot}
                     className="w-full h-full object-contain"
-                    onError={(e) => {
-                        e.target.src = '/placeholder-product.png';
-                    }}
+                    onError={(e) => (e.target.src = '/placeholder-product.png')}
                 />
             </div>
 
             <div className="flex-1 min-w-0 space-y-2">
                 <div>
                     <h3 className="font-medium text-base sm:text-lg line-clamp-2 pr-10">{item.nameSnapshot}</h3>
-
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {item.descriptionSnapshot || item.nameSnapshot || 'Không có mô tả chi tiết'}
                     </p>
@@ -86,7 +91,6 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
                     </div>
                 </div>
 
-                {/* Giá + số lượng */}
                 <div className="flex items-center justify-between sm:justify-start gap-6 mt-3">
                     <div className="font-semibold text-lg">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
@@ -94,7 +98,6 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isPending = false }) => {
                         )}
                     </div>
 
-                    {/* Controls số lượng */}
                     <div className="flex items-center border rounded-md overflow-hidden">
                         <Button
                             variant="ghost"

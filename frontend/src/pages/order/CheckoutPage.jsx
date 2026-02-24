@@ -7,7 +7,7 @@ import { createOrder, getAddress } from '@/services/customer/order.api';
 import { toast } from 'react-toastify';
 import discountService from '@/services/discount/discount.api'; // đường dẫn đúng của bạn
 import DiscountInput from '@/components/Discount/DiscountInput';
-
+import { useLocation } from 'react-router-dom';
 const CheckoutPage = () => {
     const { cart, clearCart } = useCart();
     const { user } = useAuth();
@@ -24,7 +24,9 @@ const CheckoutPage = () => {
         discountCode: '',
         paymentMethod: 'COD',
     });
-
+    const location = useLocation();
+    const selectedItems = location.state?.selectedItems || cart?.items || [];
+    const fromCart = location.state?.fromCart || false;
     const [discountInfo, setDiscountInfo] = useState(null);
     const [discountError, setDiscountError] = useState(null);
     const [availableDiscounts, setAvailableDiscounts] = useState([]);
@@ -35,9 +37,11 @@ const CheckoutPage = () => {
     const [isDiscountListOpen, setIsDiscountListOpen] = useState(false);
 
     if (!user) return <Navigate to="/login" replace />;
-    if (!cart || cart.items.length === 0) return <Navigate to="/cart" replace />;
+    if (!cart?.items?.length) {
+       return <Navigate to="/cart" replace />;
+    }
 
-    const subtotal = cart.totalPrice || 0;
+    const subtotal = selectedItems.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
     const shippingFee = 0;
 
     // Tính discountAmount dựa trên discountInfo (nếu đã apply)
@@ -78,8 +82,6 @@ const CheckoutPage = () => {
                setAvailableDiscounts(discounts);
                console.log('Đã set availableDiscounts với length:', discounts.length);
 
-               // ── AUTO-APPLY LOGIC (nếu bạn đã thêm) ──
-               // ... phần auto-apply giữ nguyên, chỉ cần discounts thay vì res.data.data
            } catch (err) {
                console.warn('Lỗi fetch discounts:', err);
            } finally {
@@ -165,7 +167,6 @@ const CheckoutPage = () => {
        setDiscountError(null);
        setDiscountInfo(null);
 
-       // Lấy base URL an toàn (fallback nếu .env chưa có)
        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:9999'; 
 
        try {
@@ -220,47 +221,66 @@ const CheckoutPage = () => {
        }
    };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
+ const handleSubmit = async (e) => {
+     e.preventDefault();
 
-        const shippingAddress = {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            street: formData.street,
-            ward: formData.ward,
-            province: formData.province,
-            note: formData.note,
-        };
+     if (loading) return; 
 
-        const payload = {
-            shippingAddress,
-            paymentMethod: formData.paymentMethod,
-            discountCode: formData.discountCode?.trim() || undefined,
-            discountAmount,
-        };
+     setLoading(true);
+     setError(null);
 
-        try {
-            await createOrder(payload);
-            clearCart();
+     const shippingAddress = {
+         fullName: formData.fullName,
+         phone: formData.phone,
+         street: formData.street,
+         ward: formData.ward,
+         province: formData.province,
+         note: formData.note,
+     };
 
-            toast.success('Đặt hàng thành công!', {
-                position: 'top-right',
-                autoClose: 5000,
-            });
+     const payload = {
+         shippingAddress,
+         paymentMethod: formData.paymentMethod,
+         discountCode: formData.discountCode?.trim() || undefined,
+         selectedProductIds: selectedItems.map((i) => i.productId),
+     };
 
-            navigate('/order-success'); // Nên redirect về trang xác nhận đơn hàng
-            // hoặc navigate('/cart') nếu bạn muốn giữ nguyên
-        } catch (err) {
-            const msg = err.response?.data?.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
-            setError(msg);
-            toast.error(msg);
-            console.error('Lỗi đặt hàng:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+     try {
+         const res = await createOrder(payload);
+         if (formData.paymentMethod === 'MOMOPAY') {
+             const payUrl = res?.paymentUrl;
+
+             if (!payUrl) {
+                 throw new Error('Backend không trả về paymentUrl');
+             }
+
+             // KHÔNG xóa cart ở đây
+             window.location.href = payUrl;
+             return;
+         }
+
+         // COD PAYMENT
+         if (typeof window !== 'undefined') {
+             window.location.reload();
+         }
+
+         toast.success('Đặt hàng thành công!', {
+             position: 'top-right',
+             autoClose: 4000,
+         });
+
+         navigate('/order-success');
+     } catch (err) {
+         const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
+
+         setError(msg);
+         toast.error(msg);
+         console.error('Lỗi đặt hàng:', err);
+     } finally {
+         setLoading(false);
+     }
+ };
+  
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             <h1 className="text-3xl font-bold mb-8 text-center md:text-left">Cổng thanh toán</h1>
@@ -445,7 +465,7 @@ const CheckoutPage = () => {
 
                         {/* Danh sách sản phẩm */}
                         <div className="space-y-4 mb-6">
-                            {cart.items.map((item) => (
+                            {selectedItems.map((item) => (
                                 <div key={item.productId} className="flex items-center gap-3">
                                     <img
                                         src={item.imageSnapshot || '/placeholder.jpg'}

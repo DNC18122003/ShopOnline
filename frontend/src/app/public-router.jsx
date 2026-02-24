@@ -9,6 +9,10 @@ import BlogPage from '@/pages/Blog/page';
 import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
+import PaymentResultPage from '@/pages/order/PaymentResultPage';
+import OrderFailedPage from '@/pages/order/OrderFailedPage';
+import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
+
 
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
@@ -31,7 +35,6 @@ export const publicRoutes = [
             {
                 path: '/product/:id',
                 element: <ProductDetailPage />,
-            
             },
             {
                 path: '/cart',
@@ -40,6 +43,18 @@ export const publicRoutes = [
             {
                 path: '/checkout',
                 element: <CheckoutPage />,
+            },
+            {
+                path: '/payment-result',
+                element: <PaymentResultPage />,
+            },
+            {
+                path: '/order-success',
+                element: <OrderSuccessPage/>,
+            },
+            {
+                path: '/order-failed',
+                element: <OrderFailedPage/> ,
             },
         ],
     },

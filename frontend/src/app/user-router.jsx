@@ -25,6 +25,7 @@ export const userRoutes = [
                         path: 'orders',
                         element: <CartPage />,
                     },
+                    
                 ],
             },
         ],

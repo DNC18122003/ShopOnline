@@ -23,7 +23,7 @@ export const CartProvider = ({ children }) => {
     };
 
     useEffect(() => {
-        if (authLoading) return; // ⛔ chờ auth xong
+        if (authLoading) return; //  chờ auth xong
         if (!user) {
             setCart(null);
             return;
