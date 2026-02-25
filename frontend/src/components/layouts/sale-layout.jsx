@@ -19,7 +19,7 @@ const navLinkItems = [
     },
     {
         href: '/link_2',
-        title: 'Ten tab số 2',
+        title: 'Ten tab số 222',
         icon: <Package />,
     },
     {

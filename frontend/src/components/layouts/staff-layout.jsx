@@ -1,10 +1,10 @@
 import React, { useContext, useMemo } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu } from 'lucide-react';
+import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, Tag } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -17,19 +17,25 @@ const navLinkItems = [
         icon: <Home />,
     },
     {
-        href: '/link_2',
-        title: 'Ten tab số 222',
+        href: '/staff/categories',
+        title: 'Danh mục',
         icon: <Package />,
     },
     {
-        href: '/link_3',
-        title: 'Ten tab số 3',
+        href: '/staff/brands',
+        title: 'Thương hiệu',
+        icon: <Tag />,
+    },
+    {
+        href: '/staff/products',
+        title: 'Sản phẩm',
         icon: <FolderOpen />,
     },
 ];
 const StaffLayout = () => {
     //hook
     const { setUser } = useContext(AuthContext);
+    const location = useLocation();
     // state
     const data_ui = JSON.parse(localStorage.getItem('data_ui'));
     //console.log('data_ui', data_ui);
