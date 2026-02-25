@@ -18,6 +18,9 @@ router.post("/", brandController.createBrand);
 // PUT /api/brands/:id - Cập nhật thương hiệu
 router.put("/:id", brandController.updateBrand);
 
+// PATCH /api/brands/:id/toggle-status - Toggle trạng thái thương hiệu
+router.patch("/:id/toggle-status", brandController.toggleBrandStatus);
+
 // DELETE /api/brands/:id - Xóa thương hiệu
 router.delete("/:id", brandController.deleteBrand);
 
