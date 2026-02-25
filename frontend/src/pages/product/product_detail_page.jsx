@@ -7,9 +7,6 @@ import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 import AddToCartButton from '@/components/customer/AddToCartButton';
 
-// ============================================
-// CONSTANTS - Các hằng số cố định
-// ============================================
 
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
@@ -251,10 +248,10 @@ export default function ProductDetailPage() {
                                     backgroundSize: 'contain',
                                     backgroundRepeat: 'no-repeat',
                                     backgroundPosition: 'center',
-                                }}
+                                }} 
                             />
                         ) : (
-                            <span className="text-gray-500 text-lg text-center px-4">
+                            <span className="max-h-full max-w-full object-contain">
                                 {productImages?.alt || 'Không có hình ảnh'}
                             </span>
                         )}

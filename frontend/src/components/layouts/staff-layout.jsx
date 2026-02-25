@@ -17,13 +17,13 @@ const navLinkItems = [
         icon: <Home />,
     },
     {
-        href: '/link_2',
-        title: 'Ten tab số 222',
+        href: '/staff/categories',
+        title: 'Danh mục',
         icon: <Package />,
     },
     {
-        href: '/link_3',
-        title: 'Ten tab số 3',
+        href: '/staff/products',
+        title: 'Sản phẩm',
         icon: <FolderOpen />,
     },
 ];
