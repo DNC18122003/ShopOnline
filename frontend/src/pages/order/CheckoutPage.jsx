@@ -9,9 +9,15 @@ import discountService from '@/services/discount/discount.api'; // đường d�
 import DiscountInput from '@/components/Discount/DiscountInput';
 import { useLocation } from 'react-router-dom';
 const CheckoutPage = () => {
-    const { cart, clearCart } = useCart();
+    const { cart, removeMultipleItems } = useCart();
     const { user } = useAuth();
     const navigate = useNavigate();
+
+    // Lấy dữ liệu Build PC từ localStorage nếu có
+    const [buildPcData] = useState(() => {
+        const saved = localStorage.getItem('buildpc_checkout');
+        return saved ? JSON.parse(saved) : null;
+    });
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -171,7 +177,7 @@ const CheckoutPage = () => {
 
        try {
            const response = await axios.post(
-               `${apiBase}/api/discount/check`,
+               `${apiBase}/api/discounts/check`,
                { code, orderValue: subtotal },
                {
                    headers: {
@@ -260,14 +266,15 @@ const CheckoutPage = () => {
          }
 
          // COD PAYMENT
-         if (typeof window !== 'undefined') {
-             window.location.reload();
-         }
-
+    
          toast.success('Đặt hàng thành công!', {
              position: 'top-right',
              autoClose: 4000,
          });
+         if (fromCart) {
+             const idsToRemove = selectedItems.map((i) => i.productId);
+             await removeMultipleItems(idsToRemove);
+         }
 
          navigate('/order-success');
      } catch (err) {
@@ -283,7 +290,9 @@ const CheckoutPage = () => {
   
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-            <h1 className="text-3xl font-bold mb-8 text-center md:text-left">Cổng thanh toán</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center md:text-left">
+                {buildPcData ? 'Thanh toán cấu hình PC' : 'Cổng thanh toán'}
+            </h1>
 
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
@@ -473,8 +482,10 @@ const CheckoutPage = () => {
                                         className="w-16 h-16 object-cover rounded bg-white"
                                     />
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{item.nameSnapshot}</p>
-                                        <p className="text-sm text-gray-700">x{item.quantity}</p>
+                                        <p className="font-medium text-gray-900 line-clamp-2">{item.nameSnapshot}</p>
+                                        <p className="text-sm text-gray-700">
+                                            {item.category ? `${item.category.toUpperCase()} x` : 'x'}{item.quantity}
+                                        </p>
                                     </div>
                                     <p className="font-bold text-black">
                                         {(item.priceSnapshot * item.quantity).toLocaleString('vi-VN')}đ

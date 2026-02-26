@@ -27,7 +27,8 @@ const discountSchema = new Schema({
     default: 0 
   },
   maxDiscountValue: { 
-    type: Number 
+    type: Number, 
+    default: 0 
   },	
   usageLimit: { 
     type: Number, 

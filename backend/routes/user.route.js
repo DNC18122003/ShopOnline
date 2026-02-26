@@ -1,9 +1,10 @@
 const express = require('express');
-const { loginController } = require('../controller/auth.controller');
+const { getProfileController } = require('../controller/user/profile.controller');
+const { isAuth } = require('../middleware/authorization');
 const router = express.Router();
 
 
 // api profile 
 // middleware => router.post('/profile', isAuth, checkRoleAndStatus(['User']),  loginController);
-router.post('/profile', loginController);
+router.get('/profile', isAuth, getProfileController);
 module.exports = router;

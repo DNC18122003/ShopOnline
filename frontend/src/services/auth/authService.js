@@ -28,6 +28,8 @@ export const logout_service = async () => {
         throw error;
     }
 };
-export const getMe = async () => {
-    return customizeAPI.get('/auth/me');
+export const getMe = () => {
+    return axios.get(`${API_BASE_URL}/auth/me`, {
+        withCredentials: true,
+    });
 };

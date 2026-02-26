@@ -8,7 +8,7 @@ const cookieExtractor = (req) => {
   let token = null;
 
   // check req có cookie không
-  console.log("Request cookies:", req.cookies);
+  // console.log("Request cookies:", req.cookies);
   if (req && req.cookies) {
     token = req.cookies["accessToken"];
     console.log("token", token);
@@ -30,7 +30,7 @@ const passportConfig = (passport) => {
     new JwtStrategy(opts, async (jwt_payload, done) => {
       try {
         // jwt_payload chứa dữ liệu bạn đã mã hóa (thường là { id: ..., email: ... })
-        console.log("jwt_payload", jwt_payload);
+        //console.log("jwt_payload", jwt_payload);
         const user = await User.findById(jwt_payload._id);
 
         if (user) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { Pencil, Trash2, Copy } from "lucide-react"
+import { Pencil, Trash2, Copy, Eye } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import {
   Table,
@@ -18,6 +18,7 @@ export function VoucherTable({
   onEdit,
   onDelete,
   onCopyCode,
+  onView, // 1. Nhận thêm prop onView
 }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -55,6 +56,7 @@ export function VoucherTable({
                   <button
                     onClick={() => onCopyCode(voucher.code)}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Sao chép mã"
                   >
                     <Copy className="w-4 h-4" />
                   </button>
@@ -70,10 +72,11 @@ export function VoucherTable({
                   Giới hạn: {voucher.usageLimit} người dùng
                 </span>
                 <span className="text-gray-400 text-sm ml-1">
-                  ({voucher.usedCount} người dùng)
+                  ({voucher.usedCount} đã dùng)
                 </span>
               </TableCell>
               <TableCell className="text-center text-gray-600">
+                {/* Bạn có thể format lại ngày tháng ở đây nếu cần đẹp hơn */}
                 {voucher.startDate} - {voucher.endDate}
               </TableCell>
               <TableCell className="text-center">
@@ -90,8 +93,18 @@ export function VoucherTable({
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => onView(voucher)}
+                    className="h-8 w-8 text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                    title="Xem chi tiết"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => onEdit(voucher)}
-                    className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    className="h-8 w-8 text-gray-400 hover:text-orange-600 hover:bg-orange-50"
+                    title="Chỉnh sửa"
                   >
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -100,6 +113,7 @@ export function VoucherTable({
                     size="icon"
                     onClick={() => onDelete(voucher.id)}
                     className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                    title="Xóa"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>

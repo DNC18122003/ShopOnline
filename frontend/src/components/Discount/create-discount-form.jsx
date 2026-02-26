@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CalendarIcon } from 'lucide-react'
+import { CalendarIcon, Loader2 } from 'lucide-react'
 import { format } from "date-fns"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,69 +14,219 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
+// Component hiển thị lỗi
+const ErrorAlert = ({ message }) => {
+    if (!message) return null;
+    return (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4 text-sm flex items-center animate-in fade-in slide-in-from-top-2">
+            <span className="font-bold mr-2">Lỗi:</span>
+            <span>{message}</span>
+        </div>
+    );
+};
+
 export function CreateDiscountForm({ onSubmit, onCancel }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
   const [formData, setFormData] = useState({
     code: '',
     description: '',
     discountType: 'percentage',
-    discountValue: 0,
-    maxDiscountValue: 0,
-    minPurchaseValue: 0,
-    usageLimit: 100,
+    discountValue: '',          
+    maxDiscountValue: '',       
+    minPurchaseValue: '',       
+    usageLimit: 100,            
     startDate: undefined,
     endDate: undefined,
     isActive: true,
   })
 
+  // Hàm xử lý nhập liệu
   const handleInputChange = (field, value) => {
+    let finalValue = value;
+
+    // Tự động viết hoa và xóa khoảng trắng cho Mã code
+    if (field === 'code') {
+        finalValue = value.toUpperCase().replace(/\s/g, '');
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: finalValue,
     }))
+
+    if (errorMessage) setErrorMessage('');
   }
 
-  const handleSubmit = (e) => {
+  // Hàm Submit (Đã thêm Full Validate)
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    onSubmit?.(formData)
+    setIsLoading(true);
+    setErrorMessage('');
+
+    const { 
+        code, description, discountType, discountValue, 
+        maxDiscountValue, minPurchaseValue, usageLimit, 
+        startDate, endDate 
+    } = formData;
+
+    // --- 1. VALIDATE DỮ LIỆU CHI TIẾT (Mapping từ BE Controller) ---
+
+    // 1.1. Validate Code
+    if (!code) {
+        setIsLoading(false); return setErrorMessage("Vui lòng nhập mã giảm giá.");
+    }
+    if (code.length < 3) {
+        setIsLoading(false); return setErrorMessage("Mã giảm giá phải có ít nhất 3 ký tự.");
+    }
+    if (code.length > 30) {
+        setIsLoading(false); return setErrorMessage("Mã giảm giá không được quá 30 ký tự.");
+    }
+
+    // 1.2. Validate Description
+    if (!description) {
+        setIsLoading(false); return setErrorMessage("Vui lòng nhập mô tả chi tiết cho mã.");
+    }
+    if (description.length > 100) {
+        setIsLoading(false); return setErrorMessage("Mô tả không được quá 100 ký tự.");
+    }
+
+    // 1.3. Validate Giá trị đơn hàng tối thiểu (Min Order)
+    if (minPurchaseValue === '' || minPurchaseValue === undefined) {
+        setIsLoading(false); return setErrorMessage("Vui lòng nhập giá trị tối thiểu để áp dụng mã.");
+    }
+    if (Number(minPurchaseValue) < 0) {
+        setIsLoading(false); return setErrorMessage("Giá trị tối thiểu đơn hàng không được âm.");
+    }
+
+    // 1.4. Validate Giới hạn sử dụng (Usage Limit)
+    if (usageLimit === '' || usageLimit === undefined) {
+        setIsLoading(false); return setErrorMessage("Vui lòng nhập giới hạn số lượt sử dụng.");
+    }
+    if (Number(usageLimit) < 0) {
+        setIsLoading(false); return setErrorMessage("Giới hạn sử dụng không được âm.");
+    }
+
+    // 1.5. Validate Giá trị giảm (Value)
+    if (discountValue === '' || discountValue === undefined) {
+        setIsLoading(false); return setErrorMessage("Vui lòng nhập giá trị giảm giá.");
+    }
+    const numValue = Number(discountValue);
+    if (numValue <= 0) {
+        setIsLoading(false); return setErrorMessage("Giá trị giảm giá phải lớn hơn 0.");
+    }
+
+    // 1.6. Validate Logic theo từng loại (Percent vs Fixed)
+    if (discountType === 'percentage') {
+        if (numValue > 100) {
+            setIsLoading(false); return setErrorMessage("Phần trăm giảm không được quá 100%.");
+        }
+        // Với percent, bắt buộc phải có Max Discount
+        if (maxDiscountValue === '' || maxDiscountValue === undefined) {
+            setIsLoading(false); return setErrorMessage("Vui lòng nhập mức giảm tối đa (VNĐ) cho loại phần trăm.");
+        }
+        if (Number(maxDiscountValue) < 0) {
+            setIsLoading(false); return setErrorMessage("Mức giảm tối đa không được âm.");
+        }
+    }
+
+    // 1.7. Validate Thời gian (Dates)
+    if (!startDate) {
+        setIsLoading(false); return setErrorMessage("Vui lòng chọn ngày bắt đầu.");
+    }
+    if (!endDate) {
+        setIsLoading(false); return setErrorMessage("Vui lòng chọn ngày kết thúc.");
+    }
+    
+    // So sánh ngày
+    if (startDate >= endDate) {
+        setIsLoading(false); return setErrorMessage("Ngày kết thúc phải sau ngày bắt đầu.");
+    }
+
+    const now = new Date();
+    if (endDate < now) {
+         setIsLoading(false); return setErrorMessage("Thời gian kết thúc không được ở trong quá khứ.");
+    }
+
+    // --- 2. Chuẩn bị Payload ---
+    const payload = {
+        code: code,
+        description: description,
+        discountType: discountType === 'percentage' ? 'percent' : 'fixed', 
+        value: Number(discountValue), 
+        minOrderValue: Number(minPurchaseValue),
+        // Nếu là Fixed thì maxDiscountValue không quan trọng (hoặc bằng chính value), 
+        // nhưng BE đòi field này nếu type=percent. Gửi 0 hoặc null cho fixed để an toàn.
+        maxDiscountValue: discountType === 'percentage' ? Number(maxDiscountValue) : 0,
+        usageLimit: Number(usageLimit),
+        validFrom: startDate,
+        expiredAt: endDate,
+        status: formData.isActive ? 'active' : 'inactive'
+    };
+
+    try {
+        // 3. GỌI HÀM TỪ CHA VÀ ĐỢI KẾT QUẢ
+        if (onSubmit) {
+            await onSubmit(payload);
+        }
+    } catch (error) {
+        console.error("Form Submit Error:", error);
+        const msg = error.response?.data?.message || error.message || "Có lỗi xảy ra, vui lòng thử lại.";
+        setErrorMessage(msg);
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
-      <div className="space-y-6">
+       <div className="space-y-6">
         <h1 className="text-2xl font-semibold text-gray-900">Tạo mã giảm giá</h1>
+        
+        {/* Khu vực hiển thị lỗi */}
+        <ErrorAlert message={errorMessage} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column */}
-          <div className="space-y-6">
-            {/* Discount Information */}
+            
+           {/* CỘT TRÁI: THÔNG TIN CƠ BẢN */}
+           <div className="space-y-6">
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Thông tin mã giảm giá</h2>
-              
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="code" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Mã giảm giá
+                    Mã giảm giá <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="code"
-                    placeholder="Nhập mã giảm giá"
+                    placeholder="VD: SUMMER2024"
                     value={formData.code}
                     onChange={(e) => handleInputChange('code', e.target.value)}
-                    className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
+                    className={cn(
+                        "border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6] tracking-wide", 
+                        errorMessage.includes("Mã") ? "border-red-500 bg-red-50" : ""
+                    )}
                   />
+                  <p className="text-xs text-gray-400 mt-1">Tự động viết hoa và viết liền (3-30 ký tự).</p>
                 </div>
-
                 <div>
                   <Label htmlFor="description" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Chi tiết
+                    Chi tiết <span className="text-red-500">*</span>
                   </Label>
                   <Textarea
                     id="description"
-                    placeholder="Mô tả chi tiết về mã giảm giá"
+                    placeholder="Mô tả chi tiết về mã giảm giá (tối đa 100 ký tự)"
                     value={formData.description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
-                    className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6] min-h-24"
+                    className={cn(
+                        "border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6] min-h-24",
+                        errorMessage.includes("Mô tả") || errorMessage.includes("Chi tiết") ? "border-red-500" : ""
+                    )}
                   />
+                  <div className="text-right text-xs text-gray-400 mt-1">
+                    {formData.description.length}/100
+                  </div>
                 </div>
               </div>
             </section>
@@ -85,16 +235,16 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="minPurchase" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Giá trị tối thiểu để áp dụng mã
+                    Giá trị tối thiểu đơn hàng <span className="text-red-500">*</span>
                   </Label>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-600">$</span>
+                    <span className="text-gray-600 font-semibold">₫</span>
                     <Input
                       id="minPurchase"
                       type="number"
-                      placeholder="0.00"
+                      placeholder="0"
                       value={formData.minPurchaseValue}
-                      onChange={(e) => handleInputChange('minPurchaseValue', parseFloat(e.target.value) || 0)}
+                      onChange={(e) => handleInputChange('minPurchaseValue', e.target.value)}
                       className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
                     />
                   </div>
@@ -102,22 +252,22 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
 
                 <div>
                   <Label htmlFor="usageLimit" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Giới hạn sử dụng
+                    Giới hạn số lượt dùng <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="usageLimit"
                     type="number"
                     placeholder="100"
                     value={formData.usageLimit}
-                    onChange={(e) => handleInputChange('usageLimit', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleInputChange('usageLimit', e.target.value)}
                     className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
                   />
                 </div>
+
                 <div>
-                  <Label className="text-sm font-medium text-gray-700 mb-3 block">Thời hạn</Label>
+                  <Label className="text-sm font-medium text-gray-700 mb-3 block">Thời hạn <span className="text-red-500">*</span></Label>
                   <div className="flex gap-3 items-center">
-                    
-                    {/* Start Date Picker */}
+                    {/* Start Date */}
                     <div className="flex-1">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -125,16 +275,13 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                             variant={"outline"}
                             type="button"
                             className={cn(
-                              "w-full justify-start text-left font-normal border-gray-200 hover:bg-white px-3", // Đổi padding
-                              !formData.startDate && "text-muted-foreground"
+                              "w-full justify-start text-left font-normal border-gray-200 hover:bg-white px-3", 
+                              !formData.startDate && "text-muted-foreground",
+                              errorMessage.includes("ngày bắt đầu") ? "border-red-500 text-red-500" : ""
                             )}
                           >
                              <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
-                             {formData.startDate ? (
-                                format(formData.startDate, "dd/MM/yyyy")
-                              ) : (
-                                <span>Ngày bắt đầu</span>
-                              )}
+                             {formData.startDate ? format(formData.startDate, "dd/MM/yyyy") : <span>Ngày bắt đầu</span>}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -147,10 +294,8 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                         </PopoverContent>
                       </Popover>
                     </div>
-                    
                     <span className="text-gray-400">-</span>
-                    
-                    {/* End Date Picker */}
+                    {/* End Date */}
                     <div className="flex-1">
                         <Popover>
                         <PopoverTrigger asChild>
@@ -158,16 +303,13 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                             variant={"outline"}
                             type="button"
                             className={cn(
-                              "w-full justify-start text-left font-normal border-gray-200 hover:bg-white px-3", // Đổi padding
-                              !formData.endDate && "text-muted-foreground"
+                              "w-full justify-start text-left font-normal border-gray-200 hover:bg-white px-3", 
+                              !formData.endDate && "text-muted-foreground",
+                              errorMessage.includes("ngày kết thúc") || errorMessage.includes("quá khứ") ? "border-red-500 text-red-500" : ""
                             )}
                           >
                              <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
-                             {formData.endDate ? (
-                                format(formData.endDate, "dd/MM/yyyy")
-                              ) : (
-                                <span>Ngày kết thúc</span>
-                              )}
+                             {formData.endDate ? format(formData.endDate, "dd/MM/yyyy") : <span>Ngày kết thúc</span>}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -180,18 +322,16 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                         </PopoverContent>
                       </Popover>
                     </div>
-
                   </div>
                 </div>
               </div>
             </section>
           </div>
 
+          {/* CỘT PHẢI: GIÁ TRỊ VÀ TRẠNG THÁI */}
           <div className="space-y-6">
-            {/* Discount Value */}
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Loại giảm giá</h2>
-              
               <div className="space-y-4">
                 <div>
                   <Label className="text-sm font-medium text-gray-700 mb-3 block">Loại giảm giá</Label>
@@ -217,52 +357,63 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                           : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                       }`}
                     >
-                      <span>$</span> Số tiền cố định
+                      <span>₫</span> Tiền cố định
                     </button>
                   </div>
                 </div>
 
                 <div>
                   <Label htmlFor="discountValue" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Giá trị giảm giá
+                    Giá trị giảm <span className="text-red-500">*</span>
                   </Label>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-600">{formData.discountType === 'percentage' ? '%' : '$'}</span>
+                    <span className="text-gray-600 font-bold">
+                        {formData.discountType === 'percentage' ? '%' : '₫'}
+                    </span>
                     <Input
                       id="discountValue"
                       type="number"
-                      placeholder={formData.discountType === 'percentage' ? '10' : '0.00'}
+                      placeholder={formData.discountType === 'percentage' ? 'VD: 10' : 'VD: 50000'}
                       value={formData.discountValue}
-                      onChange={(e) => handleInputChange('discountValue', parseFloat(e.target.value) || 0)}
-                      className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
+                      onChange={(e) => handleInputChange('discountValue', e.target.value)}
+                      className={cn(
+                          "border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]",
+                          errorMessage.includes("Giá trị giảm") || errorMessage.includes("Phần trăm") ? "border-red-500" : ""
+                      )}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="maxDiscount" className="text-sm font-medium text-gray-700 mb-2 block">
-                    Giá trị tối đa được giảm
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-600">$</span>
-                    <Input
-                      id="maxDiscount"
-                      type="number"
-                      placeholder="0.00"
-                      value={formData.maxDiscountValue}
-                      onChange={(e) => handleInputChange('maxDiscountValue', parseFloat(e.target.value) || 0)}
-                      className="border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]"
-                    />
-                  </div>
-                </div>
+                {formData.discountType === 'percentage' && (
+                    <div className="animate-in fade-in slide-in-from-top-1">
+                        <Label htmlFor="maxDiscount" className="text-sm font-medium text-gray-700 mb-2 block">
+                            Giảm tối đa (VNĐ) <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="flex items-center gap-2">
+                            <span className="text-gray-600 font-semibold">₫</span>
+                            <Input
+                                id="maxDiscount"
+                                type="number"
+                                placeholder="VD: 50000"
+                                value={formData.maxDiscountValue}
+                                onChange={(e) => handleInputChange('maxDiscountValue', e.target.value)}
+                                className={cn(
+                                    "border-gray-200 focus:border-[#3B82F6] focus:ring-[#3B82F6]",
+                                    errorMessage.includes("Mức giảm tối đa") ? "border-red-500" : ""
+                                )}
+                            />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">Giới hạn số tiền tối đa được giảm khi áp dụng %</p>
+                    </div>
+                )}
+                
               </div>
             </section>
 
-            {/* Status */}
             <section>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="status" className="text-base font-semibold text-gray-900">
-                  Trạng thái
+              <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border border-gray-100">
+                <Label htmlFor="status" className="text-base font-semibold text-gray-900 cursor-pointer">
+                  Kích hoạt mã ngay
                 </Label>
                 <div className="flex items-center gap-2">
                   <Switch
@@ -271,8 +422,8 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
                     onCheckedChange={(checked) => handleInputChange('isActive', checked)}
                     className="data-[state=checked]:bg-[#3B82F6]"
                   />
-                  <span className={`text-sm font-medium ${formData.isActive ? 'text-[#3B82F6]' : 'text-gray-500'}`}>
-                    {formData.isActive ? 'Active' : 'Inactive'}
+                  <span className={`text-sm font-bold ${formData.isActive ? 'text-[#3B82F6]' : 'text-gray-500'}`}>
+                    {formData.isActive ? 'ON' : 'OFF'}
                   </span>
                 </div>
               </div>
@@ -281,20 +432,28 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-center gap-4 pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-center gap-4 pt-6 border-t border-gray-200 mt-6">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
+            disabled={isLoading}
             className="px-6 py-2 text-gray-700 border-gray-200 hover:bg-gray-50 bg-transparent"
           >
-            Hủy
+            Hủy bỏ
           </Button>
           <Button
             type="submit"
-            className="px-6 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white"
+            disabled={isLoading}
+            className="px-6 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white min-w-[150px]"
           >
-            Tạo mã giảm giá
+             {isLoading ? (
+                <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Đang xử lý...
+                </>
+            ) : (
+                "Tạo mã giảm giá"
+            )}
           </Button>
         </div>
       </div>

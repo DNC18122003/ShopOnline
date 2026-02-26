@@ -24,6 +24,17 @@ const getProducts = async (req, res) => {
       isActive: true,
     };
 
+    // Filter theo Specs (Socket, RAM Type, Form Factor)
+    if (req.query.socket) {
+      filter["specifications.socket"] = req.query.socket;
+    }
+    if (req.query.ram_type) {
+      filter["specifications.ram_type"] = req.query.ram_type;
+    }
+    if (req.query.form_factor) {
+      filter["specifications.form_factor"] = req.query.form_factor;
+    }
+
     // ===== 2. Filter theo CATEGORY SLUG =====
     if (category) {
       const slugs = category.split(","); // ["vga", "cpu"]
@@ -188,4 +199,118 @@ const getSimilarProducts = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductById, getSimilarProducts };
+/**
+ * POST /api/product
+ * Tạo sản phẩm mới
+ */
+const createProduct = async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      price,
+      stock,
+      category,
+      brand,
+      specifications,
+      images,
+      isActive,
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Tên sản phẩm là bắt buộc",
+      });
+    }
+
+    if (price === undefined || price === null || price < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giá sản phẩm không hợp lệ",
+      });
+    }
+
+    if (stock === undefined || stock === null || stock < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Số lượng tồn kho không hợp lệ",
+      });
+    }
+
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: "Danh mục là bắt buộc",
+      });
+    }
+
+    if (!brand) {
+      return res.status(400).json({
+        success: false,
+        message: "Thương hiệu là bắt buộc",
+      });
+    }
+
+    // Kiểm tra category tồn tại
+    const categoryExists = await Category.findById(category);
+    if (!categoryExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Danh mục không tồn tại",
+      });
+    }
+
+    // Kiểm tra brand tồn tại
+    const brandExists = await Brand.findById(brand);
+    if (!brandExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Thương hiệu không tồn tại",
+      });
+    }
+
+    // Tạo sản phẩm mới
+    const newProduct = new Product({
+      name: name.trim(),
+      description: description || "",
+      price: Number(price),
+      stock: Number(stock),
+      category,
+      brand,
+      specifications: specifications || {},
+      images: images || [],
+      isActive: isActive !== undefined ? isActive : true,
+      createdBy: req.user._id,
+      price_history: [
+        {
+          price: Number(price),
+          effectiveDate: new Date(),
+        },
+      ],
+    });
+
+    await newProduct.save();
+
+    // Populate để trả về đầy đủ thông tin
+    const populatedProduct = await Product.findById(newProduct._id)
+      .populate("brand", "name slug")
+      .populate("category", "name slug")
+      .lean();
+
+    res.status(201).json({
+      success: true,
+      message: "Tạo sản phẩm thành công",
+      data: populatedProduct,
+    });
+  } catch (error) {
+    console.error("Create product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+    });
+  }
+};
+
+module.exports = { getProducts, getProductById, getSimilarProducts, createProduct };

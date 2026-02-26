@@ -6,20 +6,23 @@ export const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
+    // console.log('user in authContext:', user);
     useEffect(() => {
         const fetchMe = async () => {
+            //console.log('get me test');
             try {
                 const res = await getMe();
                 // res CHÍNH LÀ response.data
-                setUser(res.user ?? res);
+                //console.log('get me res:', res.data.user);
+                setUser(res.data.user);
             } catch (error) {
                 setUser(null);
+                // set null ở local storage
+                localStorage.removeItem('data_ui');
             } finally {
                 setLoading(false);
             }
         };
-
         fetchMe();
     }, []);
 
@@ -28,8 +31,8 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth phải được dùng bên trong AuthProvider');
-    }
+    // if (!context) {
+    //     throw new Error('useAuth phải được dùng bên trong AuthProvider');
+    // }
     return context;
 };

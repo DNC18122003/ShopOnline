@@ -12,10 +12,10 @@ export const CartProvider = ({ children }) => {
     const fetchCart = async () => {
         try {
             setLoading(true);
-            const res = await cartApi.getCart();
-            setCart(res);
+            const res = await cartApi.getCartByAxios();
+            setCart(res.data);
         } catch (err) {
-            console.error('Fetch cart failed', err);
+            //console.error('Fetch cart failed', err);
             setCart(null);
         } finally {
             setLoading(false);
@@ -33,7 +33,6 @@ export const CartProvider = ({ children }) => {
 
     //  ADD TO CART (NHẬN OBJECT)
     const addToCart = async (payload) => {
-       
         await cartApi.addToCart(payload);
         await fetchCart();
     };
@@ -53,6 +52,22 @@ export const CartProvider = ({ children }) => {
         setCart(null);
     };
 
+    const removeMultipleItems = async (productIds) => {
+        try {
+            
+            setLoading(true);
+            for (const id of productIds) {
+                await cartApi.removeCartItem(id);
+            }
+
+            await fetchCart();
+        } catch (err) {
+            console.error('Remove multiple items failed', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <CartContext.Provider
             value={{
@@ -62,6 +77,7 @@ export const CartProvider = ({ children }) => {
                 addToCart,
                 updateQuantity,
                 removeItem,
+                removeMultipleItems,
                 clearCart,
             }}
         >
