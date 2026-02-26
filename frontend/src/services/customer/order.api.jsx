@@ -30,13 +30,13 @@ export const createOrder = async (orderPayload) => {
 
 // 3. Lấy danh sách đơn hàng của tôi
 export const getMyOrders = async () => {
-  try {
-    const response = await customizeAPI.get('/order/my-orders');
-    return response;
-  } catch (error) {
-    console.error('Lỗi lấy danh sách đơn hàng:', error);
-    throw error;
-  }
+    try {
+        const response = await customizeAPI.get('/order/my-orders');
+        return response.orders || [];
+    } catch (error) {
+        console.error('Lỗi lấy danh sách đơn hàng:', error);
+        throw error;
+    }
 };
 
 
@@ -81,3 +81,4 @@ export const confirmMomoPayment = async (orderId) => {
     throw error;
   }
 };
+

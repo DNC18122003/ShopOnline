@@ -3,6 +3,7 @@ import { UserProfile } from '@/pages/user';
 import ProtectedRoute from './protected-route';
 import ProfileLayout from '@/components/layouts/profile-layout';
 import CartPage from '@/pages/cart/CartPage';
+import MyOrderPage from '@/pages/order/MyOrderPage';
 // Chỉ export mảng object, không tạo router tại đây
 export const userRoutes = [
     {
@@ -23,9 +24,9 @@ export const userRoutes = [
                     },
                     {
                         path: 'orders',
-                        element: <CartPage />,
+                        element: <MyOrderPage/>,
                     },
-                    
+                  
                 ],
             },
         ],
