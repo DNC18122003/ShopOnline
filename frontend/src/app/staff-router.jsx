@@ -5,6 +5,7 @@ import { CategoryManagement } from '@/pages/Staff/CategoryManagement';
 import { BrandManagement } from '@/pages/Staff/BrandManagement';
 import { BuildPcTemplateManagement } from '@/pages/Staff/BuildPcTemplateManagement';
 import { CreateProduct } from '@/pages/Staff/CreateProduct';
+import { ProductManagement } from '@/pages/Staff/ProductManagement';
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
     {
@@ -26,6 +27,10 @@ export const staffRoutes = [
             {
                 path: 'brands',
                 element: <BrandManagement />,
+            },
+            {
+                path: 'products',
+                element: <ProductManagement />,
             },
             {
                 path: 'products/create',
