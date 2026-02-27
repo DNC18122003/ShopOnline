@@ -20,6 +20,14 @@ export const createProduct = (data) => {
     return api.post('/product', data);
 };
 
+export const updateProduct = (id, data) => {
+    return api.put(`/product/${id}`, data);
+};
+
+export const deleteProduct = (id) => {
+    return api.delete(`/product/${id}`);
+};
+
 export const uploadImages = (formData) => {
     return api.post('/upload/images', formData, {
         headers: {
