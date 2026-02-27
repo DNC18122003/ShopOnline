@@ -1,35 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Calendar, Eye, Truck, RotateCcw, Star, Funnel,RotateCcwIcon,Clock,CircleCheck,CircleX } from 'lucide-react';
 import { getMyOrders } from '@/services/customer/order.api';
-
+import { useNavigate } from 'react-router-dom';
 const statusConfig = {
     pending: {
         label: 'Chờ xử lý',
         className: 'bg-yellow-100 text-yellow-600',
-        icon: Clock
+        icon: Clock,
+    },
+    confirmed: {
+        label: 'Đã xác nhận',
+        className: 'bg-teal-100 text-blue-600',
+        icon: CircleCheck,
     },
 
     shipping: {
         label: 'Đang giao',
         className: 'bg-blue-100 text-blue-600',
-        icon: Truck
+        icon: Truck,
     },
 
     completed: {
         label: 'Hoàn thành',
         className: 'bg-green-100 text-green-600',
-        icon: CircleCheck
+        icon: CircleCheck,
     },
     cancelled: {
         label: 'Hủy',
         className: 'bg-red-100 text-red-600',
-        icon : CircleX
+        icon: CircleX,
     },
 };
 
 const MyOrderPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
     
     useEffect(() => {
         fetchOrders();
@@ -40,11 +46,16 @@ const MyOrderPage = () => {
             setLoading(true);
             const data = await getMyOrders();
             setOrders(data || []);
+            console.log('Data:',data)
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleViewDetail = (id) => {
+        navigate(`/orders/${id}`);
     };
 
     return (
@@ -116,8 +127,8 @@ const MyOrderPage = () => {
             {!loading && (
                 <div className="space-y-4">
                     {orders.map((order) => {
-                        const status = statusConfig[order.status] || statusConfig.pending;
-                         const Icon = status.icon;
+                       const status = statusConfig[order.orderStatus] || statusConfig.pending;
+                       const Icon = status.icon;
                         return (
                             <div key={order._id} className="bg-white rounded-2xl shadow-sm p-5">
                                 {/* Top */}
@@ -130,7 +141,6 @@ const MyOrderPage = () => {
                                     </div>
 
                                     <div className="flex items-center gap-6">
-                                       
                                         <span
                                             className={`px-3 py-1 text-xs rounded-full flex items-center gap-1 ${status.className}`}
                                         >
@@ -168,7 +178,10 @@ const MyOrderPage = () => {
                                             </>
                                         )} */}
 
-                                        <button className="flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-lg text-sm">
+                                        <button
+                                            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition"
+                                            onClick={() => handleViewDetail(order._id)}
+                                        >
                                             <Eye size={14} /> Xem chi tiết
                                         </button>
                                     </div>

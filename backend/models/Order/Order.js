@@ -4,6 +4,7 @@ const addressSchema = new Schema(
   {
     fullName: String,
     phone: String,
+    email: String,
     street: String,
     ward: String,
     province: String,

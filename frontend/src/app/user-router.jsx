@@ -4,6 +4,7 @@ import ProtectedRoute from './protected-route';
 import ProfileLayout from '@/components/layouts/profile-layout';
 import CartPage from '@/pages/cart/CartPage';
 import MyOrderPage from '@/pages/order/MyOrderPage';
+import OrderDetailPage from '@/pages/order/OrderDetailPage';
 // Chỉ export mảng object, không tạo router tại đây
 export const userRoutes = [
     {
@@ -24,10 +25,13 @@ export const userRoutes = [
                     },
                     {
                         path: 'orders',
-                        element: <MyOrderPage/>,
+                        element: <MyOrderPage />,
                     },
-                  
                 ],
+            },
+            {
+                path: 'orders/:id',
+                element: <OrderDetailPage />,
             },
         ],
     },
