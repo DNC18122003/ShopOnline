@@ -10,11 +10,10 @@ import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
 import BlogDetails from '@/components/Blog/blog-details';
-import ComponentOtp from '@/components/public/component.otp';
 import PaymentResultPage from '@/pages/order/PaymentResultPage';
 import OrderFailedPage from '@/pages/order/OrderFailedPage';
 import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
-
+import VerifyRegisterOtp from '@/pages/verify-OTP/verifyRegisterOtp';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
@@ -52,11 +51,11 @@ export const publicRoutes = [
             },
             {
                 path: '/order-success',
-                element: <OrderSuccessPage/>,
+                element: <OrderSuccessPage />,
             },
             {
                 path: '/order-failed',
-                element: <OrderFailedPage/> ,
+                element: <OrderFailedPage />,
             },
         ],
     },
@@ -76,12 +75,12 @@ export const publicRoutes = [
         path: '/blog',
         element: <BlogPage />,
     },
-     {
+    {
         path: '/blogDetails',
         element: <BlogDetails />,
     },
     {
-        path: '/send_otp',
-        element: <ComponentOtp title={'Xác thực tài khoản'} email={'happynewyear@gmail.com'} />,
+        path: '/verify_otp',
+        element: <VerifyRegisterOtp />,
     },
 ];
