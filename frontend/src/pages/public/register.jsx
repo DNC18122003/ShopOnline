@@ -64,10 +64,11 @@ const register = () => {
             setLoadingLogin(true);
             const response = await register_service(formRegister.userName, formRegister.email, formRegister.password);
             // console.log('Register successful api:', response.data);
-
-            toast.success('Đăng ký thành công, vui lòng đăng nhập lại !');
+            // lưu email vào localStorage để dùng cho verify otp
+            localStorage.setItem('emailForOtp', formRegister.email);
+            toast.success('Đăng ký thành công, vui lòng xác minh OTP trên email !');
             setTimeout(() => {
-                navigate('/login');
+                navigate('/verify_otp');
             }, 1000);
         } catch (error) {
             toast.error(error.response.data.message);

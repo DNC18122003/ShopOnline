@@ -18,4 +18,4 @@ Có thể tái sử dụng cho reset password
 Có thể thêm logic retry
 
 Có thể thay đổi sang SendGrid sau này
-*/ 
+*/
