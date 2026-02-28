@@ -1,13 +1,13 @@
 // context/cartContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
 import * as cartApi from '@/services/customer/cart.api';
-
+import { useAuth } from '@/context/authContext';
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState(null);
     const [loading, setLoading] = useState(false);
-
+    const { user, loading: authLoading } = useAuth();
     // fetch cart
     const fetchCart = async () => {
         try {
@@ -23,8 +23,13 @@ export const CartProvider = ({ children }) => {
     };
 
     useEffect(() => {
+        if (authLoading) return; //  chờ auth xong
+        if (!user) {
+            setCart(null);
+            return;
+        }
         fetchCart();
-    }, []);
+    }, [user, authLoading]);
 
     //  ADD TO CART (NHẬN OBJECT)
     const addToCart = async (payload) => {
@@ -47,6 +52,22 @@ export const CartProvider = ({ children }) => {
         setCart(null);
     };
 
+    const removeMultipleItems = async (productIds) => {
+        try {
+            
+            setLoading(true);
+            for (const id of productIds) {
+                await cartApi.removeCartItem(id);
+            }
+
+            await fetchCart();
+        } catch (err) {
+            console.error('Remove multiple items failed', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <CartContext.Provider
             value={{
@@ -56,6 +77,7 @@ export const CartProvider = ({ children }) => {
                 addToCart,
                 updateQuantity,
                 removeItem,
+                removeMultipleItems,
                 clearCart,
             }}
         >

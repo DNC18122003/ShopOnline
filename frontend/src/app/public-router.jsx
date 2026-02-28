@@ -11,6 +11,10 @@ import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
 import BlogDetails from '@/components/Blog/blog-details';
 import ComponentOtp from '@/components/public/component.otp';
+import PaymentResultPage from '@/pages/order/PaymentResultPage';
+import OrderFailedPage from '@/pages/order/OrderFailedPage';
+import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
+
 
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
@@ -41,6 +45,18 @@ export const publicRoutes = [
             {
                 path: '/checkout',
                 element: <CheckoutPage />,
+            },
+            {
+                path: '/payment-result',
+                element: <PaymentResultPage />,
+            },
+            {
+                path: '/order-success',
+                element: <OrderSuccessPage/>,
+            },
+            {
+                path: '/order-failed',
+                element: <OrderFailedPage/> ,
             },
         ],
     },

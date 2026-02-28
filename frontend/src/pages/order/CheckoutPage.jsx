@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
 import axios from 'axios';
 import { createOrder, getAddress } from '@/services/customer/order.api';
 import { toast } from 'react-toastify';
-
+import discountService from '@/services/discount/discount.api'; // đường dẫn đúng của bạn
+import DiscountInput from '@/components/Discount/DiscountInput';
+import { useLocation } from 'react-router-dom';
 const CheckoutPage = () => {
-    const { cart, clearCart } = useCart();
+    const { cart, removeMultipleItems } = useCart();
     const { user } = useAuth();
     const navigate = useNavigate();
+
+    // Lấy dữ liệu Build PC từ localStorage nếu có
+    const [buildPcData] = useState(() => {
+        const saved = localStorage.getItem('buildpc_checkout');
+        return saved ? JSON.parse(saved) : null;
+    });
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -22,14 +30,75 @@ const CheckoutPage = () => {
         discountCode: '',
         paymentMethod: 'COD',
     });
-
-    const [discountApplied, setDiscountApplied] = useState(0);
+    const location = useLocation();
+    const selectedItems = location.state?.selectedItems || cart?.items || [];
+    const fromCart = location.state?.fromCart || false;
+    const [discountInfo, setDiscountInfo] = useState(null);
+    const [discountError, setDiscountError] = useState(null);
+    const [availableDiscounts, setAvailableDiscounts] = useState([]);
+    const [loadingDiscounts, setLoadingDiscounts] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [isDiscountListOpen, setIsDiscountListOpen] = useState(false);
 
     if (!user) return <Navigate to="/login" replace />;
-    if (!cart || cart.items.length === 0) return <Navigate to="/cart" replace />;
+    if (!cart?.items?.length) {
+       return <Navigate to="/cart" replace />;
+    }
+
+    const subtotal = selectedItems.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
+    const shippingFee = 0;
+
+    // Tính discountAmount dựa trên discountInfo (nếu đã apply)
+    const discountAmount = discountInfo
+        ? Math.min(
+              discountInfo.discountType === 'percent' ? subtotal * (discountInfo.value / 100) : discountInfo.value,
+              discountInfo.maxDiscountValue || Infinity,
+          )
+        : 0;
+
+    const total = subtotal - discountAmount + shippingFee;
+
+    // Fetch danh sách mã giảm giá khả dụng
+   useEffect(() => {
+       const fetchDiscounts = async () => {
+           setLoadingDiscounts(true);
+           try {
+               const res = await discountService.getAvailableDiscounts({ orderValue: subtotal });
+
+               console.log('Full res:', res);
+               console.log('res.data:', res.data);
+
+               let discounts = [];
+
+               // Trường hợp 1: backend trả array trực tiếp (như hiện tại)
+               if (Array.isArray(res.data)) {
+                   discounts = res.data;
+               }
+               // Trường hợp 2: backend trả object { success: true, data: [...] }
+               else if (res.data?.success && Array.isArray(res.data.data)) {
+                   discounts = res.data.data;
+               }
+               // Trường hợp fallback: nếu có count nhưng data là array
+               else if (res.data?.count && Array.isArray(res.data.data)) {
+                   discounts = res.data.data;
+               }
+
+               setAvailableDiscounts(discounts);
+               console.log('Đã set availableDiscounts với length:', discounts.length);
+
+           } catch (err) {
+               console.warn('Lỗi fetch discounts:', err);
+           } finally {
+               setLoadingDiscounts(false);
+           }
+       };
+
+       if (subtotal > 0) {
+           fetchDiscounts();
+       }
+   }, [subtotal]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -61,21 +130,14 @@ const CheckoutPage = () => {
                         note: (prev.note ? prev.note + '\n' : '') + '(Lấy từ vị trí hiện tại)',
                     }));
 
-                    // TOAST THÀNH CÔNG
                     toast.success('Lấy địa chỉ hiện tại thành công!', {
                         position: 'top-right',
                         autoClose: 4000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        theme: 'light',
                     });
                 } catch (err) {
                     console.error('Lỗi khi lấy địa chỉ tự động:', err);
                     setError('Không thể lấy địa chỉ tự động. Vui lòng nhập thủ công.');
-                    toast.error('Không thể lấy địa chỉ tự động. Vui lòng nhập thủ công.');
+                    toast.error('Không thể lấy địa chỉ tự động.');
                 } finally {
                     setFetchingLocation(false);
                 }
@@ -87,67 +149,150 @@ const CheckoutPage = () => {
                         ? 'Bạn đã từ chối chia sẻ vị trí.'
                         : 'Lỗi lấy vị trí. Vui lòng kiểm tra quyền truy cập.';
                 toast.error(msg);
-                console.error('Lỗi geolocation:', err);
             },
             { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 },
         );
     };
-
-    const subtotal = cart.totalPrice || 0;
-    const shippingFee = 0;
-    const discountAmount = (subtotal * discountApplied) / 100;
-    const total = subtotal - discountAmount + shippingFee;
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        const shippingAddress = {
-            fullName: formData.fullName,
-            phone: formData.phone,
-            street: formData.street,
-            ward: formData.ward,
-            province: formData.province,
-            note: formData.note,
-        };
-
-        const payload = {
-            shippingAddress,
-            paymentMethod: formData.paymentMethod,
-            discountCode: formData.discountCode || undefined,
-            discountAmount,
-        };
-
-        try {
-            const result = await createOrder(payload);
-            clearCart();
-
-            toast.success('Đặt hàng thành công!', {
-                position: 'top-right',
-                autoClose: 5000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-            });
-
-            //quay về giỏ hàng
-            navigate('/cart');
-        } catch (err) {
-            const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
-
-            setError(msg);
-            toast.error(msg);
-            console.error('Lỗi đặt hàng:', err);
-        } finally {
-            setLoading(false);
-        }
+    const handleRemoveDiscount = () => {
+        setDiscountInfo(null);
+        setDiscountError(null);
+        setFormData((prev) => ({ ...prev, discountCode: '' }));
+        toast.info('Đã bỏ mã giảm giá');
+      
     };
 
+   const applyDiscount = async () => {
+       const code = formData.discountCode?.trim().toUpperCase();
+       if (!code) {
+           setDiscountError('Vui lòng nhập mã giảm giá');
+           toast.warn('Vui lòng nhập mã giảm giá');
+           return;
+       }
+
+       setLoading(true);
+       setDiscountError(null);
+       setDiscountInfo(null);
+
+       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:9999'; 
+
+       try {
+           const response = await axios.post(
+               `${apiBase}/api/discounts/check`,
+               { code, orderValue: subtotal },
+               {
+                   headers: {
+                       Authorization: `Bearer ${localStorage.getItem('token')}`,
+                   },
+               },
+           );
+
+           if (response.data.success) {
+               const discData = response.data.data;
+               let appliedAmount = discData.calculatedDiscount;
+
+               if (appliedAmount === undefined) {
+                   let calc = 0;
+                   if (discData.discountType === 'percent') {
+                       calc = subtotal * (discData.value / 100);
+                   } else if (discData.discountType === 'fixed') {
+                       calc = discData.value;
+                   }
+                   appliedAmount = Math.min(calc, discData.maxDiscountValue || calc);
+               }
+
+               setDiscountInfo({
+                   ...discData,
+                   calculatedDiscount: appliedAmount, 
+               });
+
+               toast.success(`Áp dụng thành công! Giảm ${appliedAmount.toLocaleString('vi-VN')}đ`);
+           } else {
+               setDiscountError(response.data.message || 'Không áp dụng được mã này');
+               toast.error(response.data.message || 'Không áp dụng được mã này');
+           }
+       } catch (err) {
+           let msg = 'Mã giảm giá không hợp lệ hoặc đã hết hạn';
+           if (err.response) {
+               msg = err.response.data?.message || msg;
+           } else if (err.request) {
+               msg = 'Không kết nối được đến server. Vui lòng kiểm tra mạng.';
+           }
+
+           setDiscountError(msg);
+           toast.error(msg);
+           setDiscountInfo(null);
+           console.error('Lỗi apply discount:', err);
+       } finally {
+           setLoading(false);
+       }
+   };
+
+ const handleSubmit = async (e) => {
+     e.preventDefault();
+
+     if (loading) return; 
+
+     setLoading(true);
+     setError(null);
+
+     const shippingAddress = {
+         fullName: formData.fullName,
+         phone: formData.phone,
+         street: formData.street,
+         ward: formData.ward,
+         province: formData.province,
+         note: formData.note,
+     };
+
+     const payload = {
+         shippingAddress,
+         paymentMethod: formData.paymentMethod,
+         discountCode: formData.discountCode?.trim() || undefined,
+         selectedProductIds: selectedItems.map((i) => i.productId),
+     };
+
+     try {
+         const res = await createOrder(payload);
+         if (formData.paymentMethod === 'MOMOPAY') {
+             const payUrl = res?.paymentUrl;
+
+             if (!payUrl) {
+                 throw new Error('Backend không trả về paymentUrl');
+             }
+
+             // KHÔNG xóa cart ở đây
+             window.location.href = payUrl;
+             return;
+         }
+
+         // COD PAYMENT
+    
+         toast.success('Đặt hàng thành công!', {
+             position: 'top-right',
+             autoClose: 4000,
+         });
+         if (fromCart) {
+             const idsToRemove = selectedItems.map((i) => i.productId);
+             await removeMultipleItems(idsToRemove);
+         }
+
+         navigate('/order-success');
+     } catch (err) {
+         const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
+
+         setError(msg);
+         toast.error(msg);
+         console.error('Lỗi đặt hàng:', err);
+     } finally {
+         setLoading(false);
+     }
+ };
+  
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
-            <h1 className="text-3xl font-bold mb-8 text-center md:text-left">Cổng thanh toán</h1>
+            <h1 className="text-3xl font-bold mb-8 text-center md:text-left">
+                {buildPcData ? 'Thanh toán cấu hình PC' : 'Cổng thanh toán'}
+            </h1>
 
             {error && (
                 <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6" role="alert">
@@ -309,33 +454,27 @@ const CheckoutPage = () => {
                         <h3 className="text-2xl text-center font-bold mb-8 text-white">Tóm tắt thanh toán</h3>
 
                         {/* Mã giảm giá */}
-                        <div className="mb-6">
-                            <label className="block text-sm mb-2 text-white">Mã giảm giá</label>
-                            <div className="flex">
-                                <input
-                                    type="text"
-                                    name="discountCode"
-                                    value={formData.discountCode}
-                                    onChange={handleChange}
-                                    placeholder="Nhập mã giảm giá"
-                                    className="flex-1 px-4 py-3 rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                <button
-                                    type="button"
-                                    //   onClick={applyDiscount}
-                                    className="bg-white px-6 py-3 text-blue-600 font-medium rounded-r-lg hover:bg-blue-50 transition"
-                                >
-                                    Áp dụng
-                                </button>
-                            </div>
-                            {discountApplied > 0 && (
-                                <p className="text-sm mt-2 text-black">Đã giảm {discountApplied}%!</p>
-                            )}
-                        </div>
+                        <DiscountInput
+                            discountCode={formData.discountCode}
+                            setDiscountCode={(value) => setFormData((prev) => ({ ...prev, discountCode: value }))}
+                            discountInfo={discountInfo}
+                            setDiscountInfo={setDiscountInfo}
+                            discountError={discountError}
+                            setDiscountError={setDiscountError}
+                            subtotal={subtotal}
+                            loading={loading}
+                            applyDiscount={applyDiscount}
+                            removeDiscount={handleRemoveDiscount}
+                            availableDiscounts={availableDiscounts}
+                            loadingDiscounts={loadingDiscounts}
+                            isDiscountListOpen={isDiscountListOpen}
+                            setIsDiscountListOpen={setIsDiscountListOpen}
+                            discountAmount={discountAmount}
+                        />
 
                         {/* Danh sách sản phẩm */}
                         <div className="space-y-4 mb-6">
-                            {cart.items.map((item) => (
+                            {selectedItems.map((item) => (
                                 <div key={item.productId} className="flex items-center gap-3">
                                     <img
                                         src={item.imageSnapshot || '/placeholder.jpg'}
@@ -343,8 +482,10 @@ const CheckoutPage = () => {
                                         className="w-16 h-16 object-cover rounded bg-white"
                                     />
                                     <div className="flex-1">
-                                        <p className="font-medium text-gray-900">{item.nameSnapshot}</p>
-                                        <p className="text-sm text-gray-700">x{item.quantity}</p>
+                                        <p className="font-medium text-gray-900 line-clamp-2">{item.nameSnapshot}</p>
+                                        <p className="text-sm text-gray-700">
+                                            {item.category ? `${item.category.toUpperCase()} x` : 'x'}{item.quantity}
+                                        </p>
                                     </div>
                                     <p className="font-bold text-black">
                                         {(item.priceSnapshot * item.quantity).toLocaleString('vi-VN')}đ
@@ -368,7 +509,7 @@ const CheckoutPage = () => {
                             </div>
                             {discountAmount > 0 && (
                                 <div className="flex justify-between text-blue-900">
-                                    <span>Giảm giá</span>
+                                    <span>Giảm giá({formData.discountCode})</span>
                                     <span>-{discountAmount.toLocaleString('vi-VN')}đ</span>
                                 </div>
                             )}

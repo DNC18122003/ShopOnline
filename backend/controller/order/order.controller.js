@@ -1,11 +1,14 @@
 const Order = require("../../models/order/Order");
 const Cart = require("../../models/order/Cart");
 const Product = require("../../models/Products/Product");
+const Discount = require("../../models/Discounts/Discount");
+const { createMomoPayment } = require("./momo.controller");
+const mongoose = require("mongoose");
 
 const createOrder = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { shippingAddress, paymentMethod = "COD", discountCode } = req.body;
+   const { shippingAddress, paymentMethod = "COD", discountCode, selectedProductIds } = req.body;
 
     // Validation dia chi
     if (
@@ -35,7 +38,17 @@ const createOrder = async (req, res) => {
     let subtotal = 0;
 
     // Kiểm tra sản phẩm & tồn kho
-    for (const cartItem of cart.items) {
+    const itemsToCheckout = selectedProductIds?.length
+      ? cart.items.filter((item) =>
+          selectedProductIds.includes(item.productId.toString())
+        )
+      : cart.items; // fallback nếu buy-now
+
+    if (itemsToCheckout.length === 0) {
+      return res.status(400).json({ message: "Không có sản phẩm được chọn" });
+    }
+
+    for (const cartItem of itemsToCheckout) {
       const product = await Product.findById(cartItem.productId).lean();
       if (!product || !product.isActive) {
         return res.status(400).json({
@@ -66,19 +79,58 @@ const createOrder = async (req, res) => {
     let appliedDiscountCode = null;
 
     if (discountCode) {
+      const now = new Date();
+      const discount = await Discount.findOne({
+        code: discountCode.toUpperCase(),
+        status: "active",
+        validFrom: { $lte: now },
+        expiredAt: { $gte: now },
+        usageLimit: { $gt: 0 }, // Pre-check usage >0
+      });
 
-      // const discount = await Discount.findOne({ code: discountCode, isActive: true });
-      // if (discount && new Date() >= discount.startDate && new Date() <= discount.endDate) {
-      //     discountAmount = discount.type === 'PERCENT'
-      //         ? subtotal * (discount.value / 100)
-      //         : discount.value;
-      //     appliedDiscountCode = discountCode;
-      // } else {
-      //     return res.status(400).json({ message: "Mã giảm giá không hợp lệ hoặc đã hết hạn" });
-      // }
+      if (!discount) {
+        return res.status(400).json({
+          success: false,
+          message: "Mã giảm giá không tồn tại, đã hết hạn hoặc bị vô hiệu hóa",
+        });
+      }
 
-      // Hiện tại để tạm (demo)
-      discountAmount = 0;
+      // 2. CHECK MIN ORDER VALUE
+      if (subtotal < discount.minOrderValue) {
+        return res.status(400).json({
+          success: false,
+          message: `Đơn hàng tối thiểu phải từ ${discount.minOrderValue.toLocaleString()}đ để áp dụng mã ${discountCode}`,
+        });
+      }
+
+      // 3. TÍNH DISCOUNT AMOUNT
+      let calculatedDiscount = 0;
+      if (discount.discountType === "percent") {
+        calculatedDiscount = subtotal * (discount.value / 100);
+      } else if (discount.discountType === "fixed") {
+        calculatedDiscount = discount.value;
+      }
+
+      // Cap by maxDiscountValue
+      discountAmount = Math.min(
+        calculatedDiscount,
+        discount.maxDiscountValue || calculatedDiscount
+      );
+      appliedDiscountCode = discount.code;
+
+      // 4. ATOMIC GIẢM USAGE LIMIT (tránh race condition multi-user)
+      const updateUsage = await Discount.findOneAndUpdate(
+        { _id: discount._id, usageLimit: { $gt: 0 } }, // Double-check
+        { $inc: { usageLimit: -1 } },
+        { new: true }
+      );
+
+      if (!updateUsage) {
+        return res.status(400).json({
+          success: false,
+          message: "Mã giảm giá đã hết lượt sử dụng trong lúc xử lý!",
+        });
+      }
     }
 
     const finalAmount = Math.max(0, subtotal - discountAmount);
@@ -92,30 +144,76 @@ const createOrder = async (req, res) => {
       finalAmount,
       shippingAddress,
       paymentMethod,
-      paymentStatus: paymentMethod === "COD" ? "unpaid" : "pending",
+      paymentStatus: "unpaid",
       orderStatus: "pending",
       // createdAt sẽ tự động có nếu schema có timestamps: true
     });
 
     await newOrder.save();
+    // ... sau khi tạo newOrder và save thành công
 
-    // Giảm tồn kho (quan trọng!)
-    for (const item of orderItems) {
-      await Product.findByIdAndUpdate(
-        item.productId,
-        { $inc: { stock: -item.quantity } }, // GIẢM stock
-        { new: true, timestamps: false }
-      );
+    if (paymentMethod === "MOMOPAY") {
+      try {
+        const payUrl = await createMomoPayment(newOrder);
+        return res.status(201).json({
+          success: true,
+          paymentUrl: payUrl,
+          orderId: newOrder._id, 
+          order: newOrder,
+        });
+      } catch (err) {
+        // Nếu tạo link MoMo lỗi → xóa order (hoặc đánh dấu failed)
+        await Order.findByIdAndDelete(newOrder._id);
+        return res
+          .status(500)
+          .json({
+            success: false,
+            message: "Không thể tạo link thanh toán MoMo",
+          });
+      }
     }
 
-    // Xóa giỏ hàng
-    await Cart.updateOne({ userId }, { $set: { items: [] } });
+    // Chỉ trừ stock & xóa cart khi KHÔNG phải online payment
+    // (hoặc bạn có thể để riêng cho BANK nếu BANK cũng async)
+    for (const item of orderItems) {
+      const updated = await Product.findOneAndUpdate(
+        { _id: item.productId, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
+
+      if (!updated) {
+        // Rollback order nếu không đủ stock lúc này (hiếm nhưng có thể xảy ra)
+        await Order.findByIdAndUpdate(newOrder._id, {
+          orderStatus: "cancelled",
+          note: "Hết hàng lúc xác nhận",
+        });
+        throw new Error(`Hết hàng sản phẩm ${item.nameSnapshot}`);
+      }
+    }
+
+    await Cart.updateOne(
+      { userId },
+      {
+        $pull: {
+          items: {
+            productId: {
+              $in: selectedProductIds.map(
+                (id) => new mongoose.Types.ObjectId(id)
+              ),
+            },
+          },
+        },
+      }
+    );
 
     return res.status(201).json({
       success: true,
       message: "Tạo đơn hàng thành công!",
       order: newOrder,
     });
+
+   
   } catch (error) {
     console.error("Create order error:", error);
     return res.status(500).json({

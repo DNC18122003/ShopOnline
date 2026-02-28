@@ -217,10 +217,10 @@ const updateBrand = async (req, res) => {
 };
 
 /**
- * DELETE /api/brands/:id
- * Xóa thương hiệu (soft delete)
+ * PATCH /api/brands/:id/toggle-status
+ * Toggle trạng thái active/inactive của thương hiệu
  */
-const deleteBrand = async (req, res) => {
+const toggleBrandStatus = async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -232,9 +232,39 @@ const deleteBrand = async (req, res) => {
             });
         }
 
-        // Soft delete: set isActive = false
-        brand.isActive = false;
+        // Toggle status
+        brand.isActive = !brand.isActive;
         await brand.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Thương hiệu đã được ${brand.isActive ? 'kích hoạt' : 'vô hiệu hóa'}`,
+            data: brand,
+        });
+    } catch (error) {
+        console.error("Toggle brand status error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi server",
+        });
+    }
+};
+
+/**
+ * DELETE /api/brands/:id
+ * Xóa thương hiệu (hard delete - xóa vĩnh viễn)
+ */
+const deleteBrand = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const brand = await Brand.findByIdAndDelete(id);
+        if (!brand) {
+            return res.status(404).json({
+                success: false,
+                message: "Không tìm thấy thương hiệu",
+            });
+        }
 
         res.status(200).json({
             success: true,
@@ -255,5 +285,6 @@ module.exports = {
     getBrandBySlug,
     createBrand,
     updateBrand,
+    toggleBrandStatus,
     deleteBrand,
 };

@@ -1,15 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Star, ShoppingCart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
 import { getReviewByProductId } from '../../services/review/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 import AddToCartButton from '@/components/customer/AddToCartButton';
-
-// ============================================
-// CONSTANTS - Các hằng số cố định
-// ============================================
 
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
@@ -72,6 +68,7 @@ export default function ProductDetailPage() {
     const [error, setError] = useState(null);
     const [similarProducts, setSimilarProducts] = useState([]);
     const [reviews, setReviews] = useState([]);
+    const [showAllSpecs, setShowAllSpecs] = useState(false);
 
     // Fetch product data
     useEffect(() => {
@@ -254,7 +251,7 @@ export default function ProductDetailPage() {
                                 }}
                             />
                         ) : (
-                            <span className="text-gray-500 text-lg text-center px-4">
+                            <span className="max-h-full max-w-full object-contain">
                                 {productImages?.alt || 'Không có hình ảnh'}
                             </span>
                         )}
@@ -332,17 +329,37 @@ export default function ProductDetailPage() {
                         {specifications.length === 0 ? (
                             <p className="text-gray-600 py-4">Chưa có thông số kỹ thuật chi tiết cho sản phẩm này.</p>
                         ) : (
-                            <div className="space-y-1">
-                                {specifications.map((spec, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 px-2 rounded transition"
+                            <>
+                                <div className="space-y-1">
+                                    {(showAllSpecs ? specifications : specifications.slice(0, 5)).map((spec, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex justify-between items-center py-3 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 px-2 rounded transition"
+                                        >
+                                            <span className="text-sm text-gray-600 font-medium">{spec.title}</span>
+                                            <span className="text-sm font-semibold text-gray-900">{spec.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {specifications.length > 5 && (
+                                    <button
+                                        onClick={() => setShowAllSpecs(!showAllSpecs)}
+                                        className="mt-4 w-full flex items-center justify-center gap-2 py-2.5 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 border border-blue-200 rounded-lg transition-colors"
                                     >
-                                        <span className="text-sm text-gray-600 font-medium">{spec.title}</span>
-                                        <span className="text-sm font-semibold text-gray-900">{spec.value}</span>
-                                    </div>
-                                ))}
-                            </div>
+                                        {showAllSpecs ? (
+                                            <>
+                                                <ChevronUp className="w-4 h-4" />
+                                                Thu gọn
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ChevronDown className="w-4 h-4" />
+                                                Xem cấu hình chi tiết ({specifications.length - 5} thông số còn lại)
+                                            </>
+                                        )}
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
 
