@@ -8,7 +8,6 @@ import { BlogTable } from "@/components/Blog/blog-table"
 import { Pagination } from "@/components/Discount/pagination"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Loading } from "@/components/Discount/loading"
 import { DeleteBlogModal } from "@/components/Blog/delete-blog-form" 
 import { toast } from "react-toastify" 
 

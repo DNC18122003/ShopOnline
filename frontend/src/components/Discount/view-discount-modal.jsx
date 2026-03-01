@@ -4,7 +4,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { EditDiscountForm } from "./edit-discount-form"
+import { ViewDiscountForm } from './view-discount-form'
 
 export function ViewDiscountModal({ isOpen, onOpenChange, voucherData }) {
   return (
@@ -15,7 +15,7 @@ export function ViewDiscountModal({ isOpen, onOpenChange, voucherData }) {
         </DialogHeader>
         
         {/* Truyền prop readOnly={true} để khóa form */}
-        <EditDiscountForm 
+        <ViewDiscountForm 
             initialData={voucherData} 
             readOnly={true} 
             onCancel={() => onOpenChange(false)} 

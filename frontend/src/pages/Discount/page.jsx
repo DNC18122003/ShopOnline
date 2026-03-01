@@ -1,11 +1,10 @@
-import { useState, useEffect, Suspense } from "react";
-import { Search, Plus, RotateCcw } from "lucide-react"; // Thêm icon RotateCcw để reset filter đẹp hơn
+import { useState, useEffect } from "react";
+import { Search, Plus, RotateCcw } from "lucide-react";
 
 import { VoucherTable } from "@/components/Discount/voucher-table";
 import { Pagination } from "@/components/Discount/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loading } from "@/components/Discount/loading";
 
 // Thay đổi đường dẫn import này tùy theo cấu trúc project của bạn
 import discountService from "@/services/discount/discount.api";
@@ -159,39 +158,38 @@ export default function VoucherManagement() {
   };
 
   // 3. XỬ LÝ CẬP NHẬT
-  const handleUpdateSubmit = async (formData) => {
+  const handleUpdateSubmit = async (param1, param2) => {
     try {
-      const id = formData._id || formData.id;
+      let id = null;
+      let finalPayload = {};
 
-      // MAP DỮ LIỆU: Chuyển đổi tên các field từ Form sao cho khớp với Backend
-      const payload = {
-        description: formData.description,
-        // Ép kiểu về đúng 'percent' hoặc 'fixed' cho Backend
-        discountType: formData.discountType === 'percentage' ? 'percent' : 'fixed', 
-        value: formData.discountValue,              
-        maxDiscountValue: formData.maxDiscountValue,
-        minOrderValue: formData.minPurchaseValue,   
-        usageLimit: formData.usageLimit,
-        validFrom: formData.startDate,              
-        expiredAt: formData.endDate,                
-        status: formData.isActive ? 'active' : 'inactive'
-      };
+      if (typeof param1 === "string" && param2) {
+          id = param1;
+          finalPayload = { ...param2, _id: id };
+      } 
+      else if (typeof param1 === "object") {
+          id = voucherToEdit?._id || voucherToEdit?.id;
+          finalPayload = { ...param1, _id: id };
+      }
+      if (!id) {
+        toast.error("Lỗi: Không tìm thấy ID của mã giảm giá!");
+        console.error("Lỗi thiếu ID khi cập nhật mã giảm giá.");
+        return; 
+      }
 
-      // TRUYỀN PAYLOAD ĐÃ CHUẨN HÓA VÀO API
-      const res = await discountService.updateDiscount(id, payload);
+      const res = await discountService.updateDiscount(id, finalPayload);
 
       if (res && res.success) {
         toast.success("Cập nhật thành công!");
-        fetchVouchers();
-        
-        setIsEditModalOpen(false); 
-        setVoucherToEdit(null);
+        fetchVouchers(); // Refresh lại bảng dữ liệu
+        setIsEditModalOpen(false); // Đóng modal
+        setVoucherToEdit(null); // Clear state
         return res;
       } else {
         throw new Error(res?.message || "Cập nhật thất bại");
       }
     } catch (error) {
-      console.error("Update error:", error);
+      console.error("Lỗi khi cập nhật:", error);
       toast.error(error.message || "Có lỗi xảy ra khi cập nhật");
       throw error;
     }
@@ -263,8 +261,6 @@ export default function VoucherManagement() {
 
   // 6. XỬ LÝ EDIT & VIEW
   const handleEdit = async (voucherFromTable) => {
-    // Nếu trong bảng đã có full data thì dùng luôn, không cần gọi API getById
-    // Tuy nhiên gọi API getById vẫn an toàn nhất để lấy data mới nhất
     try {
       const id = voucherFromTable.id;
       const res = await discountService.getDiscountById(id);
@@ -300,155 +296,152 @@ export default function VoucherManagement() {
   };
 
   return (
-    <Suspense fallback={<Loading />}>
-      <div className="min-h-screen bg-gray-50/50">
-        <main className="p-8 max-w-[1600px] mx-auto">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-            <div>
-                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Quản lý mã giảm giá</h1>
-                 <p className="text-gray-500 text-sm mt-1">Tạo và quản lý các chương trình khuyến mãi của bạn</p>
-            </div>
-            
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="bg-[#3B82F6] hover:bg-[#2563EB] text-white gap-2 shadow-sm transition-all hover:shadow-md"
-            >
-              <Plus className="w-4 h-4" />
-              Tạo mã mới
-            </Button>
+    <div className="min-h-screen bg-gray-50/50">
+      <main className="p-8 max-w-[1600px] mx-auto">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div>
+               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Quản lý mã giảm giá</h1>
+               <p className="text-gray-500 text-sm mt-1">Tạo và quản lý các chương trình khuyến mãi của bạn</p>
           </div>
-
-          {/* Filter Bar */}
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-             <div className="flex flex-col md:flex-row gap-4 items-center">
-                {/* Search */}
-                <div className="relative w-full md:w-96">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
-                    placeholder="Tìm kiếm theo mã code..."
-                    value={searchQuery}
-                    onChange={handleFilterChange(setSearchQuery)}
-                    className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Filters */}
-                <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-                    <select
-                        className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        value={filterType}
-                        onChange={handleFilterChange(setFilterType)}
-                    >
-                        <option value="all">Loại giảm giá (Tất cả)</option>
-                        <option value="percent">% Phần trăm</option>
-                        <option value="fixed">₫ Tiền cố định</option>
-                    </select>
-
-                    <select
-                        className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                        value={filterStatus}
-                        onChange={handleFilterChange(setFilterStatus)}
-                    >
-                        <option value="all">Trạng thái (Tất cả)</option>
-                        <option value="active">Active (Hoạt động)</option>
-                        <option value="inactive">Inactive (Ngưng)</option>
-                    </select>
-                </div>
-
-                {/* Reset Button */}
-                {(filterStatus !== "all" || filterType !== "all" || searchQuery) && (
-                  <Button
-                    variant="ghost"
-                    onClick={handleResetFilter}
-                    className="text-gray-500 hover:text-red-600 hover:bg-red-50 gap-2 ml-auto md:ml-0"
-                  >
-                    <RotateCcw className="w-4 h-4" />
-                    Xóa bộ lọc
-                  </Button>
-                )}
-             </div>
-          </div>
-
-          {/* Table Content */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 space-y-4">
-                    {/* Bạn có thể thay bằng Component Loading skeleton */}
-                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-500 text-sm">Đang tải dữ liệu...</p>
-                </div>
-              ) : (
-                <VoucherTable
-                  vouchers={vouchers}
-                  onToggle={handleToggle}
-                  onEdit={handleEdit}
-                  onDelete={handleDeleteClick}
-                  onCopyCode={handleCopyCode}
-                  onView={handleView}
-                />
-              )}
-              
-              {/* Empty State */}
-              {!loading && vouchers.length === 0 && (
-                  <div className="text-center py-16">
-                      <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Search className="w-8 h-8 text-gray-400" />
-                      </div>
-                      <h3 className="text-lg font-medium text-gray-900">Không tìm thấy kết quả</h3>
-                      <p className="text-gray-500 mt-1">Thử thay đổi bộ lọc hoặc tạo mã giảm giá mới.</p>
-                  </div>
-              )}
-          </div>
-
-          {/* Pagination */}
-          {!loading && totalItems > 0 && (
-             <div className="mt-6">
-                 {totalPages > 1 ? (
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                        onPageChange={setCurrentPage}
-                    />
-                 ) : (
-                    <p className="text-center text-sm text-gray-500">
-                        Hiển thị toàn bộ {totalItems} kết quả
-                    </p>
-                 )}
-             </div>
-          )}
-
-          {/* ----- MODALS ----- */}
           
-          <DeleteDiscountModal
-            isOpen={isDeleteModalOpen}
-            onOpenChange={setIsDeleteModalOpen}
-            discountCode={voucherToDelete?.code || ""}
-            onConfirm={handleConfirmDelete}
-          />
+          <Button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="bg-[#3B82F6] hover:bg-[#2563EB] text-white gap-2 shadow-sm transition-all hover:shadow-md"
+          >
+            <Plus className="w-4 h-4" />
+            Tạo mã mới
+          </Button>
+        </div>
 
-          <CreateDiscountModal
-            isOpen={isCreateModalOpen}
-            onOpenChange={setIsCreateModalOpen}
-            onSubmit={handleCreateSubmit}
-          />
+        {/* Filter Bar */}
+        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+           <div className="flex flex-col md:flex-row gap-4 items-center">
+              {/* Search */}
+              <div className="relative w-full md:w-96">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Tìm kiếm theo mã code..."
+                  value={searchQuery}
+                  onChange={handleFilterChange(setSearchQuery)}
+                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
 
-          <EditDiscountModal
-            isOpen={isEditModalOpen}
-            onOpenChange={setIsEditModalOpen}
-            voucherData={voucherToEdit}
-            onSubmit={handleUpdateSubmit}
-          />
+              {/* Filters */}
+              <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+                  <select
+                      className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      value={filterType}
+                      onChange={handleFilterChange(setFilterType)}
+                  >
+                      <option value="all">Loại giảm giá (Tất cả)</option>
+                      <option value="percent">% Phần trăm</option>
+                      <option value="fixed">₫ Tiền cố định</option>
+                  </select>
 
-          <ViewDiscountModal
-            isOpen={isViewModalOpen}
-            onOpenChange={setIsViewModalOpen}
-            voucherData={voucherToView}
-          />
-        </main>
-      </div>
-    </Suspense>
+                  <select
+                      className="h-10 px-3 py-2 text-sm border border-gray-200 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                      value={filterStatus}
+                      onChange={handleFilterChange(setFilterStatus)}
+                  >
+                      <option value="all">Trạng thái (Tất cả)</option>
+                      <option value="active">Active (Hoạt động)</option>
+                      <option value="inactive">Inactive (Ngưng)</option>
+                  </select>
+              </div>
+
+              {/* Reset Button */}
+              {(filterStatus !== "all" || filterType !== "all" || searchQuery) && (
+                <Button
+                  variant="ghost"
+                  onClick={handleResetFilter}
+                  className="text-gray-500 hover:text-red-600 hover:bg-red-50 gap-2 ml-auto md:ml-0"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Xóa bộ lọc
+                </Button>
+              )}
+           </div>
+        </div>
+
+        {/* Table Content */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+           {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                  <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-gray-500 text-sm">Đang tải dữ liệu...</p>
+              </div>
+            ) : (
+              <VoucherTable
+                vouchers={vouchers}
+                onToggle={handleToggle}
+                onEdit={handleEdit}
+                onDelete={handleDeleteClick}
+                onCopyCode={handleCopyCode}
+                onView={handleView}
+              />
+            )}
+            
+            {/* Empty State */}
+            {!loading && vouchers.length === 0 && (
+                <div className="text-center py-16">
+                    <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Search className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900">Không tìm thấy kết quả</h3>
+                    <p className="text-gray-500 mt-1">Thử thay đổi bộ lọc hoặc tạo mã giảm giá mới.</p>
+                </div>
+            )}
+        </div>
+
+        {/* Pagination */}
+        {!loading && totalItems > 0 && (
+           <div className="mt-6">
+               {totalPages > 1 ? (
+                  <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={totalItems}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                  />
+               ) : (
+                  <p className="text-center text-sm text-gray-500">
+                      Hiển thị toàn bộ {totalItems} kết quả
+                  </p>
+               )}
+           </div>
+        )}
+
+        {/* ----- MODALS ----- */}
+        
+        <DeleteDiscountModal
+          isOpen={isDeleteModalOpen}
+          onOpenChange={setIsDeleteModalOpen}
+          discountCode={voucherToDelete?.code || ""}
+          onConfirm={handleConfirmDelete}
+        />
+
+        <CreateDiscountModal
+          isOpen={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          onSubmit={handleCreateSubmit}
+        />
+
+        <EditDiscountModal
+          isOpen={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          voucherData={voucherToEdit}
+          onSubmit={handleUpdateSubmit}
+        />
+
+        <ViewDiscountModal
+          isOpen={isViewModalOpen}
+          onOpenChange={setIsViewModalOpen}
+          voucherData={voucherToView}
+        />
+      </main>
+    </div>
   );
 }
