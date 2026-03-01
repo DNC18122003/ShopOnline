@@ -33,5 +33,13 @@ const verifyOTP = async (req, res) => {
   }
   return res.json({ message: "Xác thực OTP thành công !" });
 };
+const verifyOtpByForgotPassword = async (req, res) => {
+  const { otp, email } = req.body;
+  const result = verifyOTPService(otp, email, req.session);
+  if (!result.success) {
+    return res.status(400).json({ message: result.message });
+  }
+  return res.json({ message: "Xác thực OTP thành công !" });
+};
 
-module.exports = { sendOTP, verifyOTP };
+module.exports = { sendOTP, verifyOTP, verifyOtpByForgotPassword };

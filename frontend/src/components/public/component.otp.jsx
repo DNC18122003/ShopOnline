@@ -8,8 +8,8 @@ import { verifyOtpRegister } from '@/services/auth/authService';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
-const ComponentOtp = ({ title, email }) => {
-    const [otp, setOtp] = useState('');
+const ComponentOtp = ({ title, email, message, handleClose, otp, setOtp }) => {
+    // const [otp, setOtp] = useState('');
 
     const [time, setTime] = useState(60);
     const [loading, setLoading] = useState(false);
@@ -41,23 +41,22 @@ const ComponentOtp = ({ title, email }) => {
         setTime(60);
         handleSubmit();
     };
-    const handleSubmit = async () => {
-        console.log('Gửi OTP:', otp);
-        try {
-            const response = await verifyOtpRegister(email, otp);
-            console.log('OTP sent successfully:', response.data);
-            toast.success('OTP đã được xác minh thành công, vui lòng đăng nhập lại !');
-            setTimeout(() => {
-                navigate('/login');
-            }, 1000);
-        } catch (error) {
-            console.error('Error sending OTP:', error);
-            toast.error('Xác minh OTP thất bại!');
-        }
-    };
+    // const handleSubmit = async () => {
+    //     console.log('Gửi OTP:', otp);
+    //     try {
+    //         const response = await verifyOtpRegister(email, otp);
+    //         console.log('OTP sent successfully:', response.data);
+    //         toast.success(message || 'OTP đã được xác minh thành công !');
+    //         handleClose && handleClose();
+    //     } catch (error) {
+    //         console.error('Error sending OTP:', error);
+    //         toast.error('Xác minh OTP thất bại!');
+    //     }
+    // };
 
     return (
-        <div className="flex items-center justify-center h-screen">
+        // <div className="flex items-center justify-center h-screen">
+        <>
             <div className="border w-full max-w-100 mx-4 flex items-center justify-center flex-col p-5 rounded-md shadow-md gap-3">
                 {/* UI chính thức */}
                 <div className="flex items-center justify-center bg-blue-400 h-10 w-10 rounded-full ">
@@ -88,7 +87,7 @@ const ComponentOtp = ({ title, email }) => {
                         <InputOTPSlot index={5} />
                     </InputOTPGroup>
                 </InputOTP>
-                <Button className="w-[90%] mx-auto bg-blue-600" onClick={handleSubmit} disabled={loading}>
+                <Button className="w-[90%] mx-auto bg-blue-600" onClick={handleClose} disabled={loading}>
                     {loading ? 'Đang xác thực...' : 'Xác thực'}
                 </Button>
                 <span className="text-slate-500"> Không nhận được mã ?</span>
@@ -105,7 +104,7 @@ const ComponentOtp = ({ title, email }) => {
                     Gửi lại mã OTP {time > 0 && <span>({time}s)</span>}
                 </p>
             </div>
-        </div>
+        </>
     );
 };
 
