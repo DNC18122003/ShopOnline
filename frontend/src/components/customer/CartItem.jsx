@@ -9,18 +9,15 @@ import { Button } from '@/components/ui/button';
 const cn = (...inputs) => twMerge(clsx(inputs));
 
 const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onToggleSelect, isPending = false }) => {
-    const [localQty, setLocalQty] = useState(item.quantity);
+    const localQty = item.quantity;
     const [isPendingLocal, startTransition] = useTransition();
 
-    const isOutOfStock = item.stock < item.quantity;
+    // const isOutOfStock = item.stock < item.quantity;
 
-    const handleQuantityChange = (newQty) => {
-        if (newQty < 1 || newQty > 99) return;
-        setLocalQty(newQty);
-        startTransition(() => {
-            onUpdateQuantity(item.productId, newQty);
-        });
-    };
+  const handleQuantityChange = async (newQty) => {
+      if (newQty < 1 || newQty > 99) return;
+      await onUpdateQuantity(item.productId, newQty);
+  };
 
     return (
         <div
@@ -34,7 +31,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
                 <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => onToggleSelect(item.productId)}
-                    disabled={isPending || isPendingLocal || isOutOfStock}
+                    disabled={isPending || isPendingLocal}
                 />
             </div>
 
@@ -116,7 +113,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
                             size="icon"
                             className="h-9 w-9 rounded-none border-l"
                             onClick={() => handleQuantityChange(localQty + 1)}
-                            disabled={localQty >= 99 || isOutOfStock || isPending || isPendingLocal}
+                            disabled={localQty >= 99  || isPending || isPendingLocal}
                         >
                             <Plus className="h-4 w-4" />
                         </Button>

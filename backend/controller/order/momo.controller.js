@@ -74,29 +74,31 @@ exports.confirmMomoPayment = async (req, res) => {
   try {
     const { orderId } = req.body;
 
-    const order = await Order.findById(orderId);
+    //  Update atomic: chỉ update nếu chưa paid
+    const order = await Order.findOneAndUpdate(
+      { _id: orderId, paymentStatus: "unpaid" },
+      {
+        $set: {
+          paymentStatus: "paid",
+          orderStatus: "confirmed",
+        },
+      },
+      { new: true }
+    );
+
     if (!order) {
-      return res.status(404).json({ message: "Order not found" });
+      return res.json({ message: "Already paid or not found" });
     }
 
-    if (order.paymentStatus === "paid") {
-      return res.json({ message: "Already paid" });
-    }
-
-    // Cập nhật trạng thái
-    order.paymentStatus = "paid";
-    order.orderStatus = "confirmed";
-    await order.save();
-
-    // Trừ stock
+    //  Trừ stock chỉ khi update thành công
     for (const item of order.items) {
       await Product.findOneAndUpdate(
-        { _id: item.productId },
+        { _id: item.productId, stock: { $gte: item.quantity } },
         { $inc: { stock: -item.quantity } }
       );
     }
 
-    // Xóa sản phẩm đã thanh toán khỏi cart
+    //  Xóa khỏi cart
     await Cart.updateOne(
       { userId: order.customerId },
       {

@@ -82,3 +82,20 @@ export const confirmMomoPayment = async (orderId) => {
   }
 };
 
+// 7. Hủy đơn hàng (chỉ khi pending)
+export const cancelOrder = async (orderId) => {
+  try {
+    const response = await customizeAPI.patch(
+      `/order/${orderId}/cancel`
+    );
+
+    toast.success('Hủy đơn hàng thành công');
+    return response;
+  } catch (error) {
+    toast.error(
+      error.response?.data?.message || 'Không thể hủy đơn hàng'
+    );
+    throw error;
+  }
+};
+

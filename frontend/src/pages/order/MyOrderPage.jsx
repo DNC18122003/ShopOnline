@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Calendar, Eye, Truck, RotateCcw, Star, Funnel,RotateCcwIcon,Clock,CircleCheck,CircleX } from 'lucide-react';
-import { getMyOrders } from '@/services/customer/order.api';
+import { getMyOrders, cancelOrder } from '@/services/customer/order.api';
 import { useNavigate } from 'react-router-dom';
 const statusConfig = {
     pending: {
@@ -35,6 +35,8 @@ const statusConfig = {
 const MyOrderPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [cancelOrderId, setCancelOrderId] = useState(null);
+    const [cancelLoading, setCancelLoading] = useState(false);
     const navigate = useNavigate();
     
     useEffect(() => {
@@ -57,6 +59,18 @@ const MyOrderPage = () => {
     const handleViewDetail = (id) => {
         navigate(`/orders/${id}`);
     };
+const handleCancel = async () => {
+    try {
+        setCancelLoading(true);
+        await cancelOrder(cancelOrderId);
+        setCancelOrderId(null);
+        await fetchOrders();
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setCancelLoading(false);
+    }
+};
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
@@ -115,7 +129,8 @@ const MyOrderPage = () => {
                         <Funnel size={16} /> Lọc
                     </button>
                     <button className="bg-gray-200 px-4 py-2 flex rounded-lg text-sm gap-2">
-                        <RotateCcwIcon size={16} />Đặt lại
+                        <RotateCcwIcon size={16} />
+                        Đặt lại
                     </button>
                 </div>
             </div>
@@ -127,8 +142,8 @@ const MyOrderPage = () => {
             {!loading && (
                 <div className="space-y-4">
                     {orders.map((order) => {
-                       const status = statusConfig[order.orderStatus] || statusConfig.pending;
-                       const Icon = status.icon;
+                        const status = statusConfig[order.orderStatus] || statusConfig.pending;
+                        const Icon = status.icon;
                         return (
                             <div key={order._id} className="bg-white rounded-2xl shadow-sm p-5">
                                 {/* Top */}
@@ -167,17 +182,14 @@ const MyOrderPage = () => {
                                     </div>
 
                                     <div className="flex gap-3">
-                                        {/* {(order.status === 'completed' || order.status === 'delivered') && (
-                                            <>
-                                                <button className="flex items-center gap-1 border px-3 py-2 rounded-lg text-sm">
-                                                    <RotateCcw size={14} /> Mua lại
-                                                </button>
-                                                <button className="flex items-center gap-1 bg-yellow-400 text-white px-3 py-2 rounded-lg text-sm">
-                                                    <Star size={14} /> Đánh giá
-                                                </button>
-                                            </>
-                                        )} */}
-
+                                        {order.orderStatus === 'pending' && (
+                                            <button
+                                                className="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm transition"
+                                                onClick={() => setCancelOrderId(order._id)}
+                                            >
+                                                <CircleX size={14} /> Hủy đơn
+                                            </button>
+                                        )}
                                         <button
                                             className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition"
                                             onClick={() => handleViewDetail(order._id)}
@@ -195,8 +207,38 @@ const MyOrderPage = () => {
                     )}
                 </div>
             )}
+            {cancelOrderId && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl">
+                        <h2 className="text-lg font-semibold mb-2 text-gray-800">Xác nhận hủy đơn</h2>
+
+                        <p className="text-sm text-gray-500 mb-6">
+                            Bạn có chắc muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setCancelOrderId(null)}
+                                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-sm"
+                                disabled={cancelLoading}
+                            >
+                                Đóng
+                            </button>
+
+                            <button
+                                onClick={handleCancel}
+                                disabled={cancelLoading}
+                                className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white text-sm flex items-center gap-2"
+                            >
+                                {cancelLoading ? 'Đang hủy...' : 'Xác nhận hủy'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
+
 };
 
 export default MyOrderPage;

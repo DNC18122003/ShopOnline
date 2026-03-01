@@ -1,11 +1,12 @@
 import { CheckCircle2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate,useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import pay1 from '@/assets/pay.png';
 
 const OrderSuccessPage = () => {
     const navigate = useNavigate();
-
+    const location = useLocation();
+    const {orderId} = location.state || {}; 
     return (
         <div
             className="relative min-h-screen flex items-center justify-center px-4 bg-cover bg-center bg-no-repeat"
@@ -39,13 +40,15 @@ const OrderSuccessPage = () => {
                         Về trang chủ
                     </Button>
 
-                    <Button
-                        variant="outline"
-                        className="rounded-xl text-black border-white hover:bg-white/20"
-                        onClick={() => navigate('/orders')}
-                    >
-                        Xem đơn hàng
-                    </Button>
+                    {orderId && (
+                        <Button
+                            variant="outline"
+                            className="rounded-xl text-black border-white hover:bg-white/20"
+                            onClick={() => navigate(`/orders/${orderId}`)}
+                        >
+                            Xem đơn hàng
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>

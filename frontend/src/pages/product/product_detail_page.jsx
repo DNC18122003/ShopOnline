@@ -186,6 +186,21 @@ export default function ProductDetailPage() {
         navigate(`/product/${productId}`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
+const handleBuyNow = () => {
+    if (!product) return;
+
+    navigate('/checkout', {
+        state: {
+            buyNowItem: {
+                productId: product._id,
+                nameSnapshot: product.name,
+                priceSnapshot: product.price,
+                imageSnapshot: product.images?.[0] || '',
+                quantity: 1,
+            },
+        },
+    });
+};
 
     // ============================================
     // COMPUTED VALUES - Các giá trị tính toán
@@ -302,13 +317,20 @@ export default function ProductDetailPage() {
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="px-4 pb-4">
+                        <div className="px-4 pb-4 space-y-3">
                             <AddToCartButton
                                 productId={id}
                                 name={product.name}
                                 price={product.price}
                                 image={product.images?.[0] || ''}
                             />
+
+                            <button
+                                onClick={() => handleBuyNow()}
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition"
+                            >
+                                Mua ngay
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -5,7 +5,7 @@ import { useAuth } from '@/context/authContext';
 import axios from 'axios';
 import { createOrder, getAddress } from '@/services/customer/order.api';
 import { toast } from 'react-toastify';
-import discountService from '@/services/discount/discount.api'; // đường dẫn đúng của bạn
+import discountService from '@/services/discount/discount.api'; 
 import DiscountInput from '@/components/Discount/DiscountInput';
 import { useLocation } from 'react-router-dom';
 const CheckoutPage = () => {
@@ -31,7 +31,8 @@ const CheckoutPage = () => {
         paymentMethod: 'COD',
     });
     const location = useLocation();
-    const selectedItems = location.state?.selectedItems || cart?.items || [];
+    const buyNowItem = location.state?.buyNowItem || null;
+    const isBuyNow = !!buyNowItem;
     const fromCart = location.state?.fromCart || false;
     const [discountInfo, setDiscountInfo] = useState(null);
     const [discountError, setDiscountError] = useState(null);
@@ -43,9 +44,10 @@ const CheckoutPage = () => {
     const [isDiscountListOpen, setIsDiscountListOpen] = useState(false);
 
     if (!user) return <Navigate to="/login" replace />;
-    if (!cart?.items?.length) {
-       return <Navigate to="/cart" replace />;
-    }
+    if (!isBuyNow && !cart?.items?.length) {
+   return <Navigate to="/cart" replace />;
+    }   
+    const selectedItems = isBuyNow ? [buyNowItem] : location.state?.selectedItems || cart?.items || [];
 
     const subtotal = selectedItems.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
     const shippingFee = 0;
@@ -248,11 +250,20 @@ const CheckoutPage = () => {
          shippingAddress,
          paymentMethod: formData.paymentMethod,
          discountCode: formData.discountCode?.trim() || undefined,
-         selectedProductIds: selectedItems.map((i) => i.productId),
+         items: selectedItems.map((item) => ({
+             productId: item.productId,
+             quantity: item.quantity,
+             priceSnapshot: item.priceSnapshot,
+             nameSnapshot: item.nameSnapshot,
+             imageSnapshot: item.imageSnapshot,
+         })),
      };
 
      try {
          const res = await createOrder(payload);
+         console.log('Payload: ',res)
+        const orderId = res?.order?._id;
+         console.log('OrderId: ',orderId)
          if (formData.paymentMethod === 'MOMOPAY') {
              const payUrl = res?.paymentUrl;
 
@@ -266,7 +277,6 @@ const CheckoutPage = () => {
          }
 
          // COD PAYMENT
-    
          toast.success('Đặt hàng thành công!', {
              position: 'top-right',
              autoClose: 4000,
@@ -276,7 +286,9 @@ const CheckoutPage = () => {
              await removeMultipleItems(idsToRemove);
          }
 
-         navigate('/order-success');
+        navigate('/order-success', {
+            state: { orderId },
+        });
      } catch (err) {
          const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
 
