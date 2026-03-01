@@ -18,7 +18,7 @@ const getProducts = async (req, res) => {
       sort,
       keyword,
     } = req.query;
-
+    console.log("Query params:", req.query);
     // ===== 1. Build filter =====
     const filter = {
       isActive: true,
