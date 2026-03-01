@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, Star } from 'lucide-react';
 import { getProducts } from '@/services/product/product.api';
 import { getCategories } from '@/services/category/category.api';
@@ -102,6 +102,10 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images }) {
 // MAIN COMPONENT - ProductListingPage
 // ============================================
 export default function ProductListingPage() {
+    // --- STATE: từ URL ---
+    const [searchParams] = useSearchParams();
+    // Lấy category từ URL
+    const categoryFromUrl = searchParams.get('category');
     // --- STATE: Dữ liệu sản phẩm ---
     const [products, setProducts] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -119,7 +123,9 @@ export default function ProductListingPage() {
     const [sortBy, setSortBy] = useState('best-match');
 
     // --- STATE: Bộ lọc ---
-    const [selectedCategories, setSelectedCategories] = useState(new Set());
+    const [selectedCategories, setSelectedCategories] = useState(
+        new Set(categoryFromUrl ? categoryFromUrl.split(',') : []),
+    );
     const [selectedBrands, setSelectedBrands] = useState(new Set());
     const [selectedPriceRange, setSelectedPriceRange] = useState(null);
 
