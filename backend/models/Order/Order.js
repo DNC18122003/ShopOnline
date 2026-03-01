@@ -4,6 +4,7 @@ const addressSchema = new Schema(
   {
     fullName: String,
     phone: String,
+    email: String,
     street: String,
     ward: String,
     province: String,
@@ -104,9 +105,12 @@ const orderSchema = new Schema(
 
     orderStatus: {
       type: String,
-      enum: ["pending", "confirmed", "completed", "cancelled"],
+      enum: ["pending", "confirmed","shipping", "completed", "cancelled"],
       default: "pending",
       index: true,
+    },
+    momoTransId: {
+      type: String,
     },
   },
   { timestamps: true }

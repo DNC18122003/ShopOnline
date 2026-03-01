@@ -1,19 +1,20 @@
 import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
-
+import { useCart } from '@/context/cartContext';
 import { Cpu, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 import poster from '../../assets/tech_shop_poster.png';
 
 import { login_service } from '../../services/auth/authService';
 const login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { setUser } = useContext(AuthContext);
-
+    const { fetchCart } = useCart(); 
     const [formLogin, setFormLogin] = React.useState({
         email: '',
         password: '',
@@ -58,7 +59,7 @@ const login = () => {
             //console.log('Login successful api:', response);
             // set data in auth context
             setUser(response.user);
-
+             await fetchCart();
             // set data in local storage
             const data_ui = {
                 fullName: response.user.fullName,
@@ -81,7 +82,9 @@ const login = () => {
                 } else if (response.user.role === 'staff') {
                     navigate('/staff/categories');
                 } else {
-                    navigate('/');
+                    const defaultTarget = '/';
+                    const from = location.state?.from || defaultTarget;
+                    navigate(from);
                 }
             }, 1000);
         } catch (error) {

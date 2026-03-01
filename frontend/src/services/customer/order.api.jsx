@@ -30,13 +30,13 @@ export const createOrder = async (orderPayload) => {
 
 // 3. Lấy danh sách đơn hàng của tôi
 export const getMyOrders = async () => {
-  try {
-    const response = await customizeAPI.get('/order/my-orders');
-    return response;
-  } catch (error) {
-    console.error('Lỗi lấy danh sách đơn hàng:', error);
-    throw error;
-  }
+    try {
+        const response = await customizeAPI.get('/order/my-orders');
+        return response.orders || [];
+    } catch (error) {
+        console.error('Lỗi lấy danh sách đơn hàng:', error);
+        throw error;
+    }
 };
 
 
@@ -67,3 +67,18 @@ export const updateOrderStatus = async (orderId, newStatus) => {
     throw error;
   }
 };
+
+// 6. Xác nhận thanh toán MoMo (local project)
+export const confirmMomoPayment = async (orderId) => {
+  try {
+    const response = await customizeAPI.post('/order/momo/confirm', {
+      orderId,
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi confirm MoMo:', error);
+    throw error;
+  }
+};
+

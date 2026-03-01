@@ -2,7 +2,7 @@ const express = require("express");
 const orderController = require("../../controller/order/order.controller");
 const { getAddress } = require("../../controller/order/address.controller");
 const { authenticateToken,checkRoleAndStatus} = require("../../middleware/authorization");
-
+const { confirmMomoPayment} = require("../../controller/order/momo.controller");
 const router = express.Router();
 router.get("/geocode/reverse", getAddress);
 
@@ -15,5 +15,6 @@ router.get("/:orderId", orderController.getOrderById);
 router.get("/",checkRoleAndStatus(["admin", "staff"]),orderController.getAllOrder);
 router.put("/:orderId/status",checkRoleAndStatus(["admin", "staff"]),orderController.updateOrderStatus);
 
+router.post("/momo/confirm", confirmMomoPayment);
 
 module.exports = router;

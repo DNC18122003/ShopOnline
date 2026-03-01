@@ -6,6 +6,9 @@ router.get("/", discountController.getAllDiscounts);
 // 1. GET: Lấy danh sách mã giảm giá (Có thể filter ?code=...&status=...)
 router.get("/", discountController.getAllDiscounts);
 
+// 1.1 GET: Lấy mã giảm giá có sẵn
+router.get("/available", discountController.getAvailableDiscounts);
+
 // 2. GET: Lấy chi tiết 1 mã theo ID
 router.get("/:id", discountController.getDiscountById);
 
@@ -20,5 +23,6 @@ router.delete("/:id", discountController.deleteDiscount);
 
 // 6. POST: Kiểm tra tính hợp lệ của mã (Dùng ở trang Checkout)
 router.post("/check", discountController.checkDiscountValidity);
+
 
 module.exports = router;
