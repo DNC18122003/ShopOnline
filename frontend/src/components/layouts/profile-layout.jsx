@@ -1,15 +1,16 @@
-import React, { useContext } from 'react';
+import React, { useContext, useRef } from 'react';
 import { Outlet, NavLink, href, useNavigate } from 'react-router-dom';
 
-import { User, ShoppingBag, KeyRound, LogOut } from 'lucide-react';
+import { User, ShoppingBag, KeyRound, LogOut, Pencil } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import { logout_service } from '@/services/auth/authService';
 import { AuthContext } from '@/context/authContext';
+import { updateAvatarService } from '@/services/customer/profile.api';
 
 const navLinkItems = [
     {
@@ -33,6 +34,7 @@ const ProfileLayout = () => {
     const { setUser } = useContext(AuthContext);
     const navigate = useNavigate();
     // console.log('ProfileLayout userData:', userData);
+    const fileInputRef = useRef(null);
     const parseName = (name) => {
         // ex : DanNguen1477 => D7
         if (!name) return '';
@@ -56,6 +58,46 @@ const ProfileLayout = () => {
             console.log(error);
         }
     };
+    // Hàm kích hoạt chọn file khi bấm vào icon Pencil
+    const handleEditClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleInputAvatar = async (e) => {
+        console.log('hi');
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Kiểm tra định dạng file nhanh ở client
+        if (!file.type.startsWith('image/')) {
+            toast.error('Vui lòng chọn file hình ảnh!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('avatar', file); // Key "avatar" phải khớp với upload.single("avatar") ở backend
+
+        try {
+            toast.loading('Đang tải ảnh lên...');
+
+            const response = await updateAvatarService(formData);
+
+            if (response.success) {
+                // Cập nhật lại localStorage để UI đồng bộ ngay lập tức
+                const updatedUser = { ...userData, avatar: response.avatarUrl };
+                localStorage.setItem('data_ui', JSON.stringify(updatedUser));
+
+                // Cập nhật context nếu cần
+                setUser(updatedUser);
+
+                toast.dismiss();
+                toast.success('Cập nhật ảnh thành công!');
+            }
+        } catch (error) {
+            toast.dismiss();
+            toast.error(error.response?.data?.message || 'Lỗi khi upload ảnh');
+        }
+    };
     return (
         <div className="flex-1 bg-gray-50 p-5">
             <div className="flex gap-5 items-start">
@@ -64,11 +106,25 @@ const ProfileLayout = () => {
                 <aside className="w-20 md:w-72 bg-white px-3 md:px-6 py-8 flex flex-col shadow-md rounded-lg">
                     {/* 1. User info: Ẩn text trên mobile, chỉ hiện Avatar */}
                     <div className="flex flex-col items-center text-center mb-8">
-                        <Avatar className="w-12 h-12 md:w-20 md:h-20 mb-3 border-2 border-blue-50">
-                            <AvatarImage src={userData.avatar} alt="User" />
-                            <AvatarFallback>{parseName(userData.userName)}</AvatarFallback>
-                        </Avatar>
-
+                        <div className="relative">
+                            <Avatar className="w-12 h-12 md:w-20 md:h-20 mb-3 border-2 border-blue-50">
+                                <AvatarImage src={userData.avatar} alt="User" />
+                                <AvatarFallback>{parseName(userData.userName)}</AvatarFallback>
+                            </Avatar>
+                            {/* Input file ẩn */}
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleInputAvatar}
+                                className="hidden"
+                                accept="image/*"
+                            />
+                            <Pencil
+                                size={20}
+                                className="absolute bottom-4 right-0 cursor-pointer border border-gray-300 rounded-sm text-white bg-blue-500 hover:bg-blue-600 p-1"
+                                onClick={handleEditClick}
+                            />
+                        </div>
                         <div>
                             <h3 className="font-semibold text-gray-900 truncate max-w-45 hidden md:block">
                                 {userData.email || '--'}

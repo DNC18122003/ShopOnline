@@ -43,6 +43,7 @@ const userSchema = new Schema({
         type: Boolean,
         default: true
     },
+    address: String,
 }, { timestamps: true });
 
 //module.exports = mongoose.model('User', userSchema);

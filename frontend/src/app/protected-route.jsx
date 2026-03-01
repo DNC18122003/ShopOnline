@@ -8,7 +8,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     const location = useLocation();
     // nếu loading = true => app chưa chạy lần đầu, chưa tải data user chưa check role
     // nếu loading = false => app đã load user lần đầu, lúc này mới check để tránh flict UI
+    //console.log('loading in protected route:', loading);
     if (loading) {
+        //console.log('1');
         return (
             <div className="flex items-center justify-center h-screen">
                 <p>Loading...</p>
@@ -17,11 +19,13 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     }
     // console.log('protect đi đến đây và có kết quả', user);
     if (!user) {
+        //console.log('2');
         // Lưu lại vị trí trang hiện tại để sau khi login có thể quay lại
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
     // Kiểm tra user đã active chưa
-    if (!user.isActive) {
+    if (user && !user.isActive) {
+        //console.log('3');
         return <Navigate to="/verify_otp" replace />;
     }
 
