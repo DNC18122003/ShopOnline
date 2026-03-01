@@ -21,8 +21,8 @@ const blogSchema = new Schema({
     type: String,
     default: 'default-blog.jpg' 
   },
-  authorId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  author: { 
+    type: String,
     ref: 'User', 
     required: [true, 'Bài viết phải có tác giả']
   },

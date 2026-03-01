@@ -81,7 +81,7 @@ export function BlogTable({ posts = [], onEdit, onDelete, onView }) {
 
                 {/* 3. Người tạo */}
                 <TableCell className="text-center font-medium text-gray-700">
-                  {post.authorName || (post.authorId ? "User " + post.authorId : "Admin")}
+                  {post.author || (post.author ? "User " + post.author : "Admin")}
                 </TableCell>
 
                 {/* 4. Ngày đăng */}

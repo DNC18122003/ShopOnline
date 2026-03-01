@@ -10,30 +10,31 @@ const generateSlug = (title) => {
 
 const blogController = {
   // 1. danh sách bài viết
-  getAllBlogs: async (req, res) => {
-    try {
-      const { status } = req.query;
-      let query = {};
+ getAllBlogs: async (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = {};
 
-      if (status) query.status = status;
+    if (status) query.status = status;
+    const blogs = await Blog.find(query)
+      .sort({ createdAt: -1 }); 
 
-      const blogs = await Blog.find(query)
-        .populate('authorId', 'name email') 
-        .sort({ createdAt: -1 }); // 1 = Tăng dần (Giống hiển thị trong MongoDB Compass/Atlas)
-
-      res.status(200).json({
-        success: true,
-        count: blogs.length,
-        data: blogs
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
+    res.status(200).json({
+      success: true,
+      count: blogs.length,
+      data: blogs // Trả về danh sách blogs, trong đó author là một chuỗi ID
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+},
   // 2. Tạo bài viết mới
   createBlog: async (req, res) => {
     try {
-      let { title, slug, content, authorId, thumbnail, status } = req.body;
+      let { title, slug, content, author, thumbnail, status } = req.body;
 
       // Nếu không truyền slug, tự tạo từ title
       if (!slug && title) {
@@ -50,7 +51,7 @@ const blogController = {
         title,
         slug,
         content,
-        authorId, // Lưu ý: Nếu có middleware auth, thường lấy từ req.user._id
+        author, 
         thumbnail,
         status
       });
@@ -77,7 +78,7 @@ const blogController = {
         id, 
         { $inc: { viewCount: 1 } }, // Tăng view lên 1
         { new: true } // Trả về data mới sau khi tăng
-      ).populate('authorId', 'name email');
+      ).populate('author', 'name email');
 
       if (!blog) {
         return res.status(404).json({ success: false, message: 'Bài viết không tồn tại' });
@@ -98,7 +99,7 @@ const blogController = {
             { slug: slug },
             { $inc: { viewCount: 1 } },
             { new: true }
-        ).populate('authorId', 'name email');
+        ).populate('author', 'name email');
 
         if (!blog) {
             return res.status(404).json({ success: false, message: 'Bài viết không tồn tại' });
