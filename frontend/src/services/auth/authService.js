@@ -33,3 +33,20 @@ export const getMe = () => {
         withCredentials: true,
     });
 };
+// verify otp register
+export const sendOtpRegister = async (email) => {
+    try {
+        const response = await customizeAPI.post(`${API_BASE_URL}/otp/send-otp`, { email });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};
+export const verifyOtpRegister = async (email, otp) => {
+    try {
+        const response = await customizeAPI.post(`${API_BASE_URL}/otp/verify-otp`, { email, otp });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};

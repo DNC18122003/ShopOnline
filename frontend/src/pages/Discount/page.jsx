@@ -159,17 +159,31 @@ export default function VoucherManagement() {
   };
 
   // 3. XỬ LÝ CẬP NHẬT
-  const handleUpdateSubmit = async (updatedData) => {
+  const handleUpdateSubmit = async (formData) => {
     try {
-      const id = updatedData._id || updatedData.id;
-      const res = await discountService.updateDiscount(id, updatedData);
+      const id = formData._id || formData.id;
+
+      // MAP DỮ LIỆU: Chuyển đổi tên các field từ Form sao cho khớp với Backend
+      const payload = {
+        description: formData.description,
+        // Ép kiểu về đúng 'percent' hoặc 'fixed' cho Backend
+        discountType: formData.discountType === 'percentage' ? 'percent' : 'fixed', 
+        value: formData.discountValue,              
+        maxDiscountValue: formData.maxDiscountValue,
+        minOrderValue: formData.minPurchaseValue,   
+        usageLimit: formData.usageLimit,
+        validFrom: formData.startDate,              
+        expiredAt: formData.endDate,                
+        status: formData.isActive ? 'active' : 'inactive'
+      };
+
+      // TRUYỀN PAYLOAD ĐÃ CHUẨN HÓA VÀO API
+      const res = await discountService.updateDiscount(id, payload);
 
       if (res && res.success) {
         toast.success("Cập nhật thành công!");
         fetchVouchers();
         
-        // Với Edit Modal, nếu bạn chưa sửa Modal đó sang async/await giống Create
-        // thì vẫn giữ dòng này để đóng form thủ công.
         setIsEditModalOpen(false); 
         setVoucherToEdit(null);
         return res;
@@ -178,12 +192,10 @@ export default function VoucherManagement() {
       }
     } catch (error) {
       console.error("Update error:", error);
-      // Nếu EditModal chưa xử lý error, ta hiện toast
       toast.error(error.message || "Có lỗi xảy ra khi cập nhật");
       throw error;
     }
   };
-
   // 4. XỬ LÝ TOGGLE TRẠNG THÁI (Active/Inactive)
   const handleToggle = async (id) => {
     try {

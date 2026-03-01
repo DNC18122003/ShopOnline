@@ -5,30 +5,32 @@ const { sendMail } = require("./mail.service");
 
 const sendOTPService = async (email, session) => {
   const otp = generateOTP();
-
+// Lưu OTP và email vào session
   session.otp = otp;
   session.email = email;
 
   await sendMail(
     email,
-    "Your OTP Code",
-    `<h3>Your OTP is: ${otp}</h3>`
+    "Mã OTP của bạn",
+    `<h3>Mã OTP của bạn là: ${otp}</h3>`
   );
 
   return true;
 };
 
-const verifyOTPService = (userOtp, session) => {
-  if (!session.otp) {
-    return { success: false, message: "OTP expired" };
+const verifyOTPService = (userOtp, userEmail, session) => {
+  if (!session.otp || !session.email) {
+    return { success: false, message: "Session không hợp lệ hoặc OTP đã hết hạn" };
   }
 
-  if (session.otp === userOtp) {
+   // Kiểm tra OTP và email
+  if (session.otp === userOtp && session.email === userEmail) {
+    // Xóa OTP và email sau khi xác thực thành công
     session.otp = null;
+    session.email = null; // Xóa email để bảo mật
     return { success: true };
   }
-
-  return { success: false, message: "Invalid OTP" };
+  return { success: false, message: "Mã OTP không hợp lệ" };
 };
 
 module.exports = { sendOTPService, verifyOTPService };

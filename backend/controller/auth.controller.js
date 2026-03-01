@@ -44,6 +44,7 @@ const loginController = async (req, res) => {
       fullName: user.fullName,
       phone: user.phone,
       avatar: user.avatar,
+      active: user.isActive,
     };
 
     return res.status(200).json({
@@ -59,12 +60,12 @@ const loginController = async (req, res) => {
 // controller for register
 const registerController = async (req, res) => {
   const { userName, email, password } = req.body;
-  console.log(
-    "Register controller called in backend:",
-    userName,
-    email,
-    password
-  );
+  // console.log(
+  //   "Register controller called in backend:",
+  //   userName,
+  //   email,
+  //   password
+  // );
   // validate data in backend
   if (!userName || !email || !password) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
@@ -86,6 +87,11 @@ const registerController = async (req, res) => {
       userName,
       email,
       password: hash_Password,
+      fullName: null,        // Tên đầy đủ không có
+      phone: null,           // Số điện thoại không có
+      avatar: null,          // Avatar không có
+      role: 'customer',      // Mặc định là customer
+      isActive: false,       // Mặc định là chưa active
     });
     //create new user
     await newUser.save();
@@ -100,6 +106,7 @@ const registerController = async (req, res) => {
         phone: null,
         avatar: null,
         role: newUser.role,
+        active: newUser.isActive,
       },
     });
   } catch (error) {
