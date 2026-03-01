@@ -3,6 +3,7 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const hashPassword = require("../utils/hash-password");
+const { sendOTPService } = require("../services/otp.service");
 // controller for login
 const loginController = async (req, res) => {
   const { email, password } = req.body;
@@ -159,6 +160,65 @@ const getMe = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+// check email exist for forgot password
+const findEmailForgotPassword = async (req, res) => {
+  console.log("hi");
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Email không tồn tại" });
+    }
+    // Email tồn tại, gửi email xác nhận
+    await sendOTPService(email, req.session);
+    return res.json({ success: true, message: "Email tồn tại", user });
+  } catch (error) {
+    console.error("Error finding user:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+const changeByForgotPassword = async (req, res) => {
+  console.log("hi forgot");
+  const { email, newPassword } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "Email không tồn tại" });
+    }
+    // Email tồn tại, tiến hành đổi mật khẩu
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    await user.save();
+    return res.json({ success: true, message: "Đổi mật khẩu thành công" });
+      } catch (error) {
+    console.error("Error finding user:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+const changePasswordByOldPassword = async (req, res) => {
+  const userId = req.user._id;
+  const { oldPassword, newPassword } = req.body;
+  console.log("hi change by old password", oldPassword, newPassword);
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Tài khoản không tồn tại !" });
+    }
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    console.log("isMatch:", isMatch);
+    if (!isMatch) {
+      console.log("Mật khẩu cũ không đúng");
+      return res.status(404).json({ message: "Mật khẩu cũ không đúng" });
+    }
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    await user.save();
+    return res.json({ success: true, message: "Đổi mật khẩu thành công" });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 module.exports = {
@@ -166,5 +226,8 @@ module.exports = {
   loginWithGoogleController,
   registerController,
   logoutController,
-  getMe
+  getMe,
+  findEmailForgotPassword,
+  changeByForgotPassword,
+  changePasswordByOldPassword,
 };

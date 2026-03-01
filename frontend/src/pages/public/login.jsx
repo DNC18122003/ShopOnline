@@ -14,7 +14,7 @@ const login = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { setUser } = useContext(AuthContext);
-    const { fetchCart } = useCart(); 
+    const { fetchCart } = useCart();
     const [formLogin, setFormLogin] = React.useState({
         email: '',
         password: '',
@@ -59,7 +59,7 @@ const login = () => {
             //console.log('Login successful api:', response);
             // set data in auth context
             setUser(response.user);
-             await fetchCart();
+            await fetchCart();
             // set data in local storage
             const data_ui = {
                 fullName: response.user.fullName,
@@ -146,9 +146,12 @@ const login = () => {
                             </div>
                             {/*  Forgot Password */}
                             <div className="flex items-center justify-end">
-                                <a href="#" className="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                                <Link
+                                    to="/forgot-password"
+                                    className="text-sm text-blue-500 hover:text-blue-600 font-medium"
+                                >
                                     Quên mật khẩu?
-                                </a>
+                                </Link>
                             </div>
                             <Button
                                 type="submit"

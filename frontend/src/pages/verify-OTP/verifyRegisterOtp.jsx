@@ -4,11 +4,14 @@ import ComponentOtp from '@/components/public/component.otp';
 
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
-import { sendOtpRegister } from '@/services/auth/authService';
+import { sendOtpRegister, verifyOtpRegister } from '@/services/auth/authService';
+import { useNavigate } from 'react-router-dom';
 const VerifyRegisterOtp = () => {
     const emailForOtp = localStorage.getItem('emailForOtp');
     const [sendEmail, setSendEmail] = useState(false);
     const [sendEmailLoading, setSendEmailLoading] = useState(false);
+    const [otp, setOtp] = useState('');
+    const navigation = useNavigate();
     const sendEmailOtp = async () => {
         console.log('hi gọi hàm r');
         try {
@@ -22,11 +25,35 @@ const VerifyRegisterOtp = () => {
             setSendEmailLoading(false);
         }
     };
+    // Verify OTP
+    const verifyOtp = async () => {
+        console.log('Gửi OTP:', otp);
+        try {
+            const response = await verifyOtpRegister(emailForOtp, otp);
+            console.log('OTP sent successfully:', response.data);
+            toast.success('OTP đã được xác minh thành công !, vui lòng đăng nhập lại !');
+            setTimeout(() => {
+                localStorage.removeItem('emailForOtp');
+                navigation('/login');
+            }, 2000);
+        } catch (error) {
+            console.error('Error sending OTP:', error);
+            toast.error('Xác minh OTP thất bại!');
+        }
+    };
+
     return (
         <div className="flex items-center justify-center h-screen">
             <div>
                 {sendEmail ? (
-                    <ComponentOtp title="Xác minh OTP" email={emailForOtp} />
+                    <ComponentOtp
+                        title="Xác minh OTP"
+                        email={emailForOtp}
+                        otp={otp}
+                        setOtp={setOtp}
+                        message="OTP đã được xác minh thành công, vui lòng đăng nhập lại !"
+                        handleClose={verifyOtp}
+                    />
                 ) : (
                     <div className="flex items-center justify-center h-screen">
                         <div className="border w-full max-w-100 mx-4 flex items-center justify-center flex-col p-5 rounded-md shadow-md gap-3">

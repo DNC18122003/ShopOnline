@@ -14,6 +14,7 @@ import PaymentResultPage from '@/pages/order/PaymentResultPage';
 import OrderFailedPage from '@/pages/order/OrderFailedPage';
 import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
 import VerifyRegisterOtp from '@/pages/verify-OTP/verifyRegisterOtp';
+import ForgotPasswordPage from '@/pages/password/forgotPasswordPage';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
@@ -78,9 +79,13 @@ export const publicRoutes = [
     {
         path: '/blogDetails',
         element: <BlogDetails />,
-     },
+    },
     {
         path: '/verify_otp',
         element: <VerifyRegisterOtp />,
+    },
+    {
+        path: '/forgot-password',
+        element: <ForgotPasswordPage />,
     },
 ];

@@ -50,3 +50,42 @@ export const verifyOtpRegister = async (email, otp) => {
         throw error;
     }
 };
+export const findEmailForgotPassword = async (email) => {
+    try {
+        const response = await customizeAPI.post(`${API_BASE_URL}/auth/find-email`, { email });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};
+export const verifyOtpForgotPassword = async (email, otp) => {
+    try {
+        const response = await customizeAPI.post(`${API_BASE_URL}/otp/verify-otp-forgot-password`, { email, otp });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};
+export const changePasswordForgot = async (email, newPassword) => {
+    try {
+        const response = await customizeAPI.post(`${API_BASE_URL}/auth/change-password`, { email, newPassword });
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};
+export const changePasswordByOldPassword = async (oldPassword, newPassword) => {
+    try {
+        const response = await customizeAPI.post(
+            `${API_BASE_URL}/auth/change-password-by-old-password`,
+            // { withCredentials: true },
+            {
+                oldPassword,
+                newPassword,
+            },
+        );
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};
