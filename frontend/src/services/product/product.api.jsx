@@ -1,37 +1,38 @@
 import api from '../customizeApi';
 
 export const getProducts = (params) => {
-    return api.get('/product', { params });
+  return api.get('/product', { params });
 };
 
 export const getProductById = (id) => {
-    return api.get(`/product/${id}`);
+  return api.get(`/product/${id}`);
 };
 
 export const getSimilarProducts = (id, params) => {
-    return api.get(`/product/${id}/similar`, { params });
+  return api.get(`/product/${id}/similar`, { params });
 };
 
-export const checkBuildPcCompatibility = (components) => {
-    return api.post('/product/build-pc/check-compatibility', { components });
-};
-
+// Staff/Admin APIs
 export const createProduct = (data) => {
-    return api.post('/product', data);
+  return api.post('/product', data);
 };
 
 export const updateProduct = (id, data) => {
-    return api.put(`/product/${id}`, data);
+  return api.put(`/product/${id}`, data);
 };
 
 export const deleteProduct = (id) => {
-    return api.delete(`/product/${id}`);
+  return api.delete(`/product/${id}`);
 };
 
 export const uploadImages = (formData) => {
-    return api.post('/upload/images', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+  return api.post('/upload/images', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+export const checkBuildPcCompatibility = (components) => {
+  return api.post('/product/build-pc/check-compatibility', { components });
 };
