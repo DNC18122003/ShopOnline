@@ -314,6 +314,7 @@ export default function BuildPcPage() {
   const [selectedItems, setSelectedItems] = useState({});
   const [compatibilityResult, setCompatibilityResult] = useState(null);
   const [compatibilityLoading, setCompatibilityLoading] = useState(false);
+  const [sortOption, setSortOption] = useState('default');
 
   // Hàm lấy socket/ram_type từ specifications hoặc detail_json (tương tự backend logic)
   const getSpec = useCallback((product, key) => {
@@ -459,7 +460,23 @@ export default function BuildPcPage() {
   };
 
   const activeGroup = COMPONENT_GROUPS.find(g => g.key === activeCategory);
-  const displayProducts = allProducts[activeCategory] || [];
+  const rawDisplayProducts = allProducts[activeCategory] || [];
+  const displayProducts = useMemo(() => {
+    const products = [...rawDisplayProducts];
+
+    switch (sortOption) {
+      case 'price_asc':
+        return products.sort((a, b) => (a?.price || 0) - (b?.price || 0));
+      case 'price_desc':
+        return products.sort((a, b) => (b?.price || 0) - (a?.price || 0));
+      case 'name_asc':
+        return products.sort((a, b) => (a?.name || '').localeCompare(b?.name || '', 'vi'));
+      case 'name_desc':
+        return products.sort((a, b) => (b?.name || '').localeCompare(a?.name || '', 'vi'));
+      default:
+        return products;
+    }
+  }, [rawDisplayProducts, sortOption]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-8">
@@ -496,9 +513,27 @@ export default function BuildPcPage() {
 
           {/* Center: Product List */}
           <main className="flex-1">
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">{activeGroup?.label} - Bộ vi xử lý</h1>
-              <p className="text-sm text-gray-500 font-medium">Chọn {activeGroup?.label} phù hợp cho cấu hình của bạn</p>
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">{activeGroup?.label} - Bộ vi xử lý</h1>
+                <p className="text-sm text-gray-500 font-medium">Chọn {activeGroup?.label} phù hợp cho cấu hình của bạn</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label htmlFor="buildpc-sort" className="text-sm font-semibold text-gray-600">Sắp xếp:</label>
+                <select
+                  id="buildpc-sort"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="default">Mặc định</option>
+                  <option value="price_asc">Giá: Thấp đến cao</option>
+                  <option value="price_desc">Giá: Cao đến thấp</option>
+                  <option value="name_asc">Tên: A → Z</option>
+                  <option value="name_desc">Tên: Z → A</option>
+                </select>
+              </div>
             </div>
 
             {loading ? (
