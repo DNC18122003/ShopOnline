@@ -68,20 +68,19 @@ const blogController = {
 
   
 
-  // 3. Lấy chi tiết bài viết (Theo ID) + Tăng View
+  // 3. Lấy chi tiết bài viết (Theo ID)
   getBlogById: async (req, res) => {
     try {
       const { id } = req.params;
 
-      // Tìm và cập nhật viewCount + 1 (Sử dụng $inc)
-      const blog = await Blog.findByIdAndUpdate(
-        id, 
-        { $inc: { viewCount: 1 } }, // Tăng view lên 1
-        { new: true } // Trả về data mới sau khi tăng
-      ).populate('author', 'name email');
+      // Chỉ lấy thông tin bài viết, loại bỏ hàm update viewCount
+      const blog = await Blog.findById(id); 
 
       if (!blog) {
-        return res.status(404).json({ success: false, message: 'Bài viết không tồn tại' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Bài viết không tồn tại' 
+        });
       }
 
       res.status(200).json({ success: true, data: blog });

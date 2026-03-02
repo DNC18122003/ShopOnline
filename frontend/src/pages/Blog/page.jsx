@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input"
 import { DeleteBlogModal } from "@/components/Blog/delete-blog-form" 
 import { CreateBlogModal } from "@/components/Blog/create-blog-modal" 
 import { toast } from "react-toastify" 
+import { ViewBlogModal } from "@/components/Blog/view-blog-modal" 
+import { EditBlogModal } from "@/components/Blog/edit-blog-modal"
 
 // --- 1. THÊM LẠI HÀM DEBOUNCE ĐỂ SỬA LỖI MÀN HÌNH TRẮNG ---
 function useDebounce(value, delay) {
@@ -30,6 +32,11 @@ export default function BlogManagementPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [blogToDelete, setBlogToDelete] = useState(null)
+  
+  // --- STATE CHO MODAL VIEW VÀ EDIT ---
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false) // ---> THÊM STATE CHO EDIT
+  const [selectedBlogId, setSelectedBlogId] = useState(null)
   
   // --- STATE LỌC ---
   const [searchQuery, setSearchQuery] = useState("")
@@ -69,7 +76,6 @@ export default function BlogManagementPage() {
   const handleCreateBlog = async (payload) => {
     try {
       setIsLoading(true)
-      // Service sẽ tự động gọi qua Proxy (ví dụ localhost:5000/api/blogs)
       const res = await blogService.createBlog(payload) 
       
       if (res) {
@@ -81,7 +87,6 @@ export default function BlogManagementPage() {
       console.error("Lỗi tạo blog:", error)
       const errorMsg = error.response?.data?.message || "Không thể tạo bài viết. Vui lòng thử lại!"
       toast.error(errorMsg)
-      // Throw error để Form bên trong (CreateBlogForm) biết để dừng loading nút submit
       throw error 
     } finally {
       setIsLoading(false)
@@ -111,7 +116,38 @@ export default function BlogManagementPage() {
     }
   }
 
-  // --- 4. LOGIC LỌC DỮ LIỆU ---
+  // --- 4. HÀM XỬ LÝ XEM CHI TIẾT ---
+  const handleViewBlog = (post) => {
+    setSelectedBlogId(post._id || post.id)
+    setIsViewModalOpen(true)
+  }
+
+  // ---> 5. THÊM HÀM XỬ LÝ MỞ FORM EDIT <---
+  const handleEditClick = (post) => {
+    setSelectedBlogId(post._id || post.id)
+    setIsEditModalOpen(true)
+  }
+
+  // ---> 6. THÊM HÀM XỬ LÝ CẬP NHẬT (GỌI API) <---
+  const handleUpdateBlog = async (id, payload) => {
+    try {
+      setIsLoading(true)
+      const res = await blogService.updateBlog(id, payload) 
+      if (res) {
+        toast.success("Cập nhật bài viết thành công!")
+        setIsEditModalOpen(false) 
+        fetchBlogs() // Refresh lại danh sách
+      }
+    } catch (error) {
+      console.error("Lỗi cập nhật blog:", error)
+      toast.error(error.response?.data?.message || "Cập nhật thất bại!")
+      throw error // Ném lỗi để Form Edit biết dừng trạng thái loading
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // --- LOGIC LỌC DỮ LIỆU ---
   const filteredData = useMemo(() => {
     return blogPosts.filter((item) => {
       const query = debouncedSearch.toLowerCase().trim();
@@ -210,9 +246,9 @@ export default function BlogManagementPage() {
             ) : (
                 <BlogTable
                     posts={paginatedData} 
-                    onEdit={(post) => console.log("Edit:", post)}
+                    onEdit={handleEditClick}  // ---> GẮN HÀM MỞ EDIT VÀO ĐÂY
                     onDelete={handleDeleteClick}
-                    onView={(post) => toast.info(`Đang xem: ${post.title}`)} 
+                    onView={handleViewBlog} 
                 />
             )}
             
@@ -239,6 +275,19 @@ export default function BlogManagementPage() {
             onOpenChange={setDeleteModalOpen}
             blogTitle={blogToDelete?.title || ""}
             onConfirm={handleConfirmDelete}
+        />
+
+        <ViewBlogModal
+            isOpen={isViewModalOpen}
+            onOpenChange={setIsViewModalOpen}
+            blogId={selectedBlogId}
+        />
+
+        <EditBlogModal
+            isOpen={isEditModalOpen}
+            onOpenChange={setIsEditModalOpen}
+            blogId={selectedBlogId}
+            onSubmit={handleUpdateBlog}
         />
       </div>
     </Suspense>
