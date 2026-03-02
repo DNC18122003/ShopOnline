@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
