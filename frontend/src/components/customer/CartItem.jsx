@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge';
 import { CheckCircle2, Truck, PackageCheck, Minus, Plus } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox'; // ← import cái bạn đã tạo
 import { Button } from '@/components/ui/button';
-
+import { Link } from 'react-router-dom';
 const cn = (...inputs) => twMerge(clsx(inputs));
 
 const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onToggleSelect, isPending = false }) => {
@@ -15,7 +15,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
     // const isOutOfStock = item.stock < item.quantity;
 
   const handleQuantityChange = async (newQty) => {
-      if (newQty < 1 || newQty > 99) return;
+     if (newQty < 1 || newQty > item.stock) return;
       await onUpdateQuantity(item.productId, newQty);
   };
 
@@ -61,7 +61,11 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
 
             <div className="flex-1 min-w-0 space-y-2">
                 <div>
-                    <h3 className="font-medium text-base sm:text-lg line-clamp-2 pr-10">{item.nameSnapshot}</h3>
+                    <Link to={`/product/${item.productId}`} className="hover:text-blue-600 transition-colors">
+                        <h3 className="font-medium text-base sm:text-lg line-clamp-2 pr-10 cursor-pointer">
+                            {item.nameSnapshot}
+                        </h3>
+                    </Link>
                     <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {item.descriptionSnapshot || item.nameSnapshot || 'Không có mô tả chi tiết'}
                     </p>
@@ -106,14 +110,31 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
                             <Minus className="h-4 w-4" />
                         </Button>
 
-                        <div className="w-12 text-center font-medium">{localQty}</div>
+                        <input
+                            type="number"
+                            min={1}
+                            max={item.stock}
+                            value={localQty}
+                            onChange={(e) => {
+                                let value = Number(e.target.value);
+
+                                if (isNaN(value)) return;
+
+                                if (value < 1) value = 1;
+                                if (value > item.stock) value = item.stock;
+
+                                handleQuantityChange(value);
+                            }}
+                            className="w-14 text-center outline-none"
+                            disabled={isPending || isPendingLocal}
+                        />
 
                         <Button
                             variant="ghost"
                             size="icon"
                             className="h-9 w-9 rounded-none border-l"
                             onClick={() => handleQuantityChange(localQty + 1)}
-                            disabled={localQty >= 99  || isPending || isPendingLocal}
+                            disabled={localQty >= item.stock || isPending || isPendingLocal}
                         >
                             <Plus className="h-4 w-4" />
                         </Button>
