@@ -20,3 +20,13 @@ export const deleteBuildPcTemplate = (id) => {
   return api.delete(`/build-pc-template/${id}`);
 };
 
+
+// Lấy danh sách cấu hình công khai
+export const getPublicBuildPcTemplates = (params) => {
+  return api.get('/build-pc-template/public', { params });
+};
+
+// Lấy chi tiết một cấu hình công khai
+export const getPublicBuildPcTemplateById = (id) => {
+  return api.get(`/build-pc-template/public/${id}`);
+};
