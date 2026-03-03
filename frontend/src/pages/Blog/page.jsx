@@ -13,7 +13,8 @@ import { CreateBlogModal } from "@/components/Blog/create-blog-modal"
 import { toast } from "react-toastify" 
 import { ViewBlogModal } from "@/components/Blog/view-blog-modal" 
 import { EditBlogModal } from "@/components/Blog/edit-blog-modal"
-
+const data_ui = JSON.parse(localStorage.getItem('data_ui'));
+  const currentUserName = data_ui?.userName || "a";
 // --- 1. THÊM LẠI HÀM DEBOUNCE ĐỂ SỬA LỖI MÀN HÌNH TRẮNG ---
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -268,6 +269,7 @@ export default function BlogManagementPage() {
           isOpen={isCreateModalOpen}
           onOpenChange={setIsCreateModalOpen}
           onSubmit={handleCreateBlog} 
+          currentUser={currentUserName} // Truyền tên người dùng vào đây
         />
 
         <DeleteBlogModal 

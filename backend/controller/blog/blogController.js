@@ -33,38 +33,65 @@ const blogController = {
 },
   // 2. Tạo bài viết mới
   createBlog: async (req, res) => {
-    try {
-      let { title, slug, content, author, thumbnail, status } = req.body;
-
-      // Nếu không truyền slug, tự tạo từ title
-      if (!slug && title) {
-        slug = generateSlug(title);
-      }
-
-      // Kiểm tra xem slug đã tồn tại chưa
-      const existingBlog = await Blog.findOne({ slug });
-      if (existingBlog) {
-        return res.status(400).json({ success: false, message: 'Slug hoặc tiêu đề bài viết đã tồn tại' });
-      }
-
-      const newBlog = await Blog.create({
-        title,
-        slug,
-        content,
-        author, 
-        thumbnail,
-        status
+  try {
+    let { title, slug, content, author, thumbnail, status } = req.body;
+    // 1. Kiểm tra các trường không được rỗng
+    if (!title || !content || !author || !thumbnail) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Các trường tiêu đề, nội dung, tác giả và ảnh bìa không được để trống' 
       });
-
-      res.status(201).json({
-        success: true,
-        message: 'Tạo bài viết thành công',
-        data: newBlog
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
     }
-  },
+    // 2. Kiểm tra độ dài tiêu đề (tối đa 50) và nội dung (tối đa 500)
+    if (title.length > 50) {
+      return res.status(400).json({ success: false, message: 'Tiêu đề không được quá 50 ký tự' });
+    }
+    if (content.length > 500) {
+      return res.status(400).json({ success: false, message: 'Nội dung không được quá 500 ký tự' });
+    }
+
+    // 3. Validate Ảnh 
+    const allowedExtensions = ['image/png', 'image/jpeg', 'image/jpg'];
+    const maxSize = 5 * 1024 * 1024; 
+
+    if (thumbnail.size > maxSize) {
+      return res.status(400).json({ success: false, message: 'Ảnh vượt quá kích thước cho phép (tối đa 5MB)' });
+    }
+    // if (!allowedExtensions.includes(thumbnail.mimetype)) {
+    //   return res.status(400).json({ success: false, message: 'Định dạng ảnh không hỗ trợ (chỉ nhận PNG, JPG)' });
+    // }
+
+    // 4. Xử lý Slug
+    if (!slug && title) {
+      slug = generateSlug(title);
+    }
+
+    // 5. Kiểm tra slug tồn tại
+    const existingBlog = await Blog.findOne({ slug });
+    if (existingBlog) {
+      return res.status(400).json({ success: false, message: 'Slug hoặc tiêu đề bài viết đã tồn tại' });
+    }
+
+    // 6. Tạo Blog mới
+    const newBlog = await Blog.create({
+      title,
+      slug,
+      content,
+      author,
+      thumbnail: thumbnail.path || thumbnail, // Tùy vào cách bạn lưu đường dẫn ảnh
+      status
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Tạo bài viết thành công',
+      data: newBlog
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+},
 
   
 
