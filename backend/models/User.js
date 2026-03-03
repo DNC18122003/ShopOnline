@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const hashPassword = require('../utils/hash-password');
+const addressSchema = new Schema(
+  {
+    street: String,
+    ward: String,
+    province: String,
+    note: String,
+  },
+  { _id: false }
+);
 const userSchema = new Schema({
     email: {
         type: String,
@@ -43,7 +52,7 @@ const userSchema = new Schema({
         type: Boolean,
         default: true
     },
-    address: String,
+    address: addressSchema,
 }, { timestamps: true });
 
 //module.exports = mongoose.model('User', userSchema);

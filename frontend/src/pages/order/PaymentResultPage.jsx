@@ -16,10 +16,10 @@ const PaymentResultPage = () => {
                     navigate('/order-success');
                 })
                 .catch(() => {
-                    navigate('/order-fail');
+                    navigate('/order-failed');
                 });
         } else {
-            navigate('/order-fail');
+            navigate('/order-failed');
         }
     }, []);
 

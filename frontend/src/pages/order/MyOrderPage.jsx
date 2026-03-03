@@ -1,5 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Calendar, Eye, Truck, RotateCcw, Star, Funnel,RotateCcwIcon,Clock,CircleCheck,CircleX } from 'lucide-react';
+import {
+    Search,
+    Calendar,
+    Eye,
+    Truck,
+    RotateCcw,
+    Star,
+    Funnel,
+    RotateCcwIcon,
+    Clock,
+    CircleCheck,
+    CircleX,
+    ChevronLeft,
+    ChevronRight,
+} from 'lucide-react';
 import { getMyOrders, cancelOrder } from '@/services/customer/order.api';
 import { useNavigate } from 'react-router-dom';
 const statusConfig = {
@@ -37,25 +51,43 @@ const MyOrderPage = () => {
     const [loading, setLoading] = useState(false);
     const [cancelOrderId, setCancelOrderId] = useState(null);
     const [cancelLoading, setCancelLoading] = useState(false);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('');
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 5;
     const navigate = useNavigate();
     
-    useEffect(() => {
-        fetchOrders();
-    }, []);
+useEffect(() => {
+    fetchOrders();
+}, [page, search, status, fromDate, toDate]);
 
-    const fetchOrders = async () => {
-        try {
-            setLoading(true);
-            const data = await getMyOrders();
-            setOrders(data || []);
-            console.log('Data:',data)
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+const fetchOrders = async () => {
+    try {
+        setLoading(true);
 
+        const params = {
+            page,
+            limit,
+            search,
+            status,
+            fromDate,
+            toDate,
+        };
+
+        const res = await getMyOrders(params);
+        console.log('params', params);
+        console.log('res', res);
+        setOrders(res.orders || []);
+        setTotalPages(res.totalPages || 1);
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setLoading(false);
+    }
+};
     const handleViewDetail = (id) => {
         navigate(`/orders/${id}`);
     };
@@ -93,17 +125,28 @@ const handleCancel = async () => {
                         <label className="text-sm text-gray-500">Tìm kiếm</label>
                         <div className="flex items-center border rounded-lg px-2 mt-1">
                             <Search size={16} className="text-gray-400" />
-                            <input type="text" placeholder="Mã đơn hàng..." className="w-full p-2 outline-none" />
+                            <input
+                                type="text"
+                                placeholder="Mã đơn hàng..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full p-2 outline-none"
+                            />
                         </div>
                     </div>
 
                     <div>
                         <label className="text-sm text-gray-500">Trạng thái</label>
-                        <select className="w-full border rounded-lg p-2 mt-1">
-                            <option>Tất cả trạng thái</option>
-                            <option>Chờ xử lý</option>
-                            <option>Đang giao</option>
-                            <option>Hoàn thành</option>
+                        <select
+                            className="w-full border rounded-lg p-2 mt-1"
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value)}
+                        >
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="pending">Chờ xử lý</option>
+                            <option value="confirmed">Đã xác nhận</option>
+                            <option value="shipping">Đang giao</option>
+                            <option value="completed">Hoàn thành</option>
                         </select>
                     </div>
 
@@ -111,7 +154,12 @@ const handleCancel = async () => {
                         <label className="text-sm text-gray-500">Từ ngày</label>
                         <div className="flex items-center border rounded-lg px-2 mt-1">
                             <Calendar size={16} className="text-gray-400" />
-                            <input type="date" className="w-full p-2 outline-none" />
+                            <input
+                                type="date"
+                                value={fromDate}
+                                onChange={(e) => setFromDate(e.target.value)}
+                                className="w-full p-2 outline-none"
+                            />
                         </div>
                     </div>
 
@@ -119,16 +167,37 @@ const handleCancel = async () => {
                         <label className="text-sm text-gray-500">Đến ngày</label>
                         <div className="flex items-center border rounded-lg px-2 mt-1">
                             <Calendar size={16} className="text-gray-400" />
-                            <input type="date" className="w-full p-2 outline-none" />
+                            <input
+                                type="date"
+                                value={toDate}
+                                onChange={(e) => setToDate(e.target.value)}
+                                className="w-full p-2 outline-none"
+                            />
                         </div>
                     </div>
                 </div>
 
                 <div className="flex gap-3 mt-4">
-                    <button className="bg-blue-600 text-white px-4 py-2 flex rounded-lg text-sm gap-2">
+                    <button
+                        onClick={() => {
+                            setPage(1);
+                            fetchOrders();
+                        }}
+                        className="bg-blue-600 text-white px-4 py-2 flex rounded-lg text-sm gap-2"
+                    >
                         <Funnel size={16} /> Lọc
                     </button>
-                    <button className="bg-gray-200 px-4 py-2 flex rounded-lg text-sm gap-2">
+                    <button
+                        onClick={() => {
+                            setSearch('');
+                            setStatus('');
+                            setFromDate('');
+                            setToDate('');
+                            setPage(1);
+                            fetchOrders();
+                        }}
+                        className="bg-gray-200 px-4 py-2 flex rounded-lg text-sm gap-2"
+                    >
                         <RotateCcwIcon size={16} />
                         Đặt lại
                     </button>
@@ -142,8 +211,8 @@ const handleCancel = async () => {
             {!loading && (
                 <div className="space-y-4">
                     {orders.map((order) => {
-                        const status = statusConfig[order.orderStatus] || statusConfig.pending;
-                        const Icon = status.icon;
+                        const statusInfo = statusConfig[order.orderStatus] || statusConfig.pending;
+                        const Icon = statusInfo.icon;
                         return (
                             <div key={order._id} className="bg-white rounded-2xl shadow-sm p-5">
                                 {/* Top */}
@@ -157,10 +226,10 @@ const handleCancel = async () => {
 
                                     <div className="flex items-center gap-6">
                                         <span
-                                            className={`px-3 py-1 text-xs rounded-full flex items-center gap-1 ${status.className}`}
+                                            className={`px-3 py-1 text-xs rounded-full flex items-center gap-1 ${statusInfo.className}`}
                                         >
                                             <Icon size={14} />
-                                            {status.label}
+                                            {statusInfo.label}
                                         </span>
                                         <div className="text-right">
                                             <p className="text-xs text-gray-400">Tổng tiền</p>
@@ -236,6 +305,19 @@ const handleCancel = async () => {
                     </div>
                 </div>
             )}
+            <div className="flex justify-center gap-2 mt-6">
+                <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+                    <ChevronLeft size={18} />
+                </button>
+
+                <span className="px-3 py-1">
+                    Page {page} / {totalPages}
+                </span>
+
+                <button disabled={page === totalPages} onClick={() => setPage(page + 1)}>
+                    <ChevronRight size={18} />
+                </button>
+            </div>
         </div>
     );
 

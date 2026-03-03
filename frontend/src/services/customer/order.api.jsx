@@ -29,16 +29,11 @@ export const createOrder = async (orderPayload) => {
 
 
 // 3. Lấy danh sách đơn hàng của tôi
-export const getMyOrders = async () => {
-    try {
-        const response = await customizeAPI.get('/order/my-orders');
-        return response.orders || [];
-    } catch (error) {
-        console.error('Lỗi lấy danh sách đơn hàng:', error);
-        throw error;
-    }
+export const getMyOrders = async (params) => {
+    const res = await customizeAPI.get('/order/my-orders', { params });
+    console.log(res);
+    return res.data || res;
 };
-
 
 // 4. Lấy chi tiết một đơn hàng
 export const getOrderDetail = async (orderId) => {

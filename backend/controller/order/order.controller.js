@@ -4,11 +4,15 @@ const Product = require("../../models/Products/Product");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
+const User = require("../../models/User");
 
 const createOrder = async (req, res) => {
   try {
     const userId = req.user._id;
-
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy user" });
+    }
     const {
       shippingAddress,
       paymentMethod = "COD",
@@ -17,18 +21,27 @@ const createOrder = async (req, res) => {
       items,
     } = req.body;
 
+    const finalShippingAddress = {
+      fullName: shippingAddress?.fullName || user.fullName,
+      phone: shippingAddress?.phone || user.phone,
+      email: shippingAddress?.email || user.email,
+      street: shippingAddress?.street || user.address?.street,
+      ward: shippingAddress?.ward || user.address?.ward,
+      province: shippingAddress?.province || user.address?.province,
+      note: shippingAddress?.note || user.address?.note,
+    };
     // VALIDATION
-    if (
-      !shippingAddress?.fullName ||
-      !shippingAddress?.phone ||
-      !shippingAddress?.province ||
-      !shippingAddress?.ward ||
-      !shippingAddress?.street
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Thiếu thông tin địa chỉ giao hàng bắt buộc" });
-    }
+   if (
+     !finalShippingAddress.fullName ||
+     !finalShippingAddress.phone ||
+     !finalShippingAddress.province ||
+     !finalShippingAddress.ward ||
+     !finalShippingAddress.street
+   ) {
+     return res.status(400).json({
+       message: "Thiếu thông tin địa chỉ giao hàng bắt buộc",
+     });
+   }
 
     if (!["COD", "MOMOPAY", "BANK"].includes(paymentMethod)) {
       return res
@@ -75,6 +88,18 @@ const createOrder = async (req, res) => {
       if (product.stock < cartItem.quantity) {
         return res.status(400).json({
           message: `Sản phẩm "${cartItem.nameSnapshot}" chỉ còn ${product.stock} sản phẩm`,
+        });
+      }
+
+      if (!cartItem.quantity || cartItem.quantity <= 0) {
+        return res.status(400).json({
+          message: "Số lượng không hợp lệ",
+        });
+      }
+
+      if (product.stock === 0) {
+        return res.status(400).json({
+          message: `Sản phẩm "${product.name}" đã hết hàng`,
         });
       }
 
@@ -157,7 +182,7 @@ const createOrder = async (req, res) => {
       discountCode: appliedDiscountCode,
       discountAmount,
       finalAmount,
-      shippingAddress,
+      shippingAddress: finalShippingAddress,
       paymentMethod,
       paymentStatus: "unpaid",
       orderStatus: "pending",
@@ -240,15 +265,38 @@ const createOrder = async (req, res) => {
 const getMyOrders = async (req, res) => {
   try {
     const userId = req.user._id;
-    const orders = await Order.find({ customerId: userId })
+    const { page = 1, limit = 5, search, status, fromDate, toDate } = req.query;
+    const query = { customerId: userId };
+
+    if (search) {
+      query.orderCode = { $regex: search, $options: "i" };
+    }
+
+    if (status) {
+      query.orderStatus = status;
+    }
+
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      if (fromDate) query.createdAt.$gte = new Date(fromDate);
+      if (toDate) query.createdAt.$lte = new Date(toDate);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const orders = await Order.find(query)
       .sort({ createdAt: -1 })
-      .lean()
-      .exec();
+      .skip(skip)
+      .limit(Number(limit))
+      .lean();
+
+    const total = await Order.countDocuments(query);
 
     return res.json({
       success: true,
-      message: "Lấy danh sách đơn hàng thành công",
-      orders, 
+      orders,
+      totalPages: Math.ceil(total / limit),
+      currentPage: Number(page),
     });
   } catch (error) {
     return res.status(500).json({

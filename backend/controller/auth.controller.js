@@ -46,6 +46,7 @@ const loginController = async (req, res) => {
       phone: user.phone,
       avatar: user.avatar,
       isActive: user.isActive,
+      address: user.address,
     };
 
     return res.status(200).json({

@@ -5,7 +5,7 @@ import { useAuth } from '@/context/authContext';
 import axios from 'axios';
 import { createOrder, getAddress } from '@/services/customer/order.api';
 import { toast } from 'react-toastify';
-import discountService from '@/services/discount/discount.api'; 
+import discountService from '@/services/discount/discount.api';
 import DiscountInput from '@/components/Discount/DiscountInput';
 import { useLocation } from 'react-router-dom';
 const CheckoutPage = () => {
@@ -42,11 +42,12 @@ const CheckoutPage = () => {
     const [error, setError] = useState(null);
     const [fetchingLocation, setFetchingLocation] = useState(false);
     const [isDiscountListOpen, setIsDiscountListOpen] = useState(false);
-
+    const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!user) return <Navigate to="/login" replace />;
     if (!isBuyNow && !cart?.items?.length) {
-   return <Navigate to="/cart" replace />;
-    }   
+        return <Navigate to="/cart" replace />;
+    }
     const selectedItems = isBuyNow ? [buyNowItem] : location.state?.selectedItems || cart?.items || [];
 
     const subtotal = selectedItems.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
@@ -63,44 +64,54 @@ const CheckoutPage = () => {
     const total = subtotal - discountAmount + shippingFee;
 
     // Fetch danh sách mã giảm giá khả dụng
-   useEffect(() => {
-       const fetchDiscounts = async () => {
-           setLoadingDiscounts(true);
-           try {
-               const res = await discountService.getAvailableDiscounts({ orderValue: subtotal });
+    useEffect(() => {
+        const fetchDiscounts = async () => {
+            setLoadingDiscounts(true);
+            try {
+                const res = await discountService.getAvailableDiscounts({ orderValue: subtotal });
 
-               console.log('Full res:', res);
-               console.log('res.data:', res.data);
+                let discounts = [];
 
-               let discounts = [];
+                // Trường hợp 1: backend trả array trực tiếp (như hiện tại)
+                if (Array.isArray(res.data)) {
+                    discounts = res.data;
+                }
+                // Trường hợp 2: backend trả object { success: true, data: [...] }
+                else if (res.data?.success && Array.isArray(res.data.data)) {
+                    discounts = res.data.data;
+                }
+                // Trường hợp fallback: nếu có count nhưng data là array
+                else if (res.data?.count && Array.isArray(res.data.data)) {
+                    discounts = res.data.data;
+                }
 
-               // Trường hợp 1: backend trả array trực tiếp (như hiện tại)
-               if (Array.isArray(res.data)) {
-                   discounts = res.data;
-               }
-               // Trường hợp 2: backend trả object { success: true, data: [...] }
-               else if (res.data?.success && Array.isArray(res.data.data)) {
-                   discounts = res.data.data;
-               }
-               // Trường hợp fallback: nếu có count nhưng data là array
-               else if (res.data?.count && Array.isArray(res.data.data)) {
-                   discounts = res.data.data;
-               }
+                setAvailableDiscounts(discounts);
+                console.log('Đã set availableDiscounts với length:', discounts.length);
+            } catch (err) {
+                console.warn('Lỗi fetch discounts:', err);
+            } finally {
+                setLoadingDiscounts(false);
+            }
+        };
 
-               setAvailableDiscounts(discounts);
-               console.log('Đã set availableDiscounts với length:', discounts.length);
-
-           } catch (err) {
-               console.warn('Lỗi fetch discounts:', err);
-           } finally {
-               setLoadingDiscounts(false);
-           }
-       };
-
-       if (subtotal > 0) {
-           fetchDiscounts();
-       }
-   }, [subtotal]);
+        if (subtotal > 0) {
+            fetchDiscounts();
+        }
+    }, [subtotal]);
+ 
+    useEffect(() => {
+        if (user) {
+            setFormData((prev) => ({
+                ...prev,
+                fullName: user.userName || '',
+                phone: user.phone || '',
+                email: user.email || '',
+                street: user.address?.street || '',
+                province: user.address?.province || '',
+                ward: user.address?.ward || '',
+            }));
+        }
+    }, [user]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -160,146 +171,153 @@ const CheckoutPage = () => {
         setDiscountError(null);
         setFormData((prev) => ({ ...prev, discountCode: '' }));
         toast.info('Đã bỏ mã giảm giá');
-      
     };
 
-   const applyDiscount = async () => {
-       const code = formData.discountCode?.trim().toUpperCase();
-       if (!code) {
-           setDiscountError('Vui lòng nhập mã giảm giá');
-           toast.warn('Vui lòng nhập mã giảm giá');
-           return;
-       }
+    const applyDiscount = async () => {
+        const code = formData.discountCode?.trim().toUpperCase();
+        if (!code) {
+            setDiscountError('Vui lòng nhập mã giảm giá');
+            toast.warn('Vui lòng nhập mã giảm giá');
+            return;
+        }
 
-       setLoading(true);
-       setDiscountError(null);
-       setDiscountInfo(null);
+        setLoading(true);
+        setDiscountError(null);
+        setDiscountInfo(null);
 
-       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:9999'; 
+        const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:9999';
 
-       try {
-           const response = await axios.post(
-               `${apiBase}/api/discounts/check`,
-               { code, orderValue: subtotal },
-               {
-                   headers: {
-                       Authorization: `Bearer ${localStorage.getItem('token')}`,
-                   },
-               },
-           );
+        try {
+            const response = await axios.post(
+                `${apiBase}/api/discounts/check`,
+                { code, orderValue: subtotal },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                },
+            );
 
-           if (response.data.success) {
-               const discData = response.data.data;
-               let appliedAmount = discData.calculatedDiscount;
+            if (response.data.success) {
+                const discData = response.data.data;
+                let appliedAmount = discData.calculatedDiscount;
 
-               if (appliedAmount === undefined) {
-                   let calc = 0;
-                   if (discData.discountType === 'percent') {
-                       calc = subtotal * (discData.value / 100);
-                   } else if (discData.discountType === 'fixed') {
-                       calc = discData.value;
-                   }
-                   appliedAmount = Math.min(calc, discData.maxDiscountValue || calc);
-               }
+                if (appliedAmount === undefined) {
+                    let calc = 0;
+                    if (discData.discountType === 'percent') {
+                        calc = subtotal * (discData.value / 100);
+                    } else if (discData.discountType === 'fixed') {
+                        calc = discData.value;
+                    }
+                    appliedAmount = Math.min(calc, discData.maxDiscountValue || calc);
+                }
 
-               setDiscountInfo({
-                   ...discData,
-                   calculatedDiscount: appliedAmount, 
-               });
+                setDiscountInfo({
+                    ...discData,
+                    calculatedDiscount: appliedAmount,
+                });
 
-               toast.success(`Áp dụng thành công! Giảm ${appliedAmount.toLocaleString('vi-VN')}đ`);
-           } else {
-               setDiscountError(response.data.message || 'Không áp dụng được mã này');
-               toast.error(response.data.message || 'Không áp dụng được mã này');
-           }
-       } catch (err) {
-           let msg = 'Mã giảm giá không hợp lệ hoặc đã hết hạn';
-           if (err.response) {
-               msg = err.response.data?.message || msg;
-           } else if (err.request) {
-               msg = 'Không kết nối được đến server. Vui lòng kiểm tra mạng.';
-           }
+                toast.success(`Áp dụng thành công! Giảm ${appliedAmount.toLocaleString('vi-VN')}đ`);
+            } else {
+                setDiscountError(response.data.message || 'Không áp dụng được mã này');
+                toast.error(response.data.message || 'Không áp dụng được mã này');
+            }
+        } catch (err) {
+            let msg = 'Mã giảm giá không hợp lệ hoặc đã hết hạn';
+            if (err.response) {
+                msg = err.response.data?.message || msg;
+            } else if (err.request) {
+                msg = 'Không kết nối được đến server. Vui lòng kiểm tra mạng.';
+            }
 
-           setDiscountError(msg);
-           toast.error(msg);
-           setDiscountInfo(null);
-           console.error('Lỗi apply discount:', err);
-       } finally {
-           setLoading(false);
-       }
-   };
+            setDiscountError(msg);
+            toast.error(msg);
+            setDiscountInfo(null);
+            console.error('Lỗi apply discount:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
- const handleSubmit = async (e) => {
-     e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-     if (loading) return; 
-
-     setLoading(true);
-     setError(null);
-
-     const shippingAddress = {
-         fullName: formData.fullName,
-         phone: formData.phone,
-         street: formData.street,
-         ward: formData.ward,
-         province: formData.province,
-         note: formData.note,
-     };
-
-     const payload = {
-         shippingAddress,
-         paymentMethod: formData.paymentMethod,
-         discountCode: formData.discountCode?.trim() || undefined,
-         items: selectedItems.map((item) => ({
-             productId: item.productId,
-             quantity: item.quantity,
-             priceSnapshot: item.priceSnapshot,
-             nameSnapshot: item.nameSnapshot,
-             imageSnapshot: item.imageSnapshot,
-         })),
-     };
-
-     try {
-         const res = await createOrder(payload);
-         console.log('Payload: ',res)
-        const orderId = res?.order?._id;
-         console.log('OrderId: ',orderId)
-         if (formData.paymentMethod === 'MOMOPAY') {
-             const payUrl = res?.paymentUrl;
-
-             if (!payUrl) {
-                 throw new Error('Backend không trả về paymentUrl');
-             }
-
-             // KHÔNG xóa cart ở đây
-             window.location.href = payUrl;
+        if (loading) return;
+        if (!phoneRegex.test(formData.phone)) {
+             toast.error('Số điện thoại không hợp lệ');
              return;
-         }
+        }
+        if (formData.email && !emailRegex.test(formData.email)) {
+              toast.error('Email không hợp lệ');
+              return;
+        } 
+        setLoading(true);
+        setError(null);
 
-         // COD PAYMENT
-         toast.success('Đặt hàng thành công!', {
-             position: 'top-right',
-             autoClose: 4000,
-         });
-         if (fromCart) {
-             const idsToRemove = selectedItems.map((i) => i.productId);
-             await removeMultipleItems(idsToRemove);
-         }
+        const shippingAddress = {
+            fullName: formData.fullName,
+            phone: formData.phone,
+            email: formData.email,
+            street: formData.street,
+            ward: formData.ward,
+            province: formData.province,
+            note: formData.note,
+        };
 
-        navigate('/order-success', {
-            state: { orderId },
-        });
-     } catch (err) {
-         const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
+        const payload = {
+            shippingAddress,
+            paymentMethod: formData.paymentMethod,
+            discountCode: formData.discountCode?.trim() || undefined,
+            items: selectedItems.map((item) => ({
+                productId: item.productId?._id || item.productId,
+                quantity: item.quantity,
+                priceSnapshot: item.priceSnapshot,
+                nameSnapshot: item.nameSnapshot,
+                imageSnapshot: item.imageSnapshot,
+            })),
+        };
 
-         setError(msg);
-         toast.error(msg);
-         console.error('Lỗi đặt hàng:', err);
-     } finally {
-         setLoading(false);
-     }
- };
-  
+        try {
+            const res = await createOrder(payload);
+            console.log('Payload: ', res);
+            const orderId = res?.order?._id;
+            console.log('OrderId: ', orderId);
+            if (formData.paymentMethod === 'MOMOPAY') {
+                const payUrl = res?.paymentUrl;
+
+                if (!payUrl) {
+                    throw new Error('Backend không trả về paymentUrl');
+                }
+
+                // KHÔNG xóa cart ở đây
+                window.location.href = payUrl;
+                return;
+            }
+
+            // COD PAYMENT
+            toast.success('Đặt hàng thành công!', {
+                position: 'top-right',
+                autoClose: 4000,
+            });
+            if (fromCart) {
+                const idsToRemove = selectedItems.map((i) => i.productId);
+                await removeMultipleItems(idsToRemove);
+            }
+
+            navigate('/order-success', {
+                state: { orderId },
+            });
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message || 'Đặt hàng thất bại! Vui lòng thử lại.';
+
+            setError(msg);
+            toast.error(msg);
+            console.error('Lỗi đặt hàng:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="container mx-auto px-4 py-8 max-w-7xl">
             <h1 className="text-3xl font-bold mb-8 text-center md:text-left">
@@ -370,7 +388,8 @@ const CheckoutPage = () => {
                                         value={formData.phone}
                                         onChange={handleChange}
                                         required
-                                        className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 
+                                        ${!phoneRegex.test(formData.phone) && formData.phone ? 'border-red-500' : 'border-gray-300'}`}
                                     />
                                 </div>
                             </div>
@@ -496,7 +515,8 @@ const CheckoutPage = () => {
                                     <div className="flex-1">
                                         <p className="font-medium text-gray-900 line-clamp-2">{item.nameSnapshot}</p>
                                         <p className="text-sm text-gray-700">
-                                            {item.category ? `${item.category.toUpperCase()} x` : 'x'}{item.quantity}
+                                            {item.category ? `${item.category.toUpperCase()} x` : 'x'}
+                                            {item.quantity}
                                         </p>
                                     </div>
                                     <p className="font-bold text-black">
