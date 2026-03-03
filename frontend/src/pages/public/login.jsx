@@ -79,7 +79,7 @@ const login = () => {
                 if (response.user.role === 'admin') {
                     navigate('/admin');
                 } else if (response.user.role === 'sale') {
-                    navigate('/discount');
+                    navigate('/sale/discount');
                 } else if (response.user.role === 'staff') {
                     navigate('/staff/categories');
                 } else {

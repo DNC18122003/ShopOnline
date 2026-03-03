@@ -15,7 +15,7 @@ const isAuth = (req, res, next) => {
       });
     }
 
-    req.user = user; 
+    req.user = user;
     next();
   })(req, res, next);
 };
@@ -24,7 +24,6 @@ const isAuth = (req, res, next) => {
 const checkRoleAndStatus = (roles) => {
   return (req, res, next) => {
     try {
-      // Kiểm tra user có tồn tại không
       if (!req.user) {
         return res.status(401).json({
           success: false,
@@ -32,24 +31,23 @@ const checkRoleAndStatus = (roles) => {
         });
       }
 
-      // Kiểm tra user có active không
-      if (!req.user.isActive) {
+      // Chỉ chặn khi explicit false để tránh dữ liệu cũ thiếu field
+      if (req.user.isActive === false) {
         return res.status(403).json({
           success: false,
           message: "Forbidden - User account is inactive",
         });
       }
 
-      // Chuyển roles thành mảng nếu là string
-      const allowedRoles = Array.isArray(roles) ? roles : [roles];
+      const allowedRoles = (Array.isArray(roles) ? roles : [roles]).map((r) =>
+        String(r).trim().toLowerCase(),
+      );
+      const userRole = String(req.user.role || "").trim().toLowerCase();
 
-      // Kiểm tra user role có nằm trong danh sách roles cho phép không
-      if (!allowedRoles.includes(req.user.role)) {
+      if (!allowedRoles.includes(userRole)) {
         return res.status(403).json({
           success: false,
-          message: `Forbidden - User role must be one of: ${allowedRoles.join(
-            ", "
-          )}`,
+          message: `Forbidden - User role must be one of: ${allowedRoles.join(", ")}`,
         });
       }
 
@@ -63,8 +61,9 @@ const checkRoleAndStatus = (roles) => {
     }
   };
 };
+
 const authenticateToken = (req, res, next) => {
-  // Đọc token từ cookie 
+  // Đọc token từ cookie
   const token = req.cookies?.accessToken;
 
   if (!token) {
@@ -79,7 +78,6 @@ const authenticateToken = (req, res, next) => {
     req.user = {
       _id: decoded._id,
       role: decoded.role,
-      
     };
     next();
   } catch (err) {
@@ -87,9 +85,7 @@ const authenticateToken = (req, res, next) => {
     return res.status(403).json({
       success: false,
       message:
-        err.name === "TokenExpiredError"
-          ? "Token đã hết hạn"
-          : "Token không hợp lệ",
+        err.name === "TokenExpiredError" ? "Token đã hết hạn" : "Token không hợp lệ",
     });
   }
 };

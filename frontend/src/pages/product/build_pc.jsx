@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2, Info } from 'lucide-react';
+import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2, Info, X } from 'lucide-react';
 import { getProducts, checkBuildPcCompatibility } from '@/services/product/product.api';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/context/authContext';
@@ -79,41 +79,125 @@ function ProductCard({ product, onSelect, onRemove, isSelected }) {
   );
 }
 
-function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibilityLoading }) {
+function SaveConfigModal({ isOpen, onClose, onSave }) {
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(`Cấu hình ${new Date().toLocaleDateString('vi-VN')}`);
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    if (name.trim()) {
+      onSave(name);
+      onClose();
+    } else {
+      toast.warning('Vui lòng nhập tên cho cấu hình');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="font-bold text-lg text-gray-900">Lưu cấu hình</h3>
+        </div>
+        <div className="p-6 space-y-4">
+          <label htmlFor="config-name" className="text-sm font-medium text-gray-700">Tên cấu hình</label>
+          <input
+            id="config-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Ví dụ: Cấu hình chơi game"
+          />
+        </div>
+        <div className="p-6 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
+            <button
+                onClick={onClose}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+                Hủy
+            </button>
+            <button
+                onClick={handleSave}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+                Lưu
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadConfigModal({ isOpen, onClose, configs, onLoad, onDelete }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="font-bold text-lg text-gray-900">Tải cấu hình đã lưu</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          {configs.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">Không có cấu hình nào được lưu.</p>
+          ) : (
+            <div className="space-y-3">
+              {configs.map((config) => (
+                <div key={config.id} className="border border-gray-100 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50/50 transition-all">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-bold text-gray-800">{config.name}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Lưu lúc: {new Date(config.savedAt).toLocaleString('vi-VN')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => onLoad(config)}
+                        className="text-sm font-semibold text-blue-600 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-md"
+                      >
+                        Tải
+                      </button>
+                      <button
+                        onClick={() => onDelete(config.id)}
+                        className="text-red-500 bg-red-50 hover:bg-red-100 p-2 rounded-md"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="p-6 bg-gray-50 rounded-b-2xl text-right">
+            <button
+                onClick={onClose}
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+                Đóng
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibilityLoading, onLoadConfig, onSaveConfig }) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const getBuildPcStorageKey = () => {
-    const userId = user?._id || user?.id;
-    return userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
-  };
-
-  const handleSaveConfig = () => {
-    if (!user) {
-      toast.info('Vui lòng đăng nhập để lưu cấu hình');
-      navigate('/login', { state: { from: '/build-pc' } });
-      return;
-    }
-
-    const selectedCount = Object.keys(selectedItems).length;
-    if (selectedCount === 0) {
-      toast.warning('Chưa có linh kiện nào để lưu');
-      return;
-    }
-
-    try {
-      const key = getBuildPcStorageKey();
-      const payload = {
-        selectedItems,
-        savedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(key, JSON.stringify(payload));
-      toast.success('Đã lưu cấu hình theo tài khoản của bạn');
-    } catch (e) {
-      console.error('Save build pc config error:', e);
-      toast.error('Lưu cấu hình thất bại');
-    }
-  };
   const subtotal = useMemo(() => {
     return Object.values(selectedItems).reduce((sum, item) => sum + (item?.price || 0), 0);
   }, [selectedItems]);
@@ -237,7 +321,15 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-bold text-gray-900 mb-4 text-base">Cấu hình hiện tại</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-gray-900 text-base">Cấu hình hiện tại</h2>
+          <button 
+            onClick={onLoadConfig}
+            className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Tải đã lưu
+          </button>
+        </div>
         <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
           {COMPONENT_GROUPS.map((group) => {
             const item = selectedItems[group.key];
@@ -295,7 +387,7 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
             Thanh toán ngay
           </button>
           <button
-            onClick={handleSaveConfig}
+            onClick={onSaveConfig}
             className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-3 rounded-xl transition-all text-sm"
           >
             Lưu cấu hình
@@ -308,6 +400,7 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
 
 export default function BuildPcPage() {
   const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState('cpu');
   const [allProducts, setAllProducts] = useState({});
   const [loading, setLoading] = useState(false);
@@ -315,6 +408,92 @@ export default function BuildPcPage() {
   const [compatibilityResult, setCompatibilityResult] = useState(null);
   const [compatibilityLoading, setCompatibilityLoading] = useState(false);
   const [sortOption, setSortOption] = useState('default');
+  const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [savedConfigs, setSavedConfigs] = useState([]);
+  const isInitialMount = useRef(true);
+
+  const getBuildPcStorageKey = useCallback(() => {
+    const userId = user?._id || user?.id;
+    return userId ? `buildpc_configs_${userId}` : 'buildpc_configs_guest';
+  }, [user]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    const storageKey = getBuildPcStorageKey();
+    const savedData = localStorage.getItem(storageKey);
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        if (Array.isArray(parsed)) {
+          setSavedConfigs(parsed);
+        }
+      } catch (e) {
+        console.error('Load saved configs error:', e);
+        setSavedConfigs([]);
+      }
+    } else {
+      setSavedConfigs([]);
+    }
+  }, [user, authLoading, getBuildPcStorageKey]);
+
+  const handleSaveConfig = () => {
+    if (!user) {
+      toast.info('Vui lòng đăng nhập để lưu cấu hình');
+      navigate('/login', { state: { from: '/build-pc' } });
+      return;
+    }
+
+    const selectedCount = Object.keys(selectedItems).length;
+    if (selectedCount === 0) {
+      toast.warning('Chưa có linh kiện nào để lưu');
+      return;
+    }
+    
+    setIsSaveModalOpen(true);
+  };
+
+  const executeSaveConfig = (configName) => {
+    try {
+      const storageKey = getBuildPcStorageKey();
+      const newConfig = {
+        id: Date.now().toString(),
+        name: configName,
+        selectedItems,
+        savedAt: new Date().toISOString(),
+      };
+      
+      const updatedConfigs = [...savedConfigs, newConfig];
+      localStorage.setItem(storageKey, JSON.stringify(updatedConfigs));
+      setSavedConfigs(updatedConfigs);
+      toast.success(`Đã lưu cấu hình "${configName}"`);
+    } catch (e) {
+      console.error('Save build pc config error:', e);
+      toast.error('Lưu cấu hình thất bại');
+    }
+  };
+
+  const handleOpenLoadModal = () => {
+    setIsLoadModalOpen(true);
+  };
+
+  const handleLoadConfig = (config) => {
+    if (config.selectedItems) {
+      setSelectedItems(config.selectedItems);
+      toast.success(`Đã tải cấu hình "${config.name}"`);
+      setIsLoadModalOpen(false);
+    }
+  };
+
+  const handleDeleteConfig = (configId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa cấu hình này?')) return;
+
+    const newConfigs = savedConfigs.filter(c => c.id !== configId);
+    const storageKey = getBuildPcStorageKey();
+    localStorage.setItem(storageKey, JSON.stringify(newConfigs));
+    setSavedConfigs(newConfigs);
+    toast.success('Đã xóa cấu hình');
+  };
 
   // Hàm lấy socket/ram_type từ specifications hoặc detail_json (tương tự backend logic)
   const getSpec = useCallback((product, key) => {
@@ -331,6 +510,17 @@ export default function BuildPcPage() {
       if (detail[k]) return detail[k];
     }
     return null;
+  }, []);
+
+  const getWattage = useCallback((product) => {
+    if (!product?.specifications) return 0;
+    const wattage = product.specifications.wattage || product.specifications.power;
+    if (typeof wattage === 'number') return wattage;
+    if (typeof wattage === 'string') {
+        const parsed = parseInt(String(wattage).replace(/W/i, '').trim(), 10);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
   }, []);
 
   // Kiểm tra tương thích mỗi khi selectedItems thay đổi
@@ -406,6 +596,15 @@ export default function BuildPcPage() {
       } else if (activeCategory === 'cpu' && selectedItems.mainboard) {
         const mainSocket = getSpec(selectedItems.mainboard, 'socket');
         if (mainSocket) constraints.socket = mainSocket;
+      } else if (activeCategory === 'psu') {
+        const totalWattage = Object.values(selectedItems)
+          .reduce((sum, product) => sum + getWattage(product), 0);
+        
+        if (totalWattage > 0) {
+          // Recommend 30% overhead and round up to nearest 50W
+          const recommendedWattage = Math.ceil((totalWattage * 1.3) / 50) * 50;
+          constraints.min_wattage = recommendedWattage;
+        }
       }
 
       await fetchProductsForCategory(activeCategory, constraints);
@@ -413,39 +612,7 @@ export default function BuildPcPage() {
     };
 
     fetchWithConstraints();
-  }, [activeCategory, selectedItems.cpu, selectedItems.mainboard, fetchProductsForCategory, getSpec]);
-
-  // Tự động lưu cấu hình mỗi khi selectedItems thay đổi
-  useEffect(() => {
-    if (authLoading) return;
-    const userId = user?._id || user?.id;
-    const storageKey = userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
-    
-    if (Object.keys(selectedItems).length > 0) {
-      const payload = {
-        selectedItems,
-        savedAt: new Date().toISOString(),
-      };
-      localStorage.setItem(storageKey, JSON.stringify(payload));
-    } else {
-      // Nếu không còn linh kiện nào, có thể xóa key hoặc để trống
-      localStorage.removeItem(storageKey);
-    }
-  }, [selectedItems, user, authLoading]);
-
-  // Tải cấu hình đã lưu
-  useEffect(() => {
-    if (authLoading) return;
-    const userId = user?._id || user?.id;
-    const storageKey = userId ? `buildpc_config_${userId}` : 'buildpc_config_guest';
-    const savedConfig = localStorage.getItem(storageKey);
-    if (savedConfig) {
-      try {
-        const parsed = JSON.parse(savedConfig);
-        if (parsed.selectedItems) setSelectedItems(parsed.selectedItems);
-      } catch (e) { console.error('Load saved config error:', e); }
-    }
-  }, [user, authLoading]);
+  }, [activeCategory, selectedItems, fetchProductsForCategory, getSpec, getWattage]);
 
   const handleSelect = (product) => {
     setSelectedItems(prev => ({ ...prev, [activeCategory]: product }));
@@ -569,12 +736,30 @@ export default function BuildPcPage() {
             <RightSummary 
               selectedItems={selectedItems} 
               onRemove={handleRemove}
+              compatibilityResult={compatibilityResult}
+              compatibilityLoading={compatibilityLoading}
+              onLoadConfig={handleOpenLoadModal}
+              onSaveConfig={handleSaveConfig}
             />
           </aside>
 
         </div>
       </div>
       
+      <SaveConfigModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={executeSaveConfig}
+      />
+
+      <LoadConfigModal 
+        isOpen={isLoadModalOpen}
+        onClose={() => setIsLoadModalOpen(false)}
+        configs={savedConfigs}
+        onLoad={handleLoadConfig}
+        onDelete={handleDeleteConfig}
+      />
+
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
@@ -588,6 +773,9 @@ export default function BuildPcPage() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #cbd5e1;
+        }
+        .backdrop-blur-sm {
+          backdrop-filter: blur(4px);
         }
       `}</style>
     </div>
