@@ -36,6 +36,12 @@ const navLinkItems = [
         title: 'Tạo sản phẩm',
         icon: <PlusCircle />,
     },
+  
+    {
+        href: '/staff/build-pc-templates',
+        title: 'Tạo cấu hình mẫu',
+        icon: <Cpu />,
+    },
 ];
 const StaffLayout = () => {
     //hook
