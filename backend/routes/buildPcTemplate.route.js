@@ -1,29 +1,29 @@
 const express = require("express");
 const buildPcTemplateController = require("../controller/buildPcTemplateController");
-const {
-  authenticateToken,
-  checkRoleAndStatus,
-} = require("../middleware/authorization");
+// const {
+//   authenticateToken,
+//   checkRoleAndStatus,
+// } = require("../middleware/authorization");
 
 const router = express.Router();
-
+const { isAuth, checkRoleAndStatus } = require("../middleware/authorization");
 // Tất cả route dưới đây yêu cầu đăng nhập với role staff/admin
-router.use(authenticateToken, checkRoleAndStatus(["staff", "admin"]));
+// router.use(authenticateToken, checkRoleAndStatus(["staff", "admin"]));
 
 // Tạo cấu hình mẫu
-router.post("/", buildPcTemplateController.createTemplate);
+router.post("/",isAuth, buildPcTemplateController.createTemplate);
 
 // List cấu hình mẫu (có phân trang)
-router.get("/", buildPcTemplateController.getTemplates);
+router.get("/", isAuth, checkRoleAndStatus(["staff", "admin"]), buildPcTemplateController.getTemplates);
 
 // Xem chi tiết
-router.get("/:id", buildPcTemplateController.getTemplateById);
+router.get("/:id",isAuth, buildPcTemplateController.getTemplateById);
 
 // Cập nhật
-router.put("/:id", buildPcTemplateController.updateTemplate);
+router.put("/:id",isAuth, buildPcTemplateController.updateTemplate);
 
 // Xóa (soft delete)
-router.delete("/:id", buildPcTemplateController.deleteTemplate);
+router.delete("/:id",isAuth, buildPcTemplateController.deleteTemplate);
 
 module.exports = router;
 
