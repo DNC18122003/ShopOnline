@@ -6,7 +6,7 @@ import { Pencil } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { getProfile, updateProfileService } from '@/services/customer/profile.api';
+import { getProfile, updateProfileService } from '@/services/order/profile.api';
 import { set } from 'date-fns';
 import { toast } from 'react-toastify';
 
@@ -107,13 +107,13 @@ const UserProfile = () => {
                             <Button
                                 className="gap-2 bg-red-500 text-white hover:bg-red-600"
                                 onClick={() => {
-                                    (setIsEditing(false),
+                                    setIsEditing(false),
                                         setData({
                                             ...data,
                                             fullName: '',
                                             phone: '',
                                             address: '',
-                                        }));
+                                        });
                                 }}
                             >
                                 Hủy

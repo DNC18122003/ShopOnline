@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { confirmMomoPayment } from '@/services/customer/order.api';
+import { confirmMomoPayment } from '@/services/order/order.api';
 
 const PaymentResultPage = () => {
     const [params] = useSearchParams();

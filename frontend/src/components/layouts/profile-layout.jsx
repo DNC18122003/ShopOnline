@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'react-toastify';
 import { logout_service } from '@/services/auth/authService';
 import { AuthContext } from '@/context/authContext';
-import { updateAvatarService } from '@/services/customer/profile.api';
+import { updateAvatarService } from '@/services/order/profile.api';
 
 const navLinkItems = [
     {

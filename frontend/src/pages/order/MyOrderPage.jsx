@@ -14,7 +14,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
-import { getMyOrders, cancelOrder } from '@/services/customer/order.api';
+import { getMyOrders, cancelOrder } from '@/services/order/order.api';
 import { useNavigate } from 'react-router-dom';
 const statusConfig = {
     pending: {
@@ -59,50 +59,50 @@ const MyOrderPage = () => {
     const [totalPages, setTotalPages] = useState(1);
     const limit = 5;
     const navigate = useNavigate();
-    
-useEffect(() => {
-    fetchOrders();
-}, [page, search, status, fromDate, toDate]);
 
-const fetchOrders = async () => {
-    try {
-        setLoading(true);
+    useEffect(() => {
+        fetchOrders();
+    }, [page, search, status, fromDate, toDate]);
 
-        const params = {
-            page,
-            limit,
-            search,
-            status,
-            fromDate,
-            toDate,
-        };
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
 
-        const res = await getMyOrders(params);
-        console.log('params', params);
-        console.log('res', res);
-        setOrders(res.orders || []);
-        setTotalPages(res.totalPages || 1);
-    } catch (error) {
-        console.error(error);
-    } finally {
-        setLoading(false);
-    }
-};
+            const params = {
+                page,
+                limit,
+                search,
+                status,
+                fromDate,
+                toDate,
+            };
+
+            const res = await getMyOrders(params);
+            console.log('params', params);
+            console.log('res', res);
+            setOrders(res.orders || []);
+            setTotalPages(res.totalPages || 1);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
     const handleViewDetail = (id) => {
         navigate(`/orders/${id}`);
     };
-const handleCancel = async () => {
-    try {
-        setCancelLoading(true);
-        await cancelOrder(cancelOrderId);
-        setCancelOrderId(null);
-        await fetchOrders();
-    } catch (error) {
-        console.error(error);
-    } finally {
-        setCancelLoading(false);
-    }
-};
+    const handleCancel = async () => {
+        try {
+            setCancelLoading(true);
+            await cancelOrder(cancelOrderId);
+            setCancelOrderId(null);
+            await fetchOrders();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setCancelLoading(false);
+        }
+    };
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
@@ -320,7 +320,6 @@ const handleCancel = async () => {
             </div>
         </div>
     );
-
 };
 
 export default MyOrderPage;

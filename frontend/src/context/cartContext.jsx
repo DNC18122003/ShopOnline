@@ -1,6 +1,6 @@
 // context/cartContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
-import * as cartApi from '@/services/customer/cart.api';
+import * as cartApi from '@/services/order/cart.api';
 import { useAuth } from '@/context/authContext';
 const CartContext = createContext(null);
 
@@ -54,7 +54,6 @@ export const CartProvider = ({ children }) => {
 
     const removeMultipleItems = async (productIds) => {
         try {
-            
             setLoading(true);
             for (const id of productIds) {
                 await cartApi.removeCartItem(id);

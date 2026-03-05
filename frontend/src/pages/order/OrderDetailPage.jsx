@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { User, MapPin, CreditCard, CheckCircle, Truck, Circle, Phone, Mail, Notebook, Clock } from 'lucide-react';
-import { getOrderDetail } from '@/services/customer/order.api';
+import { getOrderDetail } from '@/services/order/order.api';
 
 const Card = ({ children }) => <div className="bg-white rounded-xl shadow-sm border p-5">{children}</div>;
 const ORDER_STEPS = ['pending', 'confirmed', 'shipping', 'completed'];
@@ -37,7 +37,7 @@ const OrderDetailPage = () => {
                 setLoading(true);
                 const res = await getOrderDetail(id);
                 console.log('Order Details:', res);
-                setOrder(res); 
+                setOrder(res);
             } catch (err) {
                 setError('Không thể tải chi tiết đơn hàng');
             } finally {
@@ -188,7 +188,6 @@ const OrderDetailPage = () => {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="font-semibold">Trạng thái đơn hàng</h2>
 
-                          
                             <span
                                 className={`px-3 py-1 text-xs rounded-full font-medium ${
                                     order.orderStatus === 'pending'
@@ -206,7 +205,6 @@ const OrderDetailPage = () => {
                             </span>
                         </div>
 
-                       
                         {order.orderStatus !== 'cancelled' ? (
                             <div className="flex items-center justify-between relative">
                                 {ORDER_STEPS.map((step, index) => {
@@ -216,7 +214,6 @@ const OrderDetailPage = () => {
 
                                     return (
                                         <div key={step} className="flex-1 flex flex-col items-center relative">
-                                            
                                             {index !== 0 && (
                                                 <div
                                                     className={`absolute top-5 left-[-50%] w-full h-1 ${
@@ -225,7 +222,6 @@ const OrderDetailPage = () => {
                                                 />
                                             )}
 
-                                            
                                             <div
                                                 className={`z-10 w-10 h-10 flex items-center justify-center rounded-full border-2 transition ${
                                                     isActive
@@ -236,9 +232,7 @@ const OrderDetailPage = () => {
                                                 <Icon size={18} />
                                             </div>
 
-                                           
                                             <p className="text-sm mt-2 font-medium">{STEP_CONFIG[step].label}</p>
-                                          
                                         </div>
                                     );
                                 })}

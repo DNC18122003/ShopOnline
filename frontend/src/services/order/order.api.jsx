@@ -94,3 +94,17 @@ export const cancelOrder = async (orderId) => {
   }
 };
 
+// 8. Lấy tất cả đơn hàng (admin / staff)
+export const getAllOrders = async () => {
+    try {
+        const response = await customizeAPI.get('/order');
+
+        console.log('SERVICE:', response);
+
+        return response.data || response; // API trả trực tiếp mảng orders
+    } catch (error) {
+        console.error('Lỗi getAllOrders:', error);
+        throw error;
+    }
+};
+

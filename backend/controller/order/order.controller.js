@@ -324,7 +324,7 @@ const getOrderById = async (req, res) => {
 
 const getAllOrder = async (req, res) => {
     try {
-        const order = await Order.find().sort({createAt: -1}).lean();
+        const order = await Order.find().sort({createdAt: -1}).lean();
         res.json(order);
     } catch (error) {
         res.status(500).json({message:'Get all order fail'});
