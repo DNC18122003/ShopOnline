@@ -186,6 +186,13 @@ const createOrder = async (req, res) => {
       paymentMethod,
       paymentStatus: "unpaid",
       orderStatus: "pending",
+      statusLogs: [
+        {
+          status: "pending",
+          note: "Order created",
+          updatedBy: userId,
+        },
+      ],
     });
 
     await newOrder.save();
@@ -267,7 +274,7 @@ const getMyOrders = async (req, res) => {
     const userId = req.user._id;
     const { page = 1, limit = 5, search, status, fromDate, toDate } = req.query;
     const query = { customerId: userId };
-
+    
     if (search) {
       query.orderCode = { $regex: search, $options: "i" };
     }
@@ -295,6 +302,7 @@ const getMyOrders = async (req, res) => {
     return res.json({
       success: true,
       orders,
+      total,
       totalPages: Math.ceil(total / limit),
       currentPage: Number(page),
     });
@@ -332,19 +340,40 @@ const getAllOrder = async (req, res) => {
 }
 
 const updateOrderStatus = async (req, res) => {
-    const {orderId} = req.params;
-    const {status} = req.body;
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const staffId = req.user._id;
 
     const order = await Order.findByIdAndUpdate(
-        orderId,
-        {orderStatus: status},
-        {new: true, runValidators: true}
+      orderId,
+      {
+        orderStatus: status,
+        $push: {
+          statusLogs: {
+            status: status,
+            note: "Staff updated order status",
+            updatedBy: staffId,
+          },
+        },
+      },
+      { new: true, runValidators: true }
     );
-    if (!order){
-        return res.status(404).json({message: 'Order not found !'});
-       
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found !" });
     }
-     res.json({message:'Update order status successful', order});
+
+    res.json({
+      message: "Update order status successful",
+      order,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Update order status fail",
+      error: error.message,
+    });
+  }
 };
 
 const cancelMyOrder = async (req, res) => {
@@ -388,6 +417,11 @@ const cancelMyOrder = async (req, res) => {
     }
 
     order.orderStatus = "cancelled";
+    order.statusLogs.push({
+      status: "cancelled",
+      note: "Customer cancelled order",
+      updatedBy: userId,
+    });
     await order.save();
 
     return res.json({

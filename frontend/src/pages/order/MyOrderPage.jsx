@@ -48,6 +48,7 @@ const statusConfig = {
 
 const MyOrderPage = () => {
     const [orders, setOrders] = useState([]);
+    const [totalOrders, setTotalOrders] = useState(0);
     const [loading, setLoading] = useState(false);
     const [cancelOrderId, setCancelOrderId] = useState(null);
     const [cancelLoading, setCancelLoading] = useState(false);
@@ -82,6 +83,8 @@ const MyOrderPage = () => {
             console.log('res', res);
             setOrders(res.orders || []);
             setTotalPages(res.totalPages || 1);
+
+            setTotalOrders(res.total || 0);
         } catch (error) {
             console.error(error);
         } finally {
@@ -114,7 +117,7 @@ const MyOrderPage = () => {
                 </div>
 
                 <div className="bg-white px-4 py-2 rounded-xl shadow-sm text-sm">
-                    Tổng đơn hàng: <span className="text-blue-600 font-semibold">{orders.length}</span>
+                    Tổng đơn hàng: <span className="text-blue-600 font-semibold">{totalOrders}</span>
                 </div>
             </div>
 
@@ -147,6 +150,7 @@ const MyOrderPage = () => {
                             <option value="confirmed">Đã xác nhận</option>
                             <option value="shipping">Đang giao</option>
                             <option value="completed">Hoàn thành</option>
+                            <option value="cancelled">Đã hủy</option>
                         </select>
                     </div>
 
