@@ -34,6 +34,7 @@ const header = () => {
         { name: 'Trang chủ', url: '/' },
         { name: 'Sản phẩm', url: '/product' },
         { name: 'Build PC', url: '/build-pc' },
+        { name: 'Cấu hình PC', url: '/pc-templates' },
         { name: 'Về chúng tôi', url: '/about' },
         { name: 'Liên hệ', url: '/contact' },
     ];

@@ -16,6 +16,9 @@ import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
 import VerifyRegisterOtp from '@/pages/verify-OTP/verifyRegisterOtp';
 import ForgotPasswordPage from '@/pages/password/forgotPasswordPage';
 
+import PcTemplatesPage from '@/pages/product/PcTemplatesPage';
+import PcTemplateDetailPage from '@/pages/product/PcTemplateDetailPage';
+
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -34,6 +37,15 @@ export const publicRoutes = [
                 path: '/build-pc',
                 element: <BuildPcPage />,
             },
+            {
+                path: '/pc-templates',
+                element: <PcTemplatesPage />,
+            },
+            {
+                path: '/pc-template/:id',
+                element: <PcTemplateDetailPage />,
+            },
+
             {
                 path: '/product/:id',
                 element: <ProductDetailPage />,

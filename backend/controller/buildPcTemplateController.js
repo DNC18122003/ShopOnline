@@ -1,5 +1,6 @@
 const BuildPcTemplate = require("../models/BuildPcTemplate");
 const Product = require("../models/Products/Product");
+const mongoose = require("mongoose");
 
 /**
  * POST /api/build-pc-template
@@ -57,57 +58,104 @@ const createTemplate = async (req, res) => {
  * Staff/Admin: list cấu hình mẫu (có filter, pagination)
  */
 const getTemplates = async (req, res) => {
-  try {
-    const { page = 1, limit = 10, keyword, createdBy, isPublic } = req.query;
+    try {
+      const { page = 1, limit = 10, keyword, createdBy, isPublic, minPrice, maxPrice } = req.query;
+  
+      const matchStage = { isActive: true };
+  
+      if (keyword) {
+        matchStage.$text = { $search: keyword };
+      }
+  
+      if (createdBy) {
+        matchStage.createdBy = new mongoose.Types.ObjectId(createdBy);
+      }
+  
+      if (typeof isPublic !== "undefined") {
+        matchStage.isPublic = isPublic === "true";
+      }
 
-    const filter = {};
-
-    if (keyword) {
-      filter.$text = { $search: keyword };
+      const componentKeys = ["cpu", "main", "ram", "gpu", "ssd", "hdd", "psu", "case"];
+      const lookupStages = componentKeys.map(key => ({
+        $lookup: {
+          from: "products",
+          let: { componentId: { $toObjectId: `$components.${key}` } },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$componentId"] } } },
+            { $project: { price: 1 } }
+          ],
+          as: `${key}Details`
+        }
+      }));
+  
+      const addFieldsStage = {
+        $addFields: {
+          totalPrice: {
+            $sum: componentKeys.map(key => ({ $ifNull: [{ $first: `$${key}Details.price` }, 0] }))
+          }
+        }
+      };
+      
+      if (minPrice || maxPrice) {
+        addFieldsStage.$addFields.totalPrice = {
+            $sum: componentKeys.map(key => ({ $ifNull: [{ $first: `$${key}Details.price` }, 0] }))
+        };
+        matchStage.totalPrice = {};
+        if (minPrice) {
+            matchStage.totalPrice.$gte = Number(minPrice);
+        }
+        if (maxPrice) {
+            matchStage.totalPrice.$lte = Number(maxPrice);
+        }
+      }
+  
+      const currentPage = Number(page);
+      const pageSize = Number(limit);
+      const skip = (currentPage - 1) * pageSize;
+  
+      const aggregation = [
+        { $match: matchStage },
+        ...lookupStages,
+        addFieldsStage,
+        {
+          $lookup: {
+            from: "users",
+            localField: "createdBy",
+            foreignField: "_id",
+            as: "createdBy",
+            pipeline: [
+              { $project: { userName: 1, fullName: 1, role: 1 } }
+            ]
+          }
+        },
+        { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } },
+      ];
+  
+      const [templates, total] = await Promise.all([
+        BuildPcTemplate.aggregate([...aggregation, { $sort: { createdAt: -1 } }, { $skip: skip }, { $limit: pageSize }]),
+        BuildPcTemplate.aggregate([...aggregation, { $count: "total" }])
+      ]);
+  
+      const totalCount = total.length > 0 ? total[0].total : 0;
+  
+      return res.status(200).json({
+        success: true,
+        data: templates,
+        pagination: {
+          total: totalCount,
+          page: currentPage,
+          limit: pageSize,
+          totalPages: Math.ceil(totalCount / pageSize),
+        },
+      });
+    } catch (error) {
+      console.error("Get build PC templates error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Lỗi server khi lấy danh sách cấu hình mẫu",
+      });
     }
-
-    if (createdBy) {
-      filter.createdBy = createdBy;
-    }
-
-    if (typeof isPublic !== "undefined") {
-      filter.isPublic = isPublic === "true";
-    }
-
-    filter.isActive = true;
-
-    const currentPage = Number(page);
-    const pageSize = Number(limit);
-    const skip = (currentPage - 1) * pageSize;
-
-    const [templates, total] = await Promise.all([
-      BuildPcTemplate.find(filter)
-        .populate("createdBy", "userName fullName role")
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(pageSize)
-        .lean(),
-      BuildPcTemplate.countDocuments(filter),
-    ]);
-
-    return res.status(200).json({
-      success: true,
-      data: templates,
-      pagination: {
-        total,
-        page: currentPage,
-        limit: pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      },
-    });
-  } catch (error) {
-    console.error("Get build PC templates error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi server khi lấy danh sách cấu hình mẫu",
-    });
-  }
-};
+  };
 
 /**
  * GET /api/build-pc-template/:id
@@ -243,11 +291,147 @@ const deleteTemplate = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/build-pc-template/public
+ * Public: Lấy danh sách cấu hình mẫu công khai
+ */
+const getPublicTemplates = async (req, res) => {
+  try {
+    const { page = 1, limit = 9, keyword, minPrice, maxPrice, usageType } = req.query;
+
+    // Luôn lọc các template công khai và đang hoạt động
+    const matchStage = {
+      isActive: true,
+      isPublic: true,
+    };
+
+    if (keyword) {
+      matchStage.$text = { $search: keyword };
+    }
+
+    if (usageType) {
+      matchStage.usageType = { $regex: usageType, $options: 'i' };
+    }
+
+    const componentKeys = ["cpu", "main", "ram", "gpu", "ssd", "hdd", "psu", "case"];
+    const lookupStages = componentKeys.map(key => ({
+      $lookup: {
+        from: "products",
+        let: { componentId: { $toObjectId: `$components.${key}` } },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$componentId"] } } },
+          { $project: { _id: 1, name: 1, price: 1, images: { $slice: ["$images", 1] } } }
+        ],
+        as: `${key}Details`
+      }
+    }));
+
+    const addFieldsStage = {
+      $addFields: {
+        totalPrice: {
+          $sum: componentKeys.map(key => ({ $ifNull: [{ $first: `$${key}Details.price` }, 0] }))
+        },
+        componentDetails: {
+          $mergeObjects: componentKeys.map(key => ({
+            $cond: {
+              if: { $gt: [{ $size: `$${key}Details` }, 0] },
+              then: { [key]: { $first: `$${key}Details` } },
+              else: {}
+            }
+          }))
+        }
+      }
+    };
+
+    const currentPage = Number(page);
+    const pageSize = Number(limit);
+    const skip = (currentPage - 1) * pageSize;
+
+    const aggregation = [
+      { $match: matchStage },
+      ...lookupStages,
+      addFieldsStage,
+    ];
+
+    // Thêm bộ lọc giá sau khi đã tính totalPrice
+    if (minPrice || maxPrice) {
+      const priceMatch = { totalPrice: {} };
+      if (minPrice) priceMatch.totalPrice.$gte = Number(minPrice);
+      if (maxPrice) priceMatch.totalPrice.$lte = Number(maxPrice);
+      aggregation.push({ $match: priceMatch });
+    }
+
+    const [templates, total] = await Promise.all([
+      BuildPcTemplate.aggregate([...aggregation, { $sort: { createdAt: -1 } }, { $skip: skip }, { $limit: pageSize }]),
+      BuildPcTemplate.aggregate([...aggregation, { $count: "total" }])
+    ]);
+
+    const totalCount = total.length > 0 ? total[0].total : 0;
+
+    return res.status(200).json({
+      success: true,
+      data: templates,
+      pagination: {
+        total: totalCount,
+        page: currentPage,
+        limit: pageSize,
+        totalPages: Math.ceil(totalCount / pageSize),
+      },
+    });
+  } catch (error) {
+    console.error("Get public build PC templates error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi server khi lấy danh sách cấu hình mẫu",
+    });
+  }
+};
+
+/**
+ * GET /api/build-pc-template/public/:id
+ * Public: Xem chi tiết cấu hình mẫu công khai
+ */
+const getPublicTemplateById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const template = await BuildPcTemplate.findOne({ _id: id, isPublic: true, isActive: true }).lean();
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy cấu hình mẫu hoặc cấu hình này không công khai.",
+      });
+    }
+
+    const componentDetails = {};
+    let totalPrice = 0;
+
+    for (const [key, productId] of Object.entries(template.components || {})) {
+      if (!productId) continue;
+      const product = await Product.findById(productId).select("name price images stock").lean();
+      if (product) {
+        componentDetails[key] = product;
+        totalPrice += product.price || 0;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: { ...template, components: componentDetails, totalPrice },
+    });
+  } catch (error) {
+    console.error("Get public build PC template by id error:", error);
+    return res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+};
+
 module.exports = {
   createTemplate,
   getTemplates,
   getTemplateById,
   updateTemplate,
   deleteTemplate,
+  getPublicTemplates,
+  getPublicTemplateById,
 };
-
