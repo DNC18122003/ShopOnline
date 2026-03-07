@@ -27,14 +27,14 @@ const login = () => {
     };
     const validateForm = (form) => {
         const errors = {};
-        if (!form.email) {
+        if (!form.email.trim()) {
             errors.emailError = 'Địa chỉ email không được để trống !';
-        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email.trim())) {
             errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
         }
-        if (!form.password || form.password.length < 8) {
+        if (!form.password.trim() || form.password.trim().length < 8) {
             errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
         } else {
             errors.passwordError = '';
@@ -52,7 +52,7 @@ const login = () => {
         }
         try {
             setLoadingLogin(true);
-            const response = await login_service(formLogin.email, formLogin.password);
+            const response = await login_service(formLogin.email.trim(), formLogin.password.trim());
 
             //console.log('Login successful api:', response);
             // set data in auth context
@@ -87,7 +87,7 @@ const login = () => {
                 }
             }, 1000);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Đăng nhập thấ t bại!');
+            toast.error(error.response?.data?.message || 'Đăng nhập thất bại!');
             console.error('Login failed:', error);
         } finally {
             setLoadingLogin(false);

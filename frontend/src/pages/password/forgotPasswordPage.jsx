@@ -25,13 +25,13 @@ const ForgotPasswordPage = () => {
     // Send email verify
     const handleSendOtp = async () => {
         //console.log('hi');
-        if (!email) {
+        if (!email.trim()) {
             return toast.error('Vui lòng nhập email');
         }
 
         try {
             setLoading(true);
-            const response = await findEmailForgotPassword(email);
+            const response = await findEmailForgotPassword(email.trim);
             console.log('Response from findEmailForgotPassword:', response);
             if (response) {
                 toast.success('Email hợp lệ, vui lòng kiểm tra hộp thư để nhận OTP !');
@@ -47,7 +47,7 @@ const ForgotPasswordPage = () => {
     const verifyOtp = async () => {
         //console.log('Gửi OTP:', otp);
         try {
-            const response = await verifyOtpForgotPassword(email, otp);
+            const response = await verifyOtpForgotPassword(email.trim(), otp.trim());
             console.log('OTP sent successfully:', response.data);
             toast.success('OTP đã được xác minh thành công !');
             setStep(2);

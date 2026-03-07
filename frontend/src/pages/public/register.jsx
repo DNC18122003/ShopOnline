@@ -27,27 +27,27 @@ const register = () => {
     const validateForm = (form) => {
         const errors = {};
         // validate user name
-        if (!form.userName) {
+        if (!form.userName.trim()) {
             errors.userNameError = 'Profile name is required';
         } else {
             errors.userNameError = '';
         }
         // validate email
-        if (!form.email) {
+        if (!form.email.trim()) {
             errors.emailError = 'Địa chỉ email không được để trống !';
-        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email.trim())) {
             errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
         }
         // validate password
-        if (!form.password || form.password.length < 8) {
+        if (!form.password.trim() || form.password.trim().length < 8) {
             errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
         } else {
             errors.passwordError = '';
         }
         // validate confirm password
-        if (form.password !== form.confirmPassword) {
+        if (!form.confirmPassword.trim() || form.password.trim() !== form.confirmPassword.trim()) {
             errors.confirmPasswordError = 'Mật khẩu và xác nhận mật khẩu không khớp !';
         }
         return errors;
@@ -62,10 +62,14 @@ const register = () => {
         // console.log('Register form data:', formRegister);
         try {
             setLoadingLogin(true);
-            const response = await register_service(formRegister.userName, formRegister.email, formRegister.password);
+            const response = await register_service(
+                formRegister.userName.trim(),
+                formRegister.email.trim(),
+                formRegister.password.trim(),
+            );
             // console.log('Register successful api:', response.data);
             // lưu email vào localStorage để dùng cho verify otp
-            localStorage.setItem('emailForOtp', formRegister.email);
+            localStorage.setItem('emailForOtp', formRegister.email.trim());
             toast.success('Đăng ký thành công, vui lòng xác minh OTP trên email !');
             setTimeout(() => {
                 navigate('/verify_otp');
