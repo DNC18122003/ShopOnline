@@ -63,7 +63,13 @@ const UserProfile = () => {
         }
         try {
             setLoadingUpdate(true);
-            const response = await updateProfileService(data);
+
+            const dataToUpdate = {
+                fullName: data.fullName.trim(),
+                phone: data.phone.trim(),
+                address: data.adress.trim(),
+            };
+            const response = await updateProfileService(dataToUpdate);
             console.log('Profile updated:', response);
             setIsEditing(false);
             toast.success('Cập nhật thông tin cá nhân thành công');
@@ -107,13 +113,13 @@ const UserProfile = () => {
                             <Button
                                 className="gap-2 bg-red-500 text-white hover:bg-red-600"
                                 onClick={() => {
-                                    setIsEditing(false),
+                                    (setIsEditing(false),
                                         setData({
                                             ...data,
                                             fullName: '',
                                             phone: '',
                                             address: '',
-                                        });
+                                        }));
                                 }}
                             >
                                 Hủy
