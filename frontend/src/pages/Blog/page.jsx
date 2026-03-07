@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, Suspense, useEffect, useMemo } from "react"
 import { Search, Plus, RotateCcw } from "lucide-react"
 
@@ -269,7 +267,7 @@ export default function BlogManagementPage() {
           isOpen={isCreateModalOpen}
           onOpenChange={setIsCreateModalOpen}
           onSubmit={handleCreateBlog} 
-          currentUser={currentUserName} // Truyền tên người dùng vào đây
+          currentUser={currentUserName} 
         />
 
         <DeleteBlogModal 

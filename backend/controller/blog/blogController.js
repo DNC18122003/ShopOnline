@@ -22,7 +22,7 @@ const blogController = {
     res.status(200).json({
       success: true,
       count: blogs.length,
-      data: blogs // Trả về danh sách blogs, trong đó author là một chuỗi ID
+      data: blogs 
     });
   } catch (error) {
     res.status(500).json({ 
@@ -36,18 +36,43 @@ const blogController = {
   try {
     let { title, slug, content, author, thumbnail, status } = req.body;
     // 1. Kiểm tra các trường không được rỗng
-    if (!title || !content || !author || !thumbnail) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Các trường tiêu đề, nội dung, tác giả và ảnh bìa không được để trống' 
+    if(!title){
+      return res.status(400).json({
+        success: false,
+        message: 'Trường tiêu đề không được để trống'
       });
     }
-    // 2. Kiểm tra độ dài tiêu đề (tối đa 50) và nội dung (tối đa 500)
-    if (title.length > 50) {
-      return res.status(400).json({ success: false, message: 'Tiêu đề không được quá 50 ký tự' });
+    if(!author){
+      return res.status(400).json({
+        success: false,
+        message: 'Tác giả không được để trống'
+      });
     }
+    if(!content){
+      return res.status(400).json({
+        success: false,
+        message: 'Nội dung không được để trống'
+      });
+    }
+    if(!thumbnail){
+      return res.status(400).json({
+        success: false,
+        message: 'Ảnh bìa không được để trống'
+      });
+    }
+    // 2. Kiểm tra độ dài tiêu đề 
+    if (title.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tiêu đề không được quá 50 ký tự' 
+      });
+    }
+    // 3. Kiểm tra độ dài nội dung
     if (content.length > 500) {
-      return res.status(400).json({ success: false, message: 'Nội dung không được quá 500 ký tự' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Nội dung không được quá 500 ký tự' 
+      });
     }
 
     // 3. Validate Ảnh 
@@ -55,12 +80,11 @@ const blogController = {
     const maxSize = 5 * 1024 * 1024; 
 
     if (thumbnail.size > maxSize) {
-      return res.status(400).json({ success: false, message: 'Ảnh vượt quá kích thước cho phép (tối đa 5MB)' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Ảnh vượt quá kích thước cho phép (tối đa 5MB)' 
+      });
     }
-    // if (!allowedExtensions.includes(thumbnail.mimetype)) {
-    //   return res.status(400).json({ success: false, message: 'Định dạng ảnh không hỗ trợ (chỉ nhận PNG, JPG)' });
-    // }
-
     // 4. Xử lý Slug
     if (!slug && title) {
       slug = generateSlug(title);
@@ -69,7 +93,10 @@ const blogController = {
     // 5. Kiểm tra slug tồn tại
     const existingBlog = await Blog.findOne({ slug });
     if (existingBlog) {
-      return res.status(400).json({ success: false, message: 'Slug hoặc tiêu đề bài viết đã tồn tại' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Slug hoặc tiêu đề bài viết đã tồn tại' 
+      });
     }
 
     // 6. Tạo Blog mới
@@ -78,7 +105,7 @@ const blogController = {
       slug,
       content,
       author,
-      thumbnail: thumbnail.path || thumbnail, // Tùy vào cách bạn lưu đường dẫn ảnh
+      thumbnail: thumbnail.path || thumbnail, 
       status
     });
 
@@ -89,12 +116,12 @@ const blogController = {
     });
 
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 },
-
-  
-
   // 3. Lấy chi tiết bài viết (Theo ID)
   getBlogById: async (req, res) => {
     try {
@@ -109,10 +136,15 @@ const blogController = {
           message: 'Bài viết không tồn tại' 
         });
       }
-
-      res.status(200).json({ success: true, data: blog });
+      res.status(200).json({ 
+        success: true, 
+        data: blog 
+      });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
     }
   },
   
@@ -128,26 +160,67 @@ const blogController = {
         ).populate('author', 'name email');
 
         if (!blog) {
-            return res.status(404).json({ success: false, message: 'Bài viết không tồn tại' });
+            return res.status(404).json({ 
+              success: false, 
+              message: 'Bài viết không tồn tại' 
+            });
         }
 
-        res.status(200).json({ success: true, data: blog });
+        res.status(200).json({ 
+          success: true, 
+          data: blog 
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ 
+          success: false, 
+          message: error.message 
+        });
     }
   },
 
-  // 5. Cập nhật bài viết
+// 5. Cập nhật bài viết
   updateBlog: async (req, res) => {
     try {
-      const { id } = req.params;
+      // 1. Lấy ID từ tham số URL
+      const { id } = req.params; 
       
-      // Nếu user đổi title mà không gửi slug mới, có thể cần generate lại slug (tùy logic của bạn)
-      // Ở đây mình giữ nguyên logic update cơ bản
-      const updatedBlog = await Blog.findByIdAndUpdate(id, req.body, { 
-        new: true,
-        runValidators: true 
-      });
+      // 2. Lấy dữ liệu từ Request Body
+      let { title, slug, content,  thumbnail} = req.body; 
+
+      // 3. Thực hiện kiểm tra lỗi (Validate) TRƯỚC KHI lưu
+      if (!title) {
+        return res.status(400).json({ success: false, message: 'Trường tiêu đề không được để trống' });
+      }
+      if (!content) {
+        return res.status(400).json({ success: false, message: 'Nội dung không được để trống' });
+      }
+      if (!thumbnail) {
+        return res.status(400).json({ success: false, message: 'Ảnh bìa không được để trống' });
+      }
+      if (title.length > 50) {
+        return res.status(400).json({ success: false, message: 'Tiêu đề không được quá 50 ký tự' });
+      }
+      if (content.length > 500) {
+        return res.status(400).json({ success: false, message: 'Nội dung không được quá 500 ký tự' });
+      }
+
+      // Xử lý Slug
+      if (!slug && title) {
+        slug = generateSlug(title);
+      }
+
+      // Kiểm tra trùng slug 
+      const existingBlog = await Blog.findOne({ slug, _id: { $ne: id } });
+      if (existingBlog) {
+        return res.status(400).json({ success: false, message: 'Slug hoặc tiêu đề bài viết đã tồn tại' });
+      }
+
+      // 4. SAU KHI DỮ LIỆU ĐÃ CHUẨN -> Tiến hành Update vào Database
+      const updatedBlog = await Blog.findByIdAndUpdate(
+        id, 
+        req.body, // Hoặc truyền { title, slug, content, author, thumbnail, status }
+        { new: true, runValidators: true }
+      );
 
       if (!updatedBlog) {
         return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết để sửa' });
@@ -158,11 +231,11 @@ const blogController = {
         message: 'Cập nhật bài viết thành công',
         data: updatedBlog
       });
+
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
   },
-
   // 6. Xóa bài viết
   deleteBlog: async (req, res) => {
     try {
@@ -170,7 +243,10 @@ const blogController = {
       const deletedBlog = await Blog.findByIdAndDelete(id);
 
       if (!deletedBlog) {
-        return res.status(404).json({ success: false, message: 'Không tìm thấy bài viết để xóa' });
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Không tìm thấy bài viết để xóa' 
+        });
       }
 
       res.status(200).json({
@@ -178,7 +254,10 @@ const blogController = {
         message: 'Đã xóa bài viết thành công'
       });
     } catch (error) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(500).json({ 
+        success: false, 
+        message: error.message 
+      });
     }
   }
 };
