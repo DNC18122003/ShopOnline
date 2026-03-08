@@ -9,12 +9,12 @@ const loginController = async (req, res) => {
   const { email, password } = req.body;
   try {
     // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.trim() });
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy tài khoản" });
     }
     // Check password using bcrypt.compare
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password.trim(), user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Mật khẩu không đúng" });
     }
@@ -62,32 +62,35 @@ const loginController = async (req, res) => {
 // controller for register
 const registerController = async (req, res) => {
   const { userName, email, password } = req.body;
+  const userNameParsed = userName.trim();
+  const emailParsed = email.trim();
+  const passwordParsed = password.trim();
   // console.log(
   //   "Register controller called in backend:",
-  //   userName,
-  //   email,
-  //   password
+  //   userNameParsed,
+  //   emailParsed,
+  //   passwordParsed
   // );
   // validate data in backend
-  if (!userName || !email || !password) {
+  if (!userNameParsed || !emailParsed || !passwordParsed) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
   try {
     // check emai exist
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: emailParsed });
     if (existingUser) {
       return res.status(400).json({ message: "Email đã được sử dụng" });
     }
     // check userName exist
-    const existingUserName = await User.findOne({ userName });
+    const existingUserName = await User.findOne({ userName: userNameParsed });
     if (existingUserName) {
       return res.status(400).json({ message: "Tên người dùng đã được sử dụng" });
     }
     //hash password
-    const hash_Password = await hashPassword(password);
+    const hash_Password = await hashPassword(passwordParsed);
     const newUser = new User({
-      userName,
-      email,
+      userName: userNameParsed,
+      email: emailParsed,
       password: hash_Password,
       fullName: null,        // Tên đầy đủ không có
       phone: null,           // Số điện thoại không có
@@ -165,13 +168,14 @@ const getMe = async (req, res) => {
 const findEmailForgotPassword = async (req, res) => {
   console.log("hi");
   const { email } = req.body;
+  const emailParsed = email.trim();
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: emailParsed });
     if (!user) {
       return res.status(404).json({ message: "Email không tồn tại" });
     }
     // Email tồn tại, gửi email xác nhận
-    await sendOTPService(email, req.session);
+    await sendOTPService(emailParsed, req.session);
     return res.json({ success: true, message: "Email tồn tại", user });
   } catch (error) {
     console.error("Error finding user:", error);
@@ -181,13 +185,15 @@ const findEmailForgotPassword = async (req, res) => {
 const changeByForgotPassword = async (req, res) => {
   console.log("hi forgot");
   const { email, newPassword } = req.body;
+  const emailParsed = email.trim();
+  const newPasswordParsed = newPassword.trim();
   try {
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: emailParsed });
     if (!user) {
       return res.status(404).json({ message: "Email không tồn tại" });
     }
     // Email tồn tại, tiến hành đổi mật khẩu
-    const hashedPassword = await hashPassword(newPassword);
+    const hashedPassword = await hashPassword(newPasswordParsed);
     user.password = hashedPassword;
     await user.save();
     return res.json({ success: true, message: "Đổi mật khẩu thành công" });
@@ -199,19 +205,21 @@ const changeByForgotPassword = async (req, res) => {
 const changePasswordByOldPassword = async (req, res) => {
   const userId = req.user._id;
   const { oldPassword, newPassword } = req.body;
-  console.log("hi change by old password", oldPassword, newPassword);
+  const oldPasswordParsed = oldPassword.trim();
+  const newPasswordParsed = newPassword.trim();
+  console.log("hi change by old password", oldPasswordParsed, newPasswordParsed);
   try {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Tài khoản không tồn tại !" });
     }
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    const isMatch = await bcrypt.compare(oldPasswordParsed, user.password);
     console.log("isMatch:", isMatch);
     if (!isMatch) {
       console.log("Mật khẩu cũ không đúng");
       return res.status(404).json({ message: "Mật khẩu cũ không đúng" });
     }
-    const hashedPassword = await hashPassword(newPassword);
+    const hashedPassword = await hashPassword(newPasswordParsed);
     user.password = hashedPassword;
     await user.save();
     return res.json({ success: true, message: "Đổi mật khẩu thành công" });
