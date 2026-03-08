@@ -32,34 +32,47 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
     if (errorText) setErrorText("");
   }
 
-  const handleThumbnailChange = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+const handleThumbnailChange = (e) => {
+    //Xóa báo lỗi cũ đi mỗi khi bắt đầu chọn file
+    setErrorText("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // 2. Kiểm tra định dạng ảnh
     if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      setErrorText("Lỗi: Định dạng ảnh phải là PNG hoặc JPG.");
+      setThumbnailPreview("");
+      handleInputChange("thumbnail", "");
+      e.target.value = "";
+      setErrorText("Lỗi: Định dạng ảnh phải là PNG hoặc JPG."); 
       return;
     }
 
+    // 3. Kiểm tra dung lượng ảnh (Tối đa 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setErrorText("Lỗi: Kích thước ảnh không được vượt quá 5MB.");
+      setThumbnailPreview("");
+      handleInputChange("thumbnail", "");
+      e.target.value = "";
+      // 👇 Đẩy lệnh báo lỗi xuống dưới cùng
+      setErrorText("Lỗi: Kích thước ảnh không được vượt quá 5MB."); 
       return;
     }
-
-    const reader = new FileReader()
+    // 4. NẾU ẢNH HỢP LỆ -> Xử lý lưu state và hiển thị preview
+    const reader = new FileReader();
     reader.onloadend = () => {
-      setThumbnailPreview(reader.result)
-      handleInputChange("thumbnail", reader.result)
-    }
-    reader.readAsDataURL(file)
-  }
-
+      setThumbnailPreview(reader.result); 
+      handleInputChange("thumbnail", reader.result); 
+    };
+    reader.readAsDataURL(file);
+}
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     // Validate
-    if (!formData.title.trim() || !formData.excerpt.trim() || !formData.author.trim() || !formData.thumbnail) {
+    if (!formData.title.trim() || !formData.excerpt.trim() || !formData.author.trim()) {
       setErrorText("Lỗi: Vui lòng điền đầy đủ các thông tin bắt buộc.");
+      return;
+    }
+    if(!formData.thumbnail){
+      setErrorText("Lỗi: Vùi lòng thêm ảnh bìa");
       return;
     }
 
@@ -90,6 +103,12 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
     }
   }
 
+  // Các điều kiện kiểm tra lỗi cho từng trường
+  const isImageError = errorText.includes("ảnh") || errorText.includes("định dạng");
+  const isTitleError = (errorText.includes("bắt buộc") && !formData.title.trim()) || errorText.includes("Tiêu đề");
+  const isExcerptError = (errorText.includes("bắt buộc") && !formData.excerpt.trim()) || errorText.includes("Nội dung");
+  const isAuthorError = errorText.includes("bắt buộc") && !formData.author.trim();
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {errorText && (
@@ -106,14 +125,27 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
         <div className="flex flex-col gap-3">
           <Label className="font-bold text-sm">Ảnh bài viết <span className="text-red-500">*</span></Label>
           <div className="flex items-center gap-4">
-            <div className={`w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden ${errorText && !formData.thumbnail ? 'border-red-400' : ''}`}>
+            <div className={`w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden ${
+              isImageError && !formData.thumbnail ? 'border-red-500' : 'border-gray-200'
+            }`}>
               {thumbnailPreview ? (
                 <img src={thumbnailPreview} alt="Preview" className="w-full h-full object-cover" />
               ) : <Upload className="text-gray-400 w-6 h-6" />}
             </div>
             <div className="flex-1">
-              <Input type="file" accept=".jpg,.jpeg,.png" onChange={handleThumbnailChange} className="cursor-pointer h-9 text-sm" />
-              <p className="text-[10px] text-gray-500 mt-1 italic">PNG, JPG tối đa 5MB</p>
+              <Input 
+                type="file" 
+                accept=".jpg,.jpeg,.png" 
+                onChange={handleThumbnailChange} 
+                className={`cursor-pointer h-9 text-sm ${
+                  isImageError ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"
+                }`} 
+              />
+              <p className={`text-[10px] mt-1 italic ${
+                isImageError ? "text-red-500 font-medium" : "text-gray-500"
+              }`}>
+                PNG, JPG tối đa 5MB
+              </p>
             </div>
           </div>
         </div>
@@ -130,7 +162,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             value={formData.title} 
             onChange={(e) => handleInputChange("title", e.target.value)}
             placeholder="Nhập tiêu đề..."
-            className={errorText && !formData.title ? "border-red-400 focus-visible:ring-red-400" : ""}
+            className={isTitleError ? "border-red-500 focus-visible:ring-red-500" : ""}
           />
         </div>
 
@@ -145,7 +177,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
           <Textarea 
             value={formData.excerpt} 
             onChange={(e) => handleInputChange("excerpt", e.target.value)}
-            className={`min-h-[100px] ${errorText && !formData.excerpt ? "border-red-400 focus-visible:ring-red-400" : ""}`}
+            className={`min-h-[100px] ${isExcerptError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
             placeholder="Mô tả nội dung bài viết..."
           />
         </div>
@@ -157,7 +189,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input 
-                className={`pl-9 bg-gray-50 cursor-not-allowed ${errorText && !formData.author ? "border-red-400" : ""}`} 
+                className={`pl-9 bg-gray-50 cursor-not-allowed ${isAuthorError ? "border-red-500 focus-visible:ring-red-500" : ""}`} 
                 value={formData.author} 
                 readOnly 
                 placeholder="Tên tác giả..." 
@@ -181,7 +213,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                 <input 
                   type="radio" 
                   checked={formData.status === "draft"} 
-                  onChange={() => handleInputChange("status", "draft")} // Đã sửa ở đây
+                  onChange={() => handleInputChange("status", "draft")}
                   className="w-4 h-4 accent-blue-600"
                 />
                 <span className="text-sm">Bản nháp</span>

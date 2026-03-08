@@ -18,7 +18,7 @@ export function ViewBlogForm({ blogId, onCancel }) {
     const fetchBlogDetail = async () => {
       setIsLoading(true);
       try {
-        // Gọi API đến Backend của bạn (nhớ đổi Port 9999 cho đúng)
+        // Gọi API đến Backend 
         const response = await fetch(`http://localhost:9999/api/blogs/${blogId}`);
         const result = await response.json();
         

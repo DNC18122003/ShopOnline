@@ -1,16 +1,14 @@
-"use client"
-
 import React, { useState, useEffect } from "react"
-import { Loader2, User, Calendar, Eye, Image as ImageIcon } from "lucide-react" 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Loader2, User, Calendar, Eye, Image as ImageIcon, AlertCircle } from "lucide-react"
 
 export function EditBlogForm({ blogId, onSubmit, onCancel }) {
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+  const [errorText, setErrorText] = useState("")
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -54,38 +52,89 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if(errorText) setErrorText("");
   };
 
-  // ---> THÊM HÀM XỬ LÝ KHI CHỌN ẢNH MỚI <---
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Đọc file ảnh và chuyển sang dạng Base64 để preview và gửi lên server
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, thumbnail: reader.result }));
-      };
-      reader.readAsDataURL(file);
+  // ---> HÀM ĐÃ ĐƯỢC SỬA ĐỂ PHÙ HỢP VỚI STATE CỦA EDIT FORM <---
+  const handleThumbnailChange = (e) => {
+    setErrorText("");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 1. Kiểm tra định dạng ảnh
+    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
+      setFormData(prev => ({ ...prev, thumbnail: "" })); // Xóa ảnh trên form
+      e.target.value = ""; // Xóa ảnh trong bộ nhớ input
+      setErrorText("Lỗi: Định dạng ảnh phải là PNG hoặc JPG."); 
+      return;
     }
-  };
 
+    // 2. Kiểm tra dung lượng ảnh (Tối đa 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setFormData(prev => ({ ...prev, thumbnail: "" })); // Xóa ảnh trên form
+      e.target.value = ""; // Xóa ảnh trong bộ nhớ input
+      setErrorText("Lỗi: Kích thước ảnh không được vượt quá 5MB."); 
+      return;
+    }
+
+    // 3. NẾU ẢNH HỢP LỆ -> Cập nhật ảnh vào formData
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({ ...prev, thumbnail: reader.result })); 
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ---> HÀM ĐÃ ĐƯỢC CHUẨN HOÁ VALIDATE (THÊM TRIM) <---
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Loại bỏ dấu cách thừa ở đầu/cuối
+    const validTitle = formData.title.trim();
+    const validContent = formData.content.trim();
+
+    if (!formData.thumbnail) {
+      setErrorText("Lỗi: Vui lòng chọn ảnh bài viết.");
+      return;
+    }
+    if (!validTitle) {
+      setErrorText("Lỗi: Vui lòng điền đầy đủ tiêu đề.");
+      return;
+    }
+    if (validTitle.length > 50) {
+      setErrorText("Lỗi: Tiêu đề bài viết không được vượt quá 50 ký tự.");
+      return;
+    }
+    if (!validContent) {
+      setErrorText("Lỗi: Vui lòng điền đầy đủ nội dung.");
+      return;
+    }
+    if (validContent.length > 500) {
+      setErrorText("Lỗi: Nội dung bài viết không được vượt quá 500 ký tự.");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const updatePayload = {
-        title: formData.title,
-        content: formData.content,
+        title: validTitle, // Dùng giá trị đã trim
+        content: validContent, // Dùng giá trị đã trim
         thumbnail: formData.thumbnail,
         status: formData.status
       }
       await onSubmit(blogId, updatePayload);
+      
+      // Gọi onCancel() để tự động đóng form nếu truyền từ ngoài vào
+      if(typeof onCancel === 'function') {
+        onCancel();
+      }
     } catch (error) {
       console.error("Lỗi submit:", error);
+      setErrorText(error.message || "Đã xảy ra lỗi khi cập nhật bài viết.");
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "Chưa cập nhật";
@@ -104,13 +153,24 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
     );
   }
 
+  const isImageError = errorText.includes("ảnh") || errorText.includes("định dạng");
+  const isTitleError = (errorText.includes("tiêu đề") && !formData.title.trim()) || errorText.includes("Tiêu đề");
+  const isContentError = (errorText.includes("nội dung") && !formData.content.trim()) || errorText.includes("Nội dung");
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* ---> THAY ĐỔI GIAO DIỆN PHẦN ẢNH BÀI VIẾT TẠI ĐÂY <--- */}
+      {errorText && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
+          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
+          <p className="text-sm text-red-600 leading-tight">
+            <span className="font-bold">Lỗi:</span> {errorText.replace("Lỗi: ", "")}
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
-        <Label className="font-bold">Ảnh bài viết</Label>
+        <Label className="font-bold">Ảnh bài viết<span className="text-red-500">*</span></Label>
         <div className="flex items-center gap-4">
-          {/* Khung Preview Ảnh */}
           <div className="w-24 h-24 border rounded-md overflow-hidden bg-gray-50 flex items-center justify-center flex-shrink-0">
             {formData.thumbnail ? (
               <img src={formData.thumbnail} alt="preview" className="w-full h-full object-cover" />
@@ -119,45 +179,42 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
             )}
           </div>
           
-          {/* Nút Chọn File */}
           <div className="flex-1">
             <Input 
               type="file" 
               accept="image/png, image/jpeg, image/jpg"
-              onChange={handleImageChange}
-              className="cursor-pointer"
+              onChange={handleThumbnailChange}
+              className={`cursor-pointer h-9 text-sm ${
+                isImageError ? "border-red-500 focus-visible:ring-red-500" : "border-gray-200"
+              }`} 
             />
             <p className="text-xs text-gray-500 mt-2">PNG, JPG tối đa 5MB</p>
           </div>
         </div>
       </div>
 
-      {/* Tiêu đề */}
       <div className="space-y-2">
-        <Label className="font-bold">Tiêu đề bài viết</Label>
+        <Label className="font-bold">Tiêu đề bài viết<span className="text-red-500">*</span></Label>
         <Input 
           name="title"
           value={formData.title} 
           onChange={handleChange}
           placeholder="Nhập tiêu đề..."
-          required
+          className={isTitleError ? "border-red-500 focus-visible:ring-red-500" : ""}
         />
       </div>
 
-      {/* Nội dung */}
       <div className="space-y-2">
-        <Label className="font-bold">Nội dung bài viết</Label>
+        <Label className="font-bold">Nội dung bài viết<span className="text-red-500">*</span></Label>
         <Textarea 
           name="content"
           value={formData.content} 
           onChange={handleChange}
-          className="min-h-[150px]" 
+          className={`min-h-[150px] ${isContentError ? "border-red-500 focus-visible:ring-red-500" : ""}`}
           placeholder="Viết nội dung tại đây..."
-          required
         />
       </div>
 
-      {/* Khung thông tin phụ (Read-only) + Trạng thái */}
       <div className="bg-slate-50 p-4 rounded-xl border grid grid-cols-2 gap-4 text-sm mt-2">
         <div>
           <p className="flex items-center gap-2 text-gray-500 mb-1">
@@ -209,7 +266,6 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
         </div>
       </div>
 
-      {/* Nút hành động */}
       <div className="flex justify-end gap-3 pt-4 border-t mt-4">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
           Hủy

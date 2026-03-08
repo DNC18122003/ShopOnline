@@ -18,7 +18,7 @@ import ForgotPasswordPage from '@/pages/password/forgotPasswordPage';
 
 import PcTemplatesPage from '@/pages/product/PcTemplatesPage';
 import PcTemplateDetailPage from '@/pages/product/PcTemplateDetailPage';
-
+import AuthLayout from '@/components/layouts/auth-layout';
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -73,12 +73,26 @@ export const publicRoutes = [
         ],
     },
     {
-        path: '/login',
-        element: <Login />,
-    },
-    {
-        path: '/register',
-        element: <Register />,
+        path: '/',
+        element: <AuthLayout />,
+        children: [
+            {
+                path: '/login',
+                element: <Login />,
+            },
+            {
+                path: '/register',
+                element: <Register />,
+            },
+            {
+                path: '/forgot-password',
+                element: <ForgotPasswordPage />,
+            },
+            {
+                path: '/verify_otp',
+                element: <VerifyRegisterOtp />,
+            },
+        ],
     },
     {
         path: '/discount',
@@ -91,13 +105,5 @@ export const publicRoutes = [
     {
         path: '/blogDetails',
         element: <BlogDetails />,
-    },
-    {
-        path: '/verify_otp',
-        element: <VerifyRegisterOtp />,
-    },
-    {
-        path: '/forgot-password',
-        element: <ForgotPasswordPage />,
     },
 ];

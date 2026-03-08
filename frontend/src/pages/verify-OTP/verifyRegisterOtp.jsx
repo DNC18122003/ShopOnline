@@ -43,35 +43,31 @@ const VerifyRegisterOtp = () => {
     };
 
     return (
-        <div className="flex items-center justify-center h-screen">
-            <div>
-                {sendEmail ? (
-                    <ComponentOtp
-                        title="Xác minh OTP"
-                        email={emailForOtp}
-                        otp={otp}
-                        setOtp={setOtp}
-                        message="OTP đã được xác minh thành công, vui lòng đăng nhập lại !"
-                        handleClose={verifyOtp}
-                    />
-                ) : (
-                    <div className="flex items-center justify-center h-screen">
-                        <div className="border w-full max-w-100 mx-4 flex items-center justify-center flex-col p-5 rounded-md shadow-md gap-3">
-                            <div className="text-center mb-6">
-                                <p className="text-gray-600 text-sm">Xác nhận gửi email đến</p>
-                                <p className="font-bold text-xl text-blue-600 mt-2">{emailForOtp}</p>
-                            </div>
-                            <Button
-                                onClick={sendEmailOtp}
-                                className="mt-4 bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300"
-                                disabled={sendEmailLoading}
-                            >
-                                {sendEmailLoading ? 'Đang gửi...' : 'Xác nhận'}
-                            </Button>
-                        </div>
+        <div className="">
+            {sendEmail ? (
+                <ComponentOtp
+                    title="Xác minh OTP"
+                    email={emailForOtp}
+                    otp={otp}
+                    setOtp={setOtp}
+                    message="OTP đã được xác minh thành công, vui lòng đăng nhập lại !"
+                    handleClose={verifyOtp}
+                />
+            ) : (
+                <div className="bg-white flex flex-col items-center gap-2 border w-full max-w-100 mx-4 justify-center  p-5 rounded-md shadow-md ">
+                    <div className="text-center mb-6">
+                        <p className="text-gray-600 text-sm">Xác nhận gửi email đến</p>
+                        <p className="font-bold text-xl text-blue-600 mt-2">{emailForOtp}</p>
                     </div>
-                )}
-            </div>
+                    <Button
+                        onClick={sendEmailOtp}
+                        className="mt-4 bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                        disabled={sendEmailLoading}
+                    >
+                        {sendEmailLoading ? 'Đang gửi...' : 'Xác nhận'}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 };

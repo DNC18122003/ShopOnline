@@ -5,9 +5,9 @@ import { Cpu, Mail, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import poster from '../../assets/tech_shop_poster.png';
+
 import { register_service } from '../../services/auth/authService';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 const register = () => {
     const navigate = useNavigate();
     const [formRegister, setFormRegister] = React.useState({
@@ -27,27 +27,27 @@ const register = () => {
     const validateForm = (form) => {
         const errors = {};
         // validate user name
-        if (!form.userName) {
+        if (!form.userName.trim()) {
             errors.userNameError = 'Profile name is required';
         } else {
             errors.userNameError = '';
         }
         // validate email
-        if (!form.email) {
+        if (!form.email.trim()) {
             errors.emailError = 'Địa chỉ email không được để trống !';
-        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email.trim())) {
             errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
         }
         // validate password
-        if (!form.password || form.password.length < 8) {
+        if (!form.password.trim() || form.password.trim().length < 8) {
             errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
         } else {
             errors.passwordError = '';
         }
         // validate confirm password
-        if (form.password !== form.confirmPassword) {
+        if (!form.confirmPassword.trim() || form.password.trim() !== form.confirmPassword.trim()) {
             errors.confirmPasswordError = 'Mật khẩu và xác nhận mật khẩu không khớp !';
         }
         return errors;
@@ -62,10 +62,14 @@ const register = () => {
         // console.log('Register form data:', formRegister);
         try {
             setLoadingLogin(true);
-            const response = await register_service(formRegister.userName, formRegister.email, formRegister.password);
+            const response = await register_service(
+                formRegister.userName.trim(),
+                formRegister.email.trim(),
+                formRegister.password.trim(),
+            );
             // console.log('Register successful api:', response.data);
             // lưu email vào localStorage để dùng cho verify otp
-            localStorage.setItem('emailForOtp', formRegister.email);
+            localStorage.setItem('emailForOtp', formRegister.email.trim());
             toast.success('Đăng ký thành công, vui lòng xác minh OTP trên email !');
             setTimeout(() => {
                 navigate('/verify_otp');
@@ -78,109 +82,89 @@ const register = () => {
         }
     };
     return (
-        <div>
-            <div className="flex h-screen w-full">
-                {/* left : login form */}
-                <div className=" bg-slate-300 w-full lg:w-1/2 flex items-center justify-center p-4">
-                    <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
-                        {/* back to login */}
-                        <ArrowLeft className="text-blue-700 hover:bg-gray-50" onClick={() => navigate('/login')} />
-                        {/* iCon */}
-                        <div className="flex justify-center mb-5">
-                            <Cpu className="text-blue-700 h-10 w-10" />
-                        </div>
-                        {/* Title */}
-                        <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">
-                            Chào mừng đến với TechShop
-                        </h1>
-                        {/* Descrition */}
-                        <p className="text-gray-600 text-center text-sm mb-6">
-                            Đăng kí ngay để có trải nghiệm mua sắm tuyệt vời
-                        </p>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* profile name */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-2">Tên người dùng</label>
-
-                                <Input
-                                    type="text"
-                                    placeholder="Nhập tên người dùng của bạn"
-                                    name="userName"
-                                    value={formRegister.userName}
-                                    onChange={handleChange}
-                                    className=" border-gray-300 focus:border-blue-500 text-gray-900"
-                                />
-
-                                {messageError?.userNameError && (
-                                    <p className="text-red-500 text-sm mt-1">{messageError.userNameError}</p>
-                                )}
-                            </div>
-
-                            {/* email */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
-                                <Input
-                                    type="email"
-                                    placeholder="Nhập địa chỉ email của bạn"
-                                    name="email"
-                                    value={formRegister.email}
-                                    onChange={handleChange}
-                                    className=" border-gray-300 focus:border-blue-500 text-gray-900"
-                                />
-
-                                {messageError?.emailError && (
-                                    <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>
-                                )}
-                            </div>
-                            {/* password */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-2">Mật khẩu</label>
-                                <Input
-                                    type="password"
-                                    placeholder="Nhập mật khẩu của bạn"
-                                    name="password"
-                                    value={formRegister.password}
-                                    onChange={handleChange}
-                                    className=" border-gray-300 focus:border-blue-500 text-gray-900 "
-                                />
-                                {messageError?.passwordError && (
-                                    <p className="text-red-500 text-sm mt-1">{messageError.passwordError}</p>
-                                )}
-                            </div>
-                            {/* confirm password */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-2">
-                                    Xác nhận mật khẩu
-                                </label>
-                                <Input
-                                    type="password"
-                                    placeholder="Xác nhận mật khẩu của bạn"
-                                    name="confirmPassword"
-                                    value={formRegister.confirmPassword}
-                                    onChange={handleChange}
-                                    className=" border-gray-300 focus:border-blue-500 text-gray-900 "
-                                />
-                                {messageError?.confirmPasswordError && (
-                                    <p className="text-red-500 text-sm mt-1">{messageError.confirmPasswordError}</p>
-                                )}
-                            </div>
-
-                            <Button
-                                type="submit"
-                                disabled={loadingLogin}
-                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-lg"
-                            >
-                                Đăng ký
-                            </Button>
-                        </form>
-                    </div>
-                </div>
-                {/* right : image logo */}
-                <div className="hidden lg:flex w-1/2 items-center justify-center">
-                    <img src={poster} alt="Poster website" className="h-screen " />
-                </div>
+        <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
+            {/* back to login */}
+            <ArrowLeft className="text-blue-700 hover:bg-gray-50" onClick={() => navigate('/login')} />
+            {/* iCon */}
+            <div className="flex justify-center mb-5">
+                <Cpu className="text-blue-700 h-10 w-10" />
             </div>
-            {/* <ToastContainer /> */}
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">Chào mừng đến với TechShop</h1>
+            {/* Descrition */}
+            <p className="text-gray-600 text-center text-sm mb-6">Đăng kí ngay để có trải nghiệm mua sắm tuyệt vời</p>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* profile name */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Tên người dùng</label>
+
+                    <Input
+                        type="text"
+                        placeholder="Nhập tên người dùng của bạn"
+                        name="userName"
+                        value={formRegister.userName}
+                        onChange={handleChange}
+                        className=" border-gray-300 focus:border-blue-500 text-gray-900"
+                    />
+
+                    {messageError?.userNameError && (
+                        <p className="text-red-500 text-sm mt-1">{messageError.userNameError}</p>
+                    )}
+                </div>
+
+                {/* email */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
+                    <Input
+                        type="email"
+                        placeholder="Nhập địa chỉ email của bạn"
+                        name="email"
+                        value={formRegister.email}
+                        onChange={handleChange}
+                        className=" border-gray-300 focus:border-blue-500 text-gray-900"
+                    />
+
+                    {messageError?.emailError && <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>}
+                </div>
+                {/* password */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Mật khẩu</label>
+                    <Input
+                        type="password"
+                        placeholder="Nhập mật khẩu của bạn"
+                        name="password"
+                        value={formRegister.password}
+                        onChange={handleChange}
+                        className=" border-gray-300 focus:border-blue-500 text-gray-900 "
+                    />
+                    {messageError?.passwordError && (
+                        <p className="text-red-500 text-sm mt-1">{messageError.passwordError}</p>
+                    )}
+                </div>
+                {/* confirm password */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Xác nhận mật khẩu</label>
+                    <Input
+                        type="password"
+                        placeholder="Xác nhận mật khẩu của bạn"
+                        name="confirmPassword"
+                        value={formRegister.confirmPassword}
+                        onChange={handleChange}
+                        className=" border-gray-300 focus:border-blue-500 text-gray-900 "
+                    />
+                    {messageError?.confirmPasswordError && (
+                        <p className="text-red-500 text-sm mt-1">{messageError.confirmPasswordError}</p>
+                    )}
+                </div>
+
+                <Button
+                    type="submit"
+                    disabled={loadingLogin}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-lg"
+                >
+                    Đăng ký
+                </Button>
+            </form>
         </div>
     );
 };
