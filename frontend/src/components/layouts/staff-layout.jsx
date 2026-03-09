@@ -4,7 +4,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, Tag, PlusCircle } from 'lucide-react';
+import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, Tag, PlusCircle ,Clipboard} from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -15,6 +15,11 @@ const navLinkItems = [
 
         title: 'Trang chủ',
         icon: <Home />,
+    },
+    {
+        href: '/staff/orders/',
+        title: 'Đơn hàng',
+        icon: <Clipboard/>,
     },
     {
         href: '/staff/categories',
@@ -36,7 +41,7 @@ const navLinkItems = [
         title: 'Tạo sản phẩm',
         icon: <PlusCircle />,
     },
-  
+
     {
         href: '/staff/build-pc-templates',
         title: 'Tạo cấu hình mẫu',

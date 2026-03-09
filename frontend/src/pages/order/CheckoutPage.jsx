@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
 import axios from 'axios';
-import { createOrder, getAddress } from '@/services/customer/order.api';
+import { createOrder, getAddress } from '@/services/order/order.api';
 import { toast } from 'react-toastify';
 import discountService from '@/services/discount/discount.api';
 import DiscountInput from '@/components/Discount/DiscountInput';
@@ -98,7 +98,7 @@ const CheckoutPage = () => {
             fetchDiscounts();
         }
     }, [subtotal]);
- 
+
     useEffect(() => {
         if (user) {
             setFormData((prev) => ({
@@ -244,13 +244,13 @@ const CheckoutPage = () => {
 
         if (loading) return;
         if (!phoneRegex.test(formData.phone)) {
-             toast.error('Số điện thoại không hợp lệ');
-             return;
+            toast.error('Số điện thoại không hợp lệ');
+            return;
         }
         if (formData.email && !emailRegex.test(formData.email)) {
-              toast.error('Email không hợp lệ');
-              return;
-        } 
+            toast.error('Email không hợp lệ');
+            return;
+        }
         setLoading(true);
         setError(null);
 
@@ -389,7 +389,11 @@ const CheckoutPage = () => {
                                         onChange={handleChange}
                                         required
                                         className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 
-                                        ${!phoneRegex.test(formData.phone) && formData.phone ? 'border-red-500' : 'border-gray-300'}`}
+                                        ${
+                                            !phoneRegex.test(formData.phone) && formData.phone
+                                                ? 'border-red-500'
+                                                : 'border-gray-300'
+                                        }`}
                                     />
                                 </div>
                             </div>

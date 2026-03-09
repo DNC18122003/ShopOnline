@@ -7,8 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'react-toastify';
 
-import poster from '../../assets/tech_shop_poster.png';
-
 import { login_service } from '../../services/auth/authService';
 const login = () => {
     const navigate = useNavigate();
@@ -29,14 +27,14 @@ const login = () => {
     };
     const validateForm = (form) => {
         const errors = {};
-        if (!form.email) {
+        if (!form.email.trim()) {
             errors.emailError = 'Địa chỉ email không được để trống !';
-        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email)) {
+        } else if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i.test(form.email.trim())) {
             errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
         }
-        if (!form.password || form.password.length < 8) {
+        if (!form.password.trim() || form.password.trim().length < 8) {
             errors.passwordError = 'Mật khẩu cần tối thiểu 8 kí tự !';
         } else {
             errors.passwordError = '';
@@ -54,7 +52,7 @@ const login = () => {
         }
         try {
             setLoadingLogin(true);
-            const response = await login_service(formLogin.email, formLogin.password);
+            const response = await login_service(formLogin.email.trim(), formLogin.password.trim());
 
             //console.log('Login successful api:', response);
             // set data in auth context
@@ -89,113 +87,92 @@ const login = () => {
                 }
             }, 1000);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Đăng nhập thấ t bại!');
+            toast.error(error.response?.data?.message || 'Đăng nhập thất bại!');
             console.error('Login failed:', error);
         } finally {
             setLoadingLogin(false);
         }
     };
     return (
-        <div>
-            <div className="flex h-screen w-full">
-                {/* left : login form */}
-                <div className=" bg-slate-300 w-full lg:w-1/2 flex items-center justify-center p-4">
-                    <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
-                        {/* Logo */}
-                        <div className="flex justify-center mb-5">
-                            <Cpu className="text-blue-700 h-10 w-10" />
-                        </div>
-                        {/* Title */}
-                        <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">
-                            Chào mừng đến với TechShop
-                        </h1>
-                        {/* Descrition */}
-                        <p className="text-gray-600 text-center text-sm mb-6">
-                            Đăng nhập để trải nghiệm mua sắm tuyệt vời
-                        </p>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* email */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
-                                <Input
-                                    type="email"
-                                    placeholder="Nhập địa chỉ email của bạn"
-                                    name="email"
-                                    value={formLogin.email}
-                                    onChange={handleChange}
-                                    className=" border-gray-300  text-gray-900"
-                                />
+        <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
+            {/* Logo */}
+            <div className="flex justify-center mb-5" onClick={() => navigate('/')}>
+                <Cpu className="text-blue-700 h-10 w-10" />
+            </div>
+            {/* Title */}
+            <h1 className="text-2xl font-bold text-blue-700 text-center mb-2">Chào mừng đến với TechShop</h1>
+            {/* Descrition */}
+            <p className="text-gray-600 text-center text-sm mb-6">Đăng nhập để trải nghiệm mua sắm tuyệt vời</p>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* email */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
+                    <Input
+                        type="email"
+                        placeholder="Nhập địa chỉ email của bạn"
+                        name="email"
+                        value={formLogin.email}
+                        onChange={handleChange}
+                        className=" border-gray-300  text-gray-900"
+                    />
 
-                                {messageError?.emailError && (
-                                    <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>
-                                )}
-                            </div>
-                            {/* password */}
-                            <div>
-                                <label className="text-sm font-medium text-gray-700 block mb-2">Mật khẩu</label>
-                                <Input
-                                    type="password"
-                                    placeholder="Nhập mật khẩu của bạn"
-                                    name="password"
-                                    value={formLogin.password}
-                                    onChange={handleChange}
-                                    className=" border-gray-300  text-gray-900"
-                                />
-                                {messageError?.passwordError && (
-                                    <p className="text-red-500 text-sm mt-1">{messageError.passwordError}</p>
-                                )}
-                            </div>
-                            {/*  Forgot Password */}
-                            <div className="flex items-center justify-end">
-                                <Link
-                                    to="/forgot-password"
-                                    className="text-sm text-blue-500 hover:text-blue-600 font-medium"
-                                >
-                                    Quên mật khẩu?
-                                </Link>
-                            </div>
-                            <Button
-                                type="submit"
-                                disabled={loadingLogin}
-                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-lg"
-                            >
-                                Đăng nhập
-                            </Button>
-                            {messageError && typeof messageError === 'string' && (
-                                <p className="text-red-500 text-sm">{messageError}</p>
-                            )}
-                        </form>
+                    {messageError?.emailError && <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>}
+                </div>
+                {/* password */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Mật khẩu</label>
+                    <Input
+                        type="password"
+                        placeholder="Nhập mật khẩu của bạn"
+                        name="password"
+                        value={formLogin.password}
+                        onChange={handleChange}
+                        className=" border-gray-300  text-gray-900"
+                    />
+                    {messageError?.passwordError && (
+                        <p className="text-red-500 text-sm mt-1">{messageError.passwordError}</p>
+                    )}
+                </div>
+                {/*  Forgot Password */}
+                <div className="flex items-center justify-end">
+                    <Link to="/forgot-password" className="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                        Quên mật khẩu?
+                    </Link>
+                </div>
+                <Button
+                    type="submit"
+                    disabled={loadingLogin}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2.5 rounded-lg"
+                >
+                    Đăng nhập
+                </Button>
+                {messageError && typeof messageError === 'string' && (
+                    <p className="text-red-500 text-sm">{messageError}</p>
+                )}
+            </form>
 
-                        {/* Divider */}
-                        <div className="flex items-center mt-5 ">
-                            <div className="flex-1 border"></div>
-                            <span className="mx-2 mb-1 text-gray-400">Hoặc</span>
-                            <div className="flex-1 border"></div>
-                        </div>
-                        {/* Google login */}
-                        {/* <Button
+            {/* Divider */}
+            <div className="flex items-center mt-5 ">
+                <div className="flex-1 border"></div>
+                <span className="mx-2 mb-1 text-gray-400">Hoặc</span>
+                <div className="flex-1 border"></div>
+            </div>
+            {/* Google login */}
+            {/* <Button
                             variant="outline"
                             className="w-full border border-gray-300 text-gray-700 font-medium py-2.5 rounded-lg hover:bg-gray-50 bg-transparent first-letter:text-red-500"
                         >
                             <span className="text-red-500 font-bold mr-1 text-2xl ">G</span> Đăng nhập với Google
                         </Button> */}
-                        {/* Sign Up Link */}
-                        <div className="text-center mt-6">
-                            <span className="text-gray-600 text-sm">
-                                Chưa có tài khoản?{' '}
-                                <Link to="/register" className="text-blue-500 hover:text-blue-600 font-semibold">
-                                    Đăng ký ngay
-                                </Link>
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                {/* right : image logo */}
-                <div className="hidden lg:flex w-1/2 items-center justify-center">
-                    <img src={poster} alt="Poster website" className="h-screen " />
-                </div>
+            {/* Sign Up Link */}
+            <div className="text-center mt-6">
+                <span className="text-gray-600 text-sm">
+                    Chưa có tài khoản?{' '}
+                    <Link to="/register" className="text-blue-500 hover:text-blue-600 font-semibold">
+                        Đăng ký ngay
+                    </Link>
+                </span>
             </div>
-            {/* <ToastContainer /> */}
         </div>
     );
 };

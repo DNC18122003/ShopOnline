@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, MapPin, CreditCard, CheckCircle, Truck, Circle, Phone, Mail, Notebook, Clock } from 'lucide-react';
-import { getOrderDetail } from '@/services/customer/order.api';
+import { User, MapPin, CreditCard, CheckCircle, Truck, Phone, Mail, Notebook, Clock } from 'lucide-react';
+
+import { getOrderDetail } from '@/services/order/order.api';
 
 const Card = ({ children }) => <div className="bg-white rounded-xl shadow-sm border p-5">{children}</div>;
+
 const ORDER_STEPS = ['pending', 'confirmed', 'shipping', 'completed'];
+
 const STEP_CONFIG = {
     pending: {
         label: 'Chờ xử lý',
@@ -23,6 +26,7 @@ const STEP_CONFIG = {
         icon: CheckCircle,
     },
 };
+
 const OrderDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -36,8 +40,7 @@ const OrderDetailPage = () => {
             try {
                 setLoading(true);
                 const res = await getOrderDetail(id);
-                console.log('Order Details:', res);
-                setOrder(res); 
+                setOrder(res);
             } catch (err) {
                 setError('Không thể tải chi tiết đơn hàng');
             } finally {
@@ -47,6 +50,18 @@ const OrderDetailPage = () => {
 
         if (id) fetchOrderDetail();
     }, [id]);
+
+    /* format date VN */
+    const formatDate = (date) => {
+        if (!date) return '';
+        return new Date(date).toLocaleString('vi-VN');
+    };
+
+    /* lấy thời gian của từng step */
+    const getStepTime = (status) => {
+        const log = order?.statusLogs?.find((l) => l.status === status);
+        return log?.updatedAt;
+    };
 
     if (loading) return <div className="p-6">Đang tải...</div>;
     if (error) return <div className="p-6 text-red-500">{error}</div>;
@@ -120,7 +135,7 @@ const OrderDetailPage = () => {
 
                     {/* RIGHT */}
                     <div className="space-y-6">
-                        {/* Shipping Address */}
+                        {/* Customer */}
                         <Card>
                             <h2 className="font-semibold mb-4">Thông tin khách hàng</h2>
 
@@ -129,29 +144,31 @@ const OrderDetailPage = () => {
                                     <User size={16} />
                                     <p>{order.shippingAddress?.fullName}</p>
                                 </div>
+
                                 <div className="flex text-sm gap-4">
                                     <Phone size={16} />
                                     <p>{order.shippingAddress?.phone}</p>
                                 </div>
+
                                 <div className="flex text-sm gap-4">
                                     <Mail size={16} />
-                                    <p className={order.shippingAddress?.email ? '' : 'text-gray-400 italic'}>
-                                        {order.shippingAddress?.email || 'Không có'}
-                                    </p>
+                                    <p>{order.shippingAddress?.email || 'Không có'}</p>
                                 </div>
+
                                 <div className="flex text-sm gap-4">
                                     <Notebook size={16} />
-                                    <p className={order.shippingAddress?.note ? '' : 'text-gray-400 italic'}>
-                                        {order.shippingAddress?.note || ' Không có'}
-                                    </p>
+                                    <p>{order.shippingAddress?.note || 'Không có'}</p>
                                 </div>
                             </div>
                         </Card>
+
+                        {/* Address */}
                         <Card>
                             <h2 className="font-semibold mb-4">Địa chỉ giao hàng</h2>
 
                             <div className="flex gap-3">
                                 <MapPin size={18} className="text-gray-500 mt-1" />
+
                                 <div className="text-sm">
                                     <p>{order.shippingAddress?.street}</p>
                                     <p>{order.shippingAddress?.ward}</p>
@@ -166,8 +183,10 @@ const OrderDetailPage = () => {
 
                             <div className="flex gap-3">
                                 <CreditCard size={18} className="text-gray-500 mt-1" />
+
                                 <div className="text-sm">
                                     <p>{order.paymentMethod}</p>
+
                                     <p
                                         className={`font-medium ${
                                             order.paymentStatus === 'paid' ? 'text-green-600' : 'text-red-500'
@@ -181,14 +200,13 @@ const OrderDetailPage = () => {
                     </div>
                 </div>
 
+                {/* STATUS TIMELINE */}
+
                 <div className="pt-10">
-                    {/* Status */}
                     <Card>
-                        {/* Header */}
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="font-semibold">Trạng thái đơn hàng</h2>
 
-                          
                             <span
                                 className={`px-3 py-1 text-xs rounded-full font-medium ${
                                     order.orderStatus === 'pending'
@@ -206,17 +224,19 @@ const OrderDetailPage = () => {
                             </span>
                         </div>
 
-                       
                         {order.orderStatus !== 'cancelled' ? (
                             <div className="flex items-center justify-between relative">
                                 {ORDER_STEPS.map((step, index) => {
                                     const currentIndex = ORDER_STEPS.indexOf(order.orderStatus);
+
                                     const isActive = index <= currentIndex;
+
                                     const Icon = STEP_CONFIG[step].icon;
+
+                                    const stepTime = getStepTime(step);
 
                                     return (
                                         <div key={step} className="flex-1 flex flex-col items-center relative">
-                                            
                                             {index !== 0 && (
                                                 <div
                                                     className={`absolute top-5 left-[-50%] w-full h-1 ${
@@ -225,7 +245,6 @@ const OrderDetailPage = () => {
                                                 />
                                             )}
 
-                                            
                                             <div
                                                 className={`z-10 w-10 h-10 flex items-center justify-center rounded-full border-2 transition ${
                                                     isActive
@@ -236,9 +255,11 @@ const OrderDetailPage = () => {
                                                 <Icon size={18} />
                                             </div>
 
-                                           
                                             <p className="text-sm mt-2 font-medium">{STEP_CONFIG[step].label}</p>
-                                          
+
+                                            {stepTime && (
+                                                <p className="text-xs text-gray-500">{formatDate(stepTime)}</p>
+                                            )}
                                         </div>
                                     );
                                 })}

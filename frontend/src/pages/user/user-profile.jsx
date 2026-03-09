@@ -6,7 +6,7 @@ import { Pencil } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { getProfile, updateProfileService } from '@/services/customer/profile.api';
+import { getProfile, updateProfileService } from '@/services/order/profile.api';
 import { set } from 'date-fns';
 import { toast } from 'react-toastify';
 
@@ -63,7 +63,13 @@ const UserProfile = () => {
         }
         try {
             setLoadingUpdate(true);
-            const response = await updateProfileService(data);
+
+            const dataToUpdate = {
+                fullName: data.fullName.trim(),
+                phone: data.phone.trim(),
+                address: data.adress.trim(),
+            };
+            const response = await updateProfileService(dataToUpdate);
             console.log('Profile updated:', response);
             setIsEditing(false);
             toast.success('Cập nhật thông tin cá nhân thành công');

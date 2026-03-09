@@ -82,6 +82,12 @@ exports.confirmMomoPayment = async (req, res) => {
           paymentStatus: "paid",
           orderStatus: "confirmed",
         },
+         $push: {
+          statusLogs: {
+            status: "confirmed",
+            note: "Thanh toán MoMo thành công",
+          },
+        },
       },
       { new: true }
     );

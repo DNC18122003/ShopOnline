@@ -12,6 +12,31 @@ const addressSchema = new Schema(
   },
   { _id: false }
 );
+const statusLogSchema = new Schema(
+  {
+    status: {
+      type: String,
+      enum: ["pending", "confirmed", "shipping", "completed", "cancelled"],
+      required: true,
+    },
+
+    note: {
+      type: String,
+      default: "",
+    },
+
+    updatedBy: {
+      type: Types.ObjectId,
+      ref: "User",
+    },
+
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { _id: false }
+);
 
 const orderItemSchema = new Schema(
   {
@@ -105,9 +130,13 @@ const orderSchema = new Schema(
 
     orderStatus: {
       type: String,
-      enum: ["pending", "confirmed","shipping", "completed", "cancelled"],
+      enum: ["pending", "confirmed", "shipping", "completed", "cancelled"],
       default: "pending",
       index: true,
+    },
+    statusLogs: {
+      type: [statusLogSchema],
+      default: [],
     },
     momoTransId: {
       type: String,

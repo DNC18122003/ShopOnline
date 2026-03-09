@@ -14,7 +14,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
-import { getMyOrders, cancelOrder } from '@/services/customer/order.api';
+import { getMyOrders, cancelOrder } from '@/services/order/order.api';
 import { useNavigate } from 'react-router-dom';
 const statusConfig = {
     pending: {
@@ -48,6 +48,7 @@ const statusConfig = {
 
 const MyOrderPage = () => {
     const [orders, setOrders] = useState([]);
+    const [totalOrders, setTotalOrders] = useState(0);
     const [loading, setLoading] = useState(false);
     const [cancelOrderId, setCancelOrderId] = useState(null);
     const [cancelLoading, setCancelLoading] = useState(false);
@@ -59,50 +60,52 @@ const MyOrderPage = () => {
     const [totalPages, setTotalPages] = useState(1);
     const limit = 5;
     const navigate = useNavigate();
-    
-useEffect(() => {
-    fetchOrders();
-}, [page, search, status, fromDate, toDate]);
 
-const fetchOrders = async () => {
-    try {
-        setLoading(true);
+    useEffect(() => {
+        fetchOrders();
+    }, [page, search, status, fromDate, toDate]);
 
-        const params = {
-            page,
-            limit,
-            search,
-            status,
-            fromDate,
-            toDate,
-        };
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
 
-        const res = await getMyOrders(params);
-        console.log('params', params);
-        console.log('res', res);
-        setOrders(res.orders || []);
-        setTotalPages(res.totalPages || 1);
-    } catch (error) {
-        console.error(error);
-    } finally {
-        setLoading(false);
-    }
-};
+            const params = {
+                page,
+                limit,
+                search,
+                status,
+                fromDate,
+                toDate,
+            };
+
+            const res = await getMyOrders(params);
+            console.log('params', params);
+            console.log('res', res);
+            setOrders(res.orders || []);
+            setTotalPages(res.totalPages || 1);
+
+            setTotalOrders(res.total || 0);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
     const handleViewDetail = (id) => {
         navigate(`/orders/${id}`);
     };
-const handleCancel = async () => {
-    try {
-        setCancelLoading(true);
-        await cancelOrder(cancelOrderId);
-        setCancelOrderId(null);
-        await fetchOrders();
-    } catch (error) {
-        console.error(error);
-    } finally {
-        setCancelLoading(false);
-    }
-};
+    const handleCancel = async () => {
+        try {
+            setCancelLoading(true);
+            await cancelOrder(cancelOrderId);
+            setCancelOrderId(null);
+            await fetchOrders();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setCancelLoading(false);
+        }
+    };
 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
@@ -114,7 +117,7 @@ const handleCancel = async () => {
                 </div>
 
                 <div className="bg-white px-4 py-2 rounded-xl shadow-sm text-sm">
-                    Tổng đơn hàng: <span className="text-blue-600 font-semibold">{orders.length}</span>
+                    Tổng đơn hàng: <span className="text-blue-600 font-semibold">{totalOrders}</span>
                 </div>
             </div>
 
@@ -147,6 +150,7 @@ const handleCancel = async () => {
                             <option value="confirmed">Đã xác nhận</option>
                             <option value="shipping">Đang giao</option>
                             <option value="completed">Hoàn thành</option>
+                            <option value="cancelled">Đã hủy</option>
                         </select>
                     </div>
 
@@ -320,7 +324,6 @@ const handleCancel = async () => {
             </div>
         </div>
     );
-
 };
 
 export default MyOrderPage;

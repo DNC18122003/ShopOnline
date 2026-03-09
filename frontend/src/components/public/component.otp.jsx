@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from '@/components/ui/input-otp';
-import { BadgeQuestionMark } from 'lucide-react';
+import { ArrowLeft, BadgeQuestionMark } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
 import { verifyOtpRegister } from '@/services/auth/authService';
@@ -57,7 +57,11 @@ const ComponentOtp = ({ title, email, message, handleClose, otp, setOtp }) => {
     return (
         // <div className="flex items-center justify-center h-screen">
         <>
-            <div className="border w-full max-w-100 mx-4 flex items-center justify-center flex-col p-5 rounded-md shadow-md gap-3">
+            <div className="bg-white border w-full max-w-100 mx-4 flex items-center justify-center flex-col p-5 rounded-md shadow-md gap-3 relative">
+                <ArrowLeft
+                    className="absolute top-6 left-4 cursor-pointer text-[#3B82F6]"
+                    onClick={() => navigate(-1)}
+                />
                 {/* UI chính thức */}
                 <div className="flex items-center justify-center bg-blue-400 h-10 w-10 rounded-full ">
                     <BadgeQuestionMark />

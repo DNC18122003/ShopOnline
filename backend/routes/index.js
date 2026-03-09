@@ -6,7 +6,7 @@ const productRouter = require("./product/product.route");
 const brandRouter = require("./brand.route");
 const categoryRouter = require("./category.route");
 
-const reviewRouter = require("./review.route");
+const reviewRouter = require("./order/review.route");
 
 const blogRouter = require("./Blog/blog-router");
 const commentRouter = require("./comment/comment-router");
@@ -24,7 +24,7 @@ module.exports = (app) => {
   app.use(api + "/brands", brandRouter);
   app.use(api + "/categories", categoryRouter);
   app.use(api + "/reviews", reviewRouter);
-
+  app.use(api + "/review", reviewRouter);
   app.use(api + "/blogs", blogRouter);
   app.use(api + "/discounts", discountRouter);
   app.use(api + "/comments", commentRouter);

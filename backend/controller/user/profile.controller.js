@@ -19,14 +19,17 @@ const updateProfileController = async (req, res) => {
     try {
         const userId = req.user._id;
         const { fullName, phone, address } = req.body;
-        console.log("data: ", fullName, phone, address);
+        const fullNameParsed = fullName.trim();
+        const phoneParsed = phone.trim();
+        const addressParsed = address.trim();
+        console.log("data: ", fullNameParsed, phoneParsed, addressParsed);
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        user.fullName = fullName;
-        user.address = address;
-        user.phone = phone;
+        user.fullName = fullNameParsed;
+        user.address = addressParsed;
+        user.phone = phoneParsed;
         console.log("Updated user data:", user);
         const resUp = await user.save();
         //console.log("Updated user:", resUp);

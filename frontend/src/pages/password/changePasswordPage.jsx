@@ -19,7 +19,10 @@ const ChangePasswordPage = () => {
     };
     const validateForm = (form) => {
         const errors = {};
-        const { currentPassword, newPassword, confirmPassword } = formPassword;
+        //const { currentPassword, newPassword, confirmPassword } = formPassword;
+        const currentPassword = form.currentPassword.trim();
+        const newPassword = form.newPassword.trim();
+        const confirmPassword = form.confirmPassword.trim();
         if (!currentPassword || !newPassword || !confirmPassword) {
             errors.emptyFieldError = 'Vui lòng nhập đầy đủ thông tin';
         }
@@ -29,16 +32,19 @@ const ChangePasswordPage = () => {
         return errors;
     };
     const handleSubmitForm = async () => {
-        console.log('hi');
+        //console.log('hi');
         const errors = validateForm(formPassword);
         if (Object.keys(errors).length > 0) {
             toast.error(errors.emptyFieldError || errors.confirmPasswordError);
             return;
         }
-        console.log('hi submit');
+        //console.log('hi submit');
         try {
             setLoading(true);
-            const response = await changePasswordByOldPassword(formPassword.currentPassword, formPassword.newPassword);
+            const response = await changePasswordByOldPassword(
+                formPassword.currentPassword.trim(),
+                formPassword.newPassword.trim(),
+            );
 
             if (response) {
                 toast.success(response.message);
