@@ -1,8 +1,7 @@
 const express = require("express");
 const discountController = require("../../controller/discount/discountController");
-const {isAuth} = require("../../middleware/authorization")
+const { isAuth } = require("../../middleware/authorization");
 const router = express.Router();
-router.get("/", discountController.getAllDiscounts);
 // 1. GET: Lấy danh sách mã giảm giá (Có thể filter ?code=...&status=...)
 router.get("/", discountController.getAllDiscounts);
 
@@ -23,6 +22,5 @@ router.delete("/:id", discountController.deleteDiscount);
 
 // 6. POST: Kiểm tra tính hợp lệ của mã (Dùng ở trang Checkout)
 router.post("/check", discountController.checkDiscountValidity);
-
 
 module.exports = router;
