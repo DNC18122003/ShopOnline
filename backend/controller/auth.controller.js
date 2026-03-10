@@ -7,14 +7,16 @@ const { sendOTPService } = require("../services/otp.service");
 // controller for login
 const loginController = async (req, res) => {
   const { email, password } = req.body;
+  const emailParsed = email.trim();
+  const passwordParsed = password.trim();
   try {
     // Find user by email
-    const user = await User.findOne({ email: email.trim() });
+    const user = await User.findOne({ email: emailParsed });
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy tài khoản" });
     }
     // Check password using bcrypt.compare
-    const isPasswordValid = await bcrypt.compare(password.trim(), user.password);
+    const isPasswordValid = await bcrypt.compare(passwordParsed, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Mật khẩu không đúng" });
     }
