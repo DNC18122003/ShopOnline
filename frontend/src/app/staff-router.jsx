@@ -7,6 +7,7 @@ import { BuildPcTemplateManagement } from '@/pages/Staff/BuildPcTemplateManageme
 import { CreateProduct } from '@/pages/Staff/CreateProduct';
 import { ProductManagement } from '@/pages/Staff/ProductManagement';
 import OrderManagement from '@/pages/Staff/OrderManagement';
+import OrderDetailPage from '@/pages/order/OrderDetailPage';
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
     {
@@ -39,7 +40,11 @@ export const staffRoutes = [
             },
             {
                 path: 'orders',
-                element: <OrderManagement/>,
+                element: <OrderManagement />,
+            },
+            {
+                path: 'orders/:id',
+                element: <OrderDetailPage />,
             },
             {
                 path: 'build-pc-templates',

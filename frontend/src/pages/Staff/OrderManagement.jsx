@@ -1,8 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Eye, Package, Clock, Truck, DollarSign } from 'lucide-react';
-import { getAllOrders } from '@/services/order/order.api';
+import { Search, Eye, Package, Clock, Truck, DollarSign, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { getAllOrders,updateOrderStatus } from '@/services/order/order.api';
 import { toast } from 'react-toastify';
-
+import { useNavigate } from 'react-router-dom';
+import StatusDropdown from '../../components/ui/StatusDropdown';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+const statusFlow = {
+    pending: ['confirmed', 'cancelled'],
+    confirmed: ['shipping'],
+    shipping: ['delivered', 'delivery_failed'],
+    delivered: ['completed', 'returned'],
+};
 const OrderManagement = () => {
     const [orders, setOrders] = useState([]);
 
@@ -13,10 +21,16 @@ const OrderManagement = () => {
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [datePreset, setDatePreset] = useState('');
+    const [updating, setUpdating] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [selectedStatus, setSelectedStatus] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchOrders();
     }, []);
+
 
     const fetchOrders = async () => {
         try {
@@ -32,6 +46,10 @@ const OrderManagement = () => {
     const formatPrice = (price) => {
         return (price || 0).toLocaleString('vi-VN') + ' đ';
     };
+const confirmUpdateStatus = async () => {
+    await handleUpdateStatus(selectedOrder, selectedStatus);
+    setConfirmOpen(false);
+};
 
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('vi-VN', {
@@ -42,20 +60,36 @@ const OrderManagement = () => {
     };
 
 
-    const getStatusStyle = (status) => {
-        switch (status) {
-            case 'pending':
-                return 'bg-yellow-100 text-yellow-700';
-            case 'shipping':
-                return 'bg-green-100 text-green-700';
-            case 'confirmed':
-                return 'bg-blue-100 text-blue-700';
-            case 'cancelled':
-                return 'bg-red-100 text-red-600';
-            default:
-                return 'bg-gray-100 text-gray-600';
-        }
-    };
+ const getStatusStyle = (status) => {
+     switch (status) {
+         case 'pending':
+             return 'bg-yellow-100 text-yellow-700';
+
+         case 'confirmed':
+             return 'bg-blue-100 text-blue-700';
+
+         case 'shipping':
+             return 'bg-purple-100 text-purple-700';
+
+         case 'delivered':
+             return 'bg-green-100 text-green-700';
+
+         case 'completed':
+             return 'bg-emerald-100 text-emerald-700';
+
+         case 'cancelled':
+             return 'bg-red-100 text-red-600';
+
+         case 'delivery_failed':
+             return 'bg-orange-100 text-orange-700';
+
+         case 'returned':
+             return 'bg-gray-200 text-gray-700';
+
+         default:
+             return 'bg-gray-100 text-gray-600';
+     }
+ };
 
     const getPaymentStyle = (method) => {
         switch (method) {
@@ -80,6 +114,23 @@ const OrderManagement = () => {
                 return 'bg-gray-100 text-gray-600';
         }
     };
+const handleUpdateStatus = async (orderId, newStatus) => {
+    if (updating) return;
+
+    try {
+        setUpdating(true);
+
+        await updateOrderStatus(orderId, newStatus);
+
+        toast.success('Cập nhật trạng thái thành công');
+
+        fetchOrders();
+    } catch (error) {
+        console.log(error);
+    } finally {
+        setUpdating(false);
+    }
+};
     const handleDatePreset = (value) => {
         setDatePreset(value);
 
@@ -108,6 +159,11 @@ const OrderManagement = () => {
             setFromDate('');
             setToDate('');
         }
+    };
+    const handleOpenConfirm = (orderId, newStatus) => {
+        setSelectedOrder(orderId);
+        setSelectedStatus(newStatus);
+        setConfirmOpen(true);
     };
 
     useEffect(() => {
@@ -175,8 +231,6 @@ const OrderManagement = () => {
 
     return (
         <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-       
-
             <div className="grid grid-cols-4 gap-6">
                 <div className="bg-blue-100 border-2 border-blue-200 p-5 rounded-xl flex justify-between">
                     <div>
@@ -216,7 +270,6 @@ const OrderManagement = () => {
                     <DollarSign className="text-purple-600" size={32} />
                 </div>
             </div>
-
 
             <div className="bg-white p-4 rounded-xl shadow space-y-4">
                 <div className="flex flex-wrap gap-4 items-center">
@@ -292,8 +345,6 @@ const OrderManagement = () => {
                         Reset
                     </button>
                 </div>
-
-            
             </div>
 
             <div className="bg-white rounded-xl shadow overflow-x-auto">
@@ -348,11 +399,18 @@ const OrderManagement = () => {
                                 </td>
 
                                 <td className="font-medium">{formatPrice(order.finalAmount)}</td>
-
                                 <td className="text-center">
-                                    <button className="p-2 hover:bg-gray-100 rounded">
-                                        <Eye size={18} />
-                                    </button>
+                                    <div className="flex justify-center items-center gap-2">
+                                        <button className="p-2 hover:bg-gray-100 rounded" onClick={()=> navigate(`/staff/orders/${order._id}`)}>
+                                            <Eye size={18} />
+                                        </button>
+
+                                        <StatusDropdown
+                                            order={order}
+                                            statusFlow={statusFlow}
+                                            onChange={handleOpenConfirm}
+                                        />
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -361,6 +419,13 @@ const OrderManagement = () => {
 
                 {filteredOrders.length === 0 && <p className="text-center py-6 text-gray-500">Không có đơn hàng</p>}
             </div>
+            <ConfirmDialog
+                open={confirmOpen}
+                setOpen={setConfirmOpen}
+                title="Cập nhật trạng thái đơn"
+                message={`Bạn có chắc muốn đổi trạng thái sang "${selectedStatus}" ?`}
+                onConfirm={confirmUpdateStatus}
+            />
         </div>
     );
 };
