@@ -56,7 +56,7 @@ export function ProductManagement() {
             setLoading(true);
             const params = {
                 page: currentPage,
-                limit: 10,
+                limit: 6,
                 keyword: searchTerm || undefined,
                 showAll: true,
             };
