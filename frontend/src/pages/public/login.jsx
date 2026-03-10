@@ -52,7 +52,9 @@ const login = () => {
         }
         try {
             setLoadingLogin(true);
-            const response = await login_service(formLogin.email.trim(), formLogin.password.trim());
+            const emailParsed = formLogin.email.trim();
+            const passwordParsed = formLogin.password.trim();
+            const response = await login_service(emailParsed, passwordParsed);
 
             //console.log('Login successful api:', response);
             // set data in auth context
