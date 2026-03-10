@@ -7,7 +7,7 @@
     updateBuildPcTemplate,
     deleteBuildPcTemplate,
   } from '@/services/buildPcTemplate.api';
-import { getProducts } from '@/services/product/product.api';
+import { getProducts, checkBuildPcCompatibility } from '@/services/product/product.api';
 
   const EMPTY_COMPONENTS = {
     cpu: '',
@@ -50,6 +50,8 @@ import { getProducts } from '@/services/product/product.api';
       case: [],
     });
     const [loadingComponents, setLoadingComponents] = useState(false);
+    const [compatibilityResult, setCompatibilityResult] = useState(null);
+    const [compatibilityLoading, setCompatibilityLoading] = useState(false);
 
     const [formData, setFormData] = useState({
       name: '',
@@ -183,6 +185,36 @@ import { getProducts } from '@/services/product/product.api';
         },
       }));
     };
+
+    const checkCompatibility = async (components) => {
+      const entries = Object.entries(components).filter(([, v]) => v);
+      if (entries.length < 2) {
+        setCompatibilityResult(null);
+        return;
+      }
+
+      try {
+        setCompatibilityLoading(true);
+        const payload = entries.reduce((acc, [key, value]) => {
+          acc[key] = value;
+          return acc;
+        }, {});
+        const res = await checkBuildPcCompatibility(payload);
+        if (res.success) {
+          setCompatibilityResult(res.data);
+        }
+      } catch (error) {
+        console.error('Error checking compatibility:', error);
+        setCompatibilityResult(null);
+      } finally {
+        setCompatibilityLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      checkCompatibility(formData.components);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.components]);
 
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -515,9 +547,24 @@ import { getProducts } from '@/services/product/product.api';
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                    Chọn linh kiện
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      Chọn linh kiện
+                    </h3>
+                    {compatibilityLoading ? (
+                      <span className="text-xs text-gray-400">Đang kiểm tra...</span>
+                    ) : compatibilityResult ? (
+                      <span
+                        className={`text-xs font-semibold ${
+                          compatibilityResult.isCompatible ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {compatibilityResult.isCompatible ? 'Tương thích' : 'Không tương thích'}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">Chọn &gt;= 2 linh kiện</span>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Object.keys(EMPTY_COMPONENTS).map((key) => (
                       <div key={key}>
@@ -545,6 +592,15 @@ import { getProducts } from '@/services/product/product.api';
                   <p className="text-xs text-gray-400 mt-1">
                     Danh sách lấy từ kho sản phẩm hiện tại.
                   </p>
+                  {compatibilityResult?.issues?.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {compatibilityResult.issues.map((issue, idx) => (
+                        <p key={idx} className="text-xs text-red-600">
+                          • {issue.message}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center">
