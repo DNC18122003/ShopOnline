@@ -7,6 +7,7 @@
     updateBuildPcTemplate,
     deleteBuildPcTemplate,
   } from '@/services/buildPcTemplate.api';
+import { getProducts } from '@/services/product/product.api';
 
   const EMPTY_COMPONENTS = {
     cpu: '',
@@ -37,6 +38,18 @@
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [selectedTemplate, setSelectedTemplate] = useState(null);
+
+    const [componentOptions, setComponentOptions] = useState({
+      cpu: [],
+      main: [],
+      ram: [],
+      gpu: [],
+      ssd: [],
+      hdd: [],
+      psu: [],
+      case: [],
+    });
+    const [loadingComponents, setLoadingComponents] = useState(false);
 
     const [formData, setFormData] = useState({
       name: '',
@@ -80,10 +93,53 @@
       }
     };
 
+    const fetchComponentOptions = async () => {
+      try {
+        setLoadingComponents(true);
+        const mapCategory = {
+          cpu: 'cpu',
+          main: 'mainboard',
+          ram: 'ram',
+          gpu: 'vga',
+          ssd: 'ssd',
+          hdd: 'hdd',
+          psu: 'psu',
+          case: 'case',
+        };
+
+        const entries = await Promise.all(
+          Object.entries(mapCategory).map(async ([key, category]) => {
+            const res = await getProducts({ category, limit: 100 });
+            return [key, res?.data || []];
+          }),
+        );
+
+        const nextOptions = entries.reduce((acc, [key, items]) => {
+          acc[key] = items;
+          return acc;
+        }, {});
+
+        setComponentOptions((prev) => ({
+          ...prev,
+          ...nextOptions,
+        }));
+      } catch (error) {
+        console.error('Error fetching component options:', error);
+        toast.error('Không thể tải danh sách linh kiện');
+      } finally {
+        setLoadingComponents(false);
+      }
+    };
+
     useEffect(() => {
       fetchTemplates();
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentPage, searchTerm, minPrice, maxPrice]);
+
+    useEffect(() => {
+      fetchComponentOptions();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const openCreateModal = () => {
       resetForm();
@@ -460,7 +516,7 @@
 
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">
-                    ID linh kiện (Product ID)
+                    Chọn linh kiện
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Object.keys(EMPTY_COMPONENTS).map((key) => (
@@ -468,18 +524,26 @@
                         <label className="block text-xs font-medium text-gray-600 mb-1">
                           {key.toUpperCase()}
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={formData.components[key] || ''}
                           onChange={(e) => handleComponentChange(key, e.target.value)}
-                          placeholder={`Nhập Product ID cho ${key.toUpperCase()}`}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          disabled={loadingComponents}
+                        >
+                          <option value="">
+                            {loadingComponents ? 'Đang tải linh kiện...' : `Chọn ${key.toUpperCase()}`}
+                          </option>
+                          {(componentOptions[key] || []).map((item) => (
+                            <option key={item._id} value={item._id}>
+                              {item.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     ))}
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
-                    Bạn có thể copy ID sản phẩm từ trang quản lý sản phẩm.
+                    Danh sách lấy từ kho sản phẩm hiện tại.
                   </p>
                 </div>
 
@@ -525,7 +589,7 @@
 
         {/* Detail Modal */}
         {showDetailModal && selectedTemplate && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black/20 bg-opacity-40 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">
@@ -558,14 +622,18 @@
                 <div className="border-t border-gray-200 pt-3">
                   <h3 className="text-sm font-semibold text-gray-800 mb-2">Linh kiện</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                    {Object.entries(selectedTemplate.components || {}).map(([key, value]) => (
-                      <div key={key} className="flex justify-between border-b border-dashed py-1">
-                        <span className="font-medium text-gray-700">{key.toUpperCase()}</span>
-                        <span className="text-gray-600 truncate max-w-[60%] text-right">
-                          {value || 'Chưa chọn'}
-                        </span>
-                      </div>
-                    ))}
+                    {Object.entries(selectedTemplate.components || {}).map(([key, value]) => {
+                      const matched = (componentOptions[key] || []).find((item) => item._id === value);
+                      const label = matched?.name || value || 'Chưa chọn';
+                      return (
+                        <div key={key} className="flex justify-between border-b border-dashed py-1">
+                          <span className="font-medium text-gray-700">{key.toUpperCase()}</span>
+                          <span className="text-gray-600 truncate max-w-[60%] text-right">
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
