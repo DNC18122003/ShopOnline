@@ -6,6 +6,7 @@ import CartPage from '@/pages/cart/CartPage';
 import MyOrderPage from '@/pages/order/MyOrderPage';
 import OrderDetailPage from '@/pages/order/OrderDetailPage';
 import ChangePasswordPage from '@/pages/password/changePasswordPage';
+import RatingPage from '@/pages/order/RatingPage';
 // Chỉ export mảng object, không tạo router tại đây
 export const userRoutes = [
     {
@@ -37,6 +38,10 @@ export const userRoutes = [
             {
                 path: 'orders/:id',
                 element: <OrderDetailPage />,
+            },
+            {
+                path: 'review/:id',
+                element: <RatingPage/>,
             },
         ],
     },
