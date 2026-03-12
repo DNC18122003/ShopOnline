@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2, Info, X } from 'lucide-react';
 import { getProducts, checkBuildPcCompatibility } from '@/services/product/product.api';
@@ -196,7 +196,6 @@ function LoadConfigModal({ isOpen, onClose, configs, onLoad, onDelete }) {
 
 function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibilityLoading, onLoadConfig, onSaveConfig }) {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const subtotal = useMemo(() => {
     return Object.values(selectedItems).reduce((sum, item) => sum + (item?.price || 0), 0);
@@ -212,7 +211,7 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
       return;
     }
 
-    if (!compatibilityResult?.isCompatible) {
+    if (selectedCount >= 2 && !compatibilityResult?.isCompatible) {
       toast.info(`Cấu hình có vấn đề tương thích. Bạn vẫn có thể tiếp tục thanh toán.`);
     }
 
@@ -279,13 +278,13 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
                     ? 'text-gray-600' 
                     : (!compatibilityResult || compatibilityResult.isCompatible ? 'text-green-700' : 'text-red-700')
                 }`}>
-                  {Object.keys(selectedItems || {}).length === 0
-                    ? 'Chưa chọn linh kiện'
+                  {Object.keys(selectedItems || {}).length < 2
+                    ? 'Chọn ít nhất 2 linh kiện'
                     : (!compatibilityResult || compatibilityResult.isCompatible ? 'Tương thích tốt' : 'Phát hiện vấn đề')}
                 </p>
                 <p className="text-[10px] text-gray-500">
-                  {Object.keys(selectedItems || {}).length === 0
-                    ? 'Vui lòng chọn linh kiện để kiểm tra'
+                  {Object.keys(selectedItems || {}).length < 2
+                    ? 'Chọn ít nhất 2 linh kiện để kiểm tra'
                     : (!compatibilityResult || (compatibilityResult.issues?.length === 0 && compatibilityResult.warnings?.length === 0)
                       ? 'Cấu hình hiện tại ổn định' 
                       : `${compatibilityResult.issues?.length || 0} lỗi, ${compatibilityResult.warnings?.length || 0} cảnh báo`)}
@@ -411,7 +410,6 @@ export default function BuildPcPage() {
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [savedConfigs, setSavedConfigs] = useState([]);
-  const isInitialMount = useRef(true);
 
   const getBuildPcStorageKey = useCallback(() => {
     const userId = user?._id || user?.id;
@@ -533,6 +531,11 @@ export default function BuildPcPage() {
       }
 
       try {
+        if (keys.length < 2) {
+          setCompatibilityResult(null);
+          return;
+        }
+
         setCompatibilityLoading(true);
         const components = {};
         keys.forEach(k => {

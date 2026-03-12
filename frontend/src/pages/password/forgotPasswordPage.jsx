@@ -31,7 +31,7 @@ const ForgotPasswordPage = () => {
 
         try {
             setLoading(true);
-            const response = await findEmailForgotPassword(email.trim);
+            const response = await findEmailForgotPassword(email.trim());
             console.log('Response from findEmailForgotPassword:', response);
             if (response) {
                 toast.success('Email hợp lệ, vui lòng kiểm tra hộp thư để nhận OTP !');
@@ -52,21 +52,21 @@ const ForgotPasswordPage = () => {
             toast.success('OTP đã được xác minh thành công !');
             setStep(2);
         } catch (error) {
-            console.error('Error sending OTP:', error);
-            toast.error('Xác minh OTP thất bại!');
+            console.error('Error sending OTP:', error.response.data.message);
+            toast.error(error.response.data.message || 'Xác minh OTP thất bại!');
         }
     };
     // Change password
     const handleChangePassword = async () => {
         try {
-            if (!password || !confirmPassword) {
+            if (!password.trim() || !confirmPassword.trim()) {
                 return toast.error('Vui lòng nhập đầy đủ thông tin');
             }
-            if (password !== confirmPassword) {
+            if (password.trim() !== confirmPassword.trim()) {
                 return toast.error('Mật khẩu xác nhận không khớp');
             }
             // Call service to change password
-            const response = await changePasswordForgot(email, password);
+            const response = await changePasswordForgot(email.trim(), password.trim());
             console.log('Response from changePasswordForgot:', response);
             if (response) {
                 toast.success('Đổi mật khẩu thành công, vui lòng đăng nhập lại!');

@@ -39,7 +39,7 @@ const ComponentOtp = ({ title, email, message, handleClose, otp, setOtp }) => {
     const handleResendOtp = () => {
         // console.log('Gửi lại OTP');
         setTime(60);
-        handleSubmit();
+        handleClose();
     };
     // const handleSubmit = async () => {
     //     console.log('Gửi OTP:', otp);

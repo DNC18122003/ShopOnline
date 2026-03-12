@@ -284,7 +284,11 @@ const handleBuyNow = () => {
                                 </span>
                                 <span className="text-sm text-gray-600">({product.reviewCount || 0} đánh giá)</span>
                             </div>
-                            <span className="text-sm text-green-600 font-semibold">Còn hàng</span>
+                            {product.stock > 0 ? (
+                                <span className="text-sm text-green-600 font-semibold">Còn hàng ({product.stock} sản phẩm)</span>
+                            ) : (
+                                <span className="text-sm text-red-600 font-semibold">Hết hàng</span>
+                            )}
                         </div>
 
                         {/* Price */}
