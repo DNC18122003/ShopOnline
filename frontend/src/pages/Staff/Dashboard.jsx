@@ -11,7 +11,6 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { getStaffDashboardDataService } from '@/services/dashboardService';
 
 const Dashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
@@ -27,12 +26,29 @@ const Dashboard = () => {
     const fetchDashboardData = async () => {
         try {
             setIsLoading(true);
-            const response = await getStaffDashboardDataService();
-            if (response && response.success) {
-                setStats(response.data.stats);
-                setRecentOrders(response.data.recentOrders);
-                setLowStockProducts(response.data.lowStockProducts);
-            }
+            // Giả lập load API 
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Dữ liệu mẫu (sẽ thay bằng API sau)
+            setStats({
+                totalOrders: 145,
+                totalProducts: 432,
+                totalCategories: 12,
+                totalBrands: 25,
+            });
+            
+            setRecentOrders([
+                { id: "ORD-001", customer: "Nguyễn Văn A", date: new Date().toLocaleDateString('vi-VN'), total: "1.500.000đ", status: "Chờ lấy hàng", statusColor: "bg-yellow-100 text-yellow-800" },
+                { id: "ORD-002", customer: "Trần Thị B", date: new Date().toLocaleDateString('vi-VN'), total: "3.200.000đ", status: "Đang giao hàng", statusColor: "bg-blue-100 text-blue-800" },
+                { id: "ORD-003", customer: "Lê Văn C", date: new Date().toLocaleDateString('vi-VN'), total: "550.000đ", status: "Giao thành công", statusColor: "bg-green-100 text-green-800" },
+                { id: "ORD-004", customer: "Phạm Thị D", date: new Date().toLocaleDateString('vi-VN'), total: "2.100.000đ", status: "Đã hủy", statusColor: "bg-red-100 text-red-800" },
+            ]);
+            
+            setLowStockProducts([
+                { id: 1, name: "Bàn ăn mặt đá Ceramic", sku: "BA-001", stock: 3, price: "4.500.000đ" },
+                { id: 2, name: "Ghế Sofa phòng khách chữ L", sku: "SF-002", stock: 1, price: "12.000.000đ" },
+                { id: 3, name: "Giường ngủ bọc da cao cấp", sku: "GN-003", stock: 2, price: "8.500.000đ" },
+            ]);
         } catch (error) {
             console.error("Failed to fetch staff dashboard data", error);
             toast.error("Không thể tải dữ liệu thống kê!");
