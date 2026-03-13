@@ -3,7 +3,6 @@ import AdminLayout from '@/components/layouts/admin-layout';
 import ProtectedRoute from './protected-route';
 import { UserProfile } from '@/pages/user';
 
-
 // Chỉ export mảng object, không tạo router tại đây
 export const adminRoutes = [
     {
@@ -15,10 +14,9 @@ export const adminRoutes = [
         ),
         children: [
             {
-                path: 'profile',
+                path: 'dashboard',
                 element: <UserProfile />,
             },
-           
         ],
     },
 ];
