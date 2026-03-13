@@ -6,12 +6,12 @@ import { getReviewsByProduct } from '../../services/order/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 import AddToCartButton from '@/components/customer/AddToCartButton';
+import commentService from '@/services/comment/comment.api';
 import RatingPage from '../order/RatingPage';
 
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
 // ============================================
-
 // Format tiêu đề specification từ key (vd: "ram_capacity" -> "Ram Capacity")
 const formatSpecTitle = (key) => {
     return key
@@ -63,6 +63,7 @@ const getProductImages = (product) => {
 
 export default function ProductDetailPage() {
     const { id } = useParams();
+    console.log('ID nhận được là:', id);
     const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -70,6 +71,10 @@ export default function ProductDetailPage() {
     const [similarProducts, setSimilarProducts] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [showAllSpecs, setShowAllSpecs] = useState(false);
+    const [comments, setComments] = useState([]);
+    const [question, setQuestion] = useState('');
+    const [replyContent, setReplyContent] = useState({});
+    const [replyOpenId, setReplyOpenId] = useState(null);
 
     // Fetch product data
     useEffect(() => {
@@ -149,7 +154,35 @@ export default function ProductDetailPage() {
 
         fetchReviews();
     }, [product]);
+    // Thêm useEffect gọi API Comment
+    useEffect(() => {
+        const fetchComments = async () => {
+            if (!product) {
+                return;
+            }
+            const productId = product._id || product.id;
+            if (!productId) {
+                return;
+            }
+            try {
+                const response = await commentService.getCommentsByProductId(productId);
+                const commentsData = response.data?.data || response.data || [];
+                setComments(Array.isArray(commentsData) ? commentsData : []);
+            } catch (err) {
+                console.error('Error fetching reviews:', err);
+            }
+        };
+        fetchComments();
+    }, [product]);
 
+    const handleReplyChange = (commentId, value) => {
+        setReplyContent((prev) => ({ ...prev, [commentId]: value }));
+    };
+    const submitReply = async (commentId) => {
+        // Gọi API lưu reply vào database với parentId là commentId
+        // Sau khi thành công, nhớ refresh lại danh sách comments
+        console.log('Gửi phản hồi:', replyContent[commentId], 'cho comment:', commentId);
+    };
     // Customer Reviews Data
 
     // Hàm test add to cart
@@ -187,21 +220,21 @@ export default function ProductDetailPage() {
         navigate(`/product/${productId}`);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
-const handleBuyNow = () => {
-    if (!product) return;
+    const handleBuyNow = () => {
+        if (!product) return;
 
-    navigate('/checkout', {
-        state: {
-            buyNowItem: {
-                productId: product._id,
-                nameSnapshot: product.name,
-                priceSnapshot: product.price,
-                imageSnapshot: product.images?.[0] || '',
-                quantity: 1,
+        navigate('/checkout', {
+            state: {
+                buyNowItem: {
+                    productId: product._id,
+                    nameSnapshot: product.name,
+                    priceSnapshot: product.price,
+                    imageSnapshot: product.images?.[0] || '',
+                    quantity: 1,
+                },
             },
-        },
-    });
-};
+        });
+    };
 
     // ============================================
     // COMPUTED VALUES - Các giá trị tính toán
@@ -391,12 +424,197 @@ const handleBuyNow = () => {
                     </div>
 
                     <div className="mb-8">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-6">ĐÁNH GIÁ {product.name}</h2>
+                        <div className="bg-gray-100 rounded p-6 mb-6">
+                            <div className="flex items-center gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <Star className="w-7 h-7 fill-yellow-400 text-yellow-400" />
+                                        <span className="text-lg font-bold text-gray-900">
+                                            {product.averageRating || '0'}
+                                        </span>
+                                        <span className="text-lg text-gray-400">/5</span>
+                                        <span className="text-base text-gray-600">
+                                            ({product.reviewCount || 0} đánh giá)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Reviews */}
+                        <div className="space-y-4">
+                            {reviews.length === 0 ? (
+                                <p className="text-gray-600 py-4">Chưa có đánh giá nào cho sản phẩm này.</p>
+                            ) : (
+                                reviews.map((review) => (
+                                    <div
+                                        key={review._id}
+                                        className="border border-gray-200 rounded p-4 hover:bg-gray-50 transition"
+                                    >
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                                                {review.userId?.userName?.charAt(0) || 'U'}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-semibold text-gray-900">
+                                                    {review.userId?.userName || 'Anonymous'}
+                                                </p>
+                                                <div className="flex gap-0.5">
+                                                    {[...Array(review.rating)].map((_, j) => (
+                                                        <Star
+                                                            key={j}
+                                                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-gray-600">{review.comment}</p>
+                                    </div>
+                                ))
+                            )}
+                        </div>
                         {/* <RatingPage productId={id} /> */}
                         
                     </div>
                 </div>
+                {/* ========== PHẦN HỎI ĐÁP ========== */}
             </section>
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-100">
+                <div className="bg-gray-50 rounded-2xl p-6 border border-gray-200">
+                    <h2 className="text-xl font-bold mb-6 text-gray-900 uppercase">Hỏi và đáp</h2>
 
+                    {/* Khung nhập câu hỏi */}
+                    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 mb-8">
+                        <div className="flex gap-4 items-start">
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-gray-800 mb-3">
+                                    Bạn có thắc mắc gì về sản phẩm? Hãy đặt câu hỏi ngay!
+                                </p>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <input
+                                        type="text"
+                                        value={question}
+                                        onChange={(e) => setQuestion(e.target.value)}
+                                        placeholder="Nhập nội dung câu hỏi "
+                                        className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none text-sm transition-all"
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (question.length < 10) return toast.warning('Câu hỏi quá ngắn!');
+                                            toast.info('Tính năng gửi câu hỏi đang được xử lý...');
+                                        }}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-colors shadow-md"
+                                    >
+                                        GỬI CÂU HỎI
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Danh sách các câu hỏi */}
+                    <div className="space-y-6">
+                        {comments.length > 0 ? (
+                            comments.map((comment) => (
+                                <div
+                                    key={comment._id}
+                                    className="bg-white rounded-lg p-5 border border-gray-100 shadow-sm"
+                                >
+                                    {/* Nội dung người dùng hỏi */}
+                                    <div className="flex gap-3 items-start mb-4">
+                                        <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                                            {comment.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="font-bold text-gray-900 text-sm">
+                                                    {comment.userId?.userName}
+                                                </span>
+                                                <span className="text-[11px] text-gray-400 italic">
+                                                    {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-700 leading-relaxed">{comment.content}</p>
+                                        </div>
+                                    </div>
+                                    {/* Phản hồi */}
+                                    {comment.replies &&
+                                        comment.replies.map((reply) => (
+                                            <div
+                                                key={reply._id}
+                                                className="ml-10 bg-gray-50 border border-gray-200 rounded-lg p-4 relative mt-2"
+                                            >
+                                                {/* Mũi tên trỏ lên */}
+                                                <div className="absolute -top-2 left-4 w-4 h-4 bg-gray-50 border-t border-l border-gray-200 rotate-45"></div>
+
+                                                <div className="flex gap-3 items-start">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                                                        {comment.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="font-bold text-gray-900 text-sm">
+                                                                {reply.userId?.userName}
+                                                            </span>
+                                                            {reply.userId?.role === 'sale' && (
+                                                                <span className="bg-blue-600 text-[9px] text-white px-1 rounded font-bold uppercase">
+                                                                    Quản trị viên
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                                            {reply.content}
+                                                        </p>
+                                                        <div className="mt-2 text-[11px] text-gray-400">
+                                                            Trả lời lúc:{' '}
+                                                            {new Date(reply.createdAt).toLocaleTimeString('vi-VN')} -{' '}
+                                                            {new Date(reply.createdAt).toLocaleDateString('vi-VN')}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 ml-10">
+                                                    <button
+                                                        onClick={() => setReplyOpenId(reply._id)}
+                                                        className="text-blue-600 text-sm font-semibold hover:underline"
+                                                    >
+                                                        Phản hồi
+                                                    </button>
+
+                                                    {replyOpenId === reply._id && (
+                                                        <div className="flex gap-2 mt-2">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Viết phản hồi..."
+                                                                className="flex-1 text-sm border border-gray-200 rounded-full px-4 py-2 outline-none focus:border-blue-500"
+                                                                value={replyContent[reply._id] || ''}
+                                                                onChange={(e) =>
+                                                                    handleReplyChange(reply._id, e.target.value)
+                                                                }
+                                                            />
+                                                            <button
+                                                                onClick={() => submitReply(reply._id)}
+                                                                className="text-blue-600 font-bold text-sm hover:underline"
+                                                            >
+                                                                Gửi
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-300">
+                                <p className="text-gray-400 italic text-sm">
+                                    Sản phẩm này chưa có câu hỏi nào. Hãy là người đầu tiên thắc mắc!
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
             {/* Similar Products */}
             {similarProducts.length > 0 && (
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200">

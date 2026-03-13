@@ -4,7 +4,21 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu } from 'lucide-react';
+import {
+    Menu,
+    Home,
+    Package,
+    FolderOpen,
+    LogOut,
+    Users,
+    ShoppingCart,
+    Cpu,
+    CommandIcon,
+    CompassIcon,
+    ChartAreaIcon,
+    ChartNetwork,
+    MessageCircleCode,
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'react-toastify';
@@ -13,9 +27,8 @@ import { logout_service } from '@/services/auth/authService';
 const navLinkItems = [
     {
         href: '/sale/dashboard',
-
-        title: 'Trang chủ',
-        icon: <Home />,
+        title: 'Dashboard',
+        icon: <ChartAreaIcon />,
     },
     {
         href: '/sale/discount',
@@ -26,6 +39,11 @@ const navLinkItems = [
         href: '/sale/blog',
         title: 'Quản lý Blog',
         icon: <FolderOpen />,
+    },
+    {
+        href: '',
+        title: 'Quản lý comment',
+        icon: <MessageCircleCode />,
     },
 ];
 const SaleLayout = () => {
