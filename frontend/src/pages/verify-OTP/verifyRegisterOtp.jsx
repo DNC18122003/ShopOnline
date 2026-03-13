@@ -6,14 +6,17 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'react-toastify';
 import { sendOtpRegister, verifyOtpRegister } from '@/services/auth/authService';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/authContext';
+
 const VerifyRegisterOtp = () => {
+    const { setUser } = useAuth();
     const emailForOtp = localStorage.getItem('emailForOtp');
     const [sendEmail, setSendEmail] = useState(false);
     const [sendEmailLoading, setSendEmailLoading] = useState(false);
     const [otp, setOtp] = useState('');
     const navigation = useNavigate();
     const sendEmailOtp = async () => {
-        console.log('hi gọi hàm r');
+        //console.log('hi gọi hàm r');
         try {
             setSendEmailLoading(true);
             const response = await sendOtpRegister(emailForOtp);
@@ -27,14 +30,28 @@ const VerifyRegisterOtp = () => {
     };
     // Verify OTP
     const verifyOtp = async () => {
-        console.log('Gửi OTP:', otp);
+        //console.log('Gửi OTP:', otp);
         try {
             const response = await verifyOtpRegister(emailForOtp, otp);
-            console.log('OTP sent successfully:', response.data);
-            toast.success('OTP đã được xác minh thành công !, vui lòng đăng nhập lại !');
+            // console.log('OTP sent successfully:', response.data);
+            // chỉnh sửa : đã login (nhưng chưa active)  => chuyển hướng sang home
+            // chua login giư nguyen
+            const data_ui = localStorage.getItem('data_ui');
+            const message = `OTP đã được xác minh thành công! ${
+                data_ui ? '' : 'Vui lòng đăng nhập lại để tiếp tục sử dụng dịch vụ!'
+            }`;
+
+            toast.success(message);
+            // Cập nhật thông tin người dùng sau khi xác minh OTP thành công
+            setUser((prevUser) => ({
+                ...prevUser,
+                isActive: true,
+            }));
+            //console.log('test đến đây rồi ');
             setTimeout(() => {
                 localStorage.removeItem('emailForOtp');
-                navigation('/login');
+                if (data_ui) navigation('/');
+                else navigation('/login');
             }, 2000);
         } catch (error) {
             console.error('Error sending OTP:', error);

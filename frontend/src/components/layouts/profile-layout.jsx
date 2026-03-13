@@ -64,7 +64,7 @@ const ProfileLayout = () => {
     };
 
     const handleInputAvatar = async (e) => {
-        console.log('hi');
+        //console.log('hi');
         const file = e.target.files[0];
         if (!file) return;
 
@@ -84,11 +84,12 @@ const ProfileLayout = () => {
 
             if (response.success) {
                 // Cập nhật lại localStorage để UI đồng bộ ngay lập tức
-                const updatedUser = { ...userData, avatar: response.avatarUrl };
+                console.log('update avatar response:', response);
+                const updatedUser = { ...userData, avatar: response.avatar };
                 localStorage.setItem('data_ui', JSON.stringify(updatedUser));
 
-                // Cập nhật context nếu cần
-                setUser(updatedUser);
+                // Cập nhật state trong context
+                setUser((prev) => ({ ...prev, avatar: response.avatar }));
 
                 toast.dismiss();
                 toast.success('Cập nhật ảnh thành công!');
