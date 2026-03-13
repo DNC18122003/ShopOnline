@@ -1,6 +1,7 @@
 const Comment = require("../../models/Comments/Comment");
-
-const getCommentsByProduct = async (req, res) => {
+const commentController = {
+  //1 lấy comment theo từng sản phẩms
+ getCommentsByProduct : async (req, res) => {
   try {
     const { productId } = req.params;
 
@@ -10,7 +11,7 @@ const getCommentsByProduct = async (req, res) => {
       parentId: null,
       isActive: true,
     })
-      .populate("userId", "fullName avatar role") // Lấy thông tin user (để FE biết ai là admin)
+      .populate("userId", "userName role createdAt")
       .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên đầu
       .lean();
 
@@ -22,8 +23,8 @@ const getCommentsByProduct = async (req, res) => {
       parentId: { $in: rootCommentIds },
       isActive: true,
     })
-      .populate("userId", "fullName avatar role")
-      .sort({ createdAt: 1 }) // Câu trả lời cũ hơn xếp trước
+      .populate("userId", "userName role createdAt")
+      .sort({ createdAt: -1 }) // Câu trả lời mối hơn xếp trước
       .lean();
 
     // 4. Map các câu trả lời vào đúng câu hỏi gốc (Tạo mảng replies)
@@ -43,7 +44,39 @@ const getCommentsByProduct = async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
+},
+//2 đăng tải comment
+ createComment :   async (req, res) => {
+  try {
+    // Chỉ lấy những trường mình cho phép
+    const { productId, userId, content, parentId } = req.body;
+
+    // Kiểm tra dữ liệu bắt buộc
+    if (!productId || !userId || !content) {
+      return res.status(400).json({ success: false, message: "Thiếu thông tin bắt buộc" });
+    }
+
+    const newCommentData = {
+      productId,
+      userId,
+      content,
+      parentId: parentId || null, 
+      isActive: true, 
+    };
+
+    const newComment = await comment.create(newCommentData);
+
+    res.status(201).json({
+      success: true,
+      message: "Tạo comment thành công",
+      data: newComment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 };
-module.exports = {
-  getCommentsByProduct,
-};
+module.exports = commentController;

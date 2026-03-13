@@ -3,6 +3,7 @@ import SaleLayout from '@/components/layouts/sale-layout';
 import ProtectedRoute from './protected-route';
 import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
+import { SalesDashboard } from '@/pages/SaleDashboard/page';
 // Chỉ export mảng object, không tạo router tại đây
 export const saleRoutes = [
     {
@@ -20,6 +21,10 @@ export const saleRoutes = [
             {
                 path: 'blog',
                 element: <BlogPage />,
+            },
+            {
+                path: 'dashboard',
+                element: <SalesDashboard />,
             },
         ],
     },
