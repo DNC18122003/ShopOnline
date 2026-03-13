@@ -19,13 +19,18 @@ const updateProfileController = async (req, res) => {
     try {
         const userId = req.user._id;
         const { fullName, phone, address } = req.body;
+        // validate data
         const fullNameParsed = fullName.trim();
         const phoneParsed = phone.trim();
-        const addressParsed = address.trim();
-        console.log("data: ", fullNameParsed, phoneParsed, addressParsed);
+        const addressParsed = {
+            street: address.street.trim(),
+            ward: address.ward.trim(),
+            province: address.province.trim(),
+        }
+        //console.log("data: ", fullNameParsed, phoneParsed, addressParsed);
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ message: "Không tìm thấy người dùng !" });
         }
         user.fullName = fullNameParsed;
         user.address = addressParsed;
@@ -33,7 +38,7 @@ const updateProfileController = async (req, res) => {
         console.log("Updated user data:", user);
         const resUp = await user.save();
         //console.log("Updated user:", resUp);
-        res.json({ success: true, message: "Profile updated successfully" });
+        res.json({ success: true, message: "Cập nhật thông tin cá nhân thành công !!" });
     } catch (error) {
         console.error("Error updating profile:", error);
         return res.status(500).json({ message: "Error updating profile" });
