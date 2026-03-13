@@ -1,15 +1,58 @@
 const Review = require("../../models/order/Review");
 const Order = require("../../models/order/Order");
-
+const { uploadMediaToCloudinary, uploadToCloudinary } = require("../../middleware/upload");
 /**
  * Tạo đánh giá sản phẩm
  */
 exports.createReview = async (req, res) => {
   try {
-    const { productId, orderId, rating, comment, images, videos } = req.body;
+  
+    const { productId, orderId, rating, comment } = req.body;
     const userId = req.user._id;
 
-    // kiểm tra đơn hàng tồn tại
+    let images = [];
+    let videos = [];
+
+    if (req.files && req.files.length > 0) {
+      const imageFiles = req.files.filter((file) =>
+        file.mimetype.startsWith("image")
+      );
+
+      const videoFiles = req.files.filter((file) =>
+        file.mimetype.startsWith("video")
+      );
+
+      if (imageFiles.length > 5) {
+        return res.status(400).json({
+          message: "Chỉ được upload tối đa 5 ảnh",
+        });
+      }
+
+      if (videoFiles.length > 1) {
+        return res.status(400).json({
+          message: "Chỉ được upload tối đa 1 video",
+        });
+      }
+
+      if (imageFiles.length > 0) {
+        const uploadedImages = await uploadToCloudinary(
+          imageFiles,
+          "reviews/images/"
+        );
+
+        images = uploadedImages.map((img) => img.Url); //  chỉ lưu URL
+      }
+
+      if (videoFiles.length > 0) {
+        const uploadedVideos = await uploadMediaToCloudinary(
+          videoFiles,
+          "reviews/videos/"
+        );
+
+        videos = uploadedVideos.map((video) => video.Url); //  chỉ lưu URL
+      }
+    }
+
     const order = await Order.findById(orderId);
 
     if (!order) {
@@ -18,14 +61,12 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    // kiểm tra user có phải chủ đơn hàng không
-    if (order.userId.toString() !== userId.toString()) {
+    if (order.customerId.toString() !== userId.toString()) {
       return res.status(403).json({
         message: "Bạn không có quyền đánh giá đơn hàng này",
       });
     }
 
-    // kiểm tra sản phẩm có trong đơn hàng không
     const productInOrder = order.items.find(
       (item) => item.productId.toString() === productId
     );
@@ -36,7 +77,6 @@ exports.createReview = async (req, res) => {
       });
     }
 
-    // kiểm tra đã đánh giá chưa
     const existingReview = await Review.findOne({
       productId,
       orderId,
@@ -70,7 +110,6 @@ exports.createReview = async (req, res) => {
     });
   }
 };
-
 /**
  * Lấy review theo sản phẩm
  */
@@ -185,6 +224,30 @@ exports.deleteReview = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Lỗi xóa review",
+      error: error.message,
+    });
+  }
+};
+
+exports.checkReview = async (req, res) => {
+  try {
+    const { orderId, productId } = req.params;
+    const userId = req.user._id;
+
+    const review = await Review.findOne({
+      orderId,
+      productId,
+      userId,
+      isActive: true,
+    });
+
+    res.json({
+      reviewed: !!review,
+      review,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi kiểm tra review",
       error: error.message,
     });
   }

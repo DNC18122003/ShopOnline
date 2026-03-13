@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
             </div>
         );
     }
-    console.log('protect đi đến đây và có kết quả', user);
+    //console.log('protect đi đến đây và có kết quả', user);
     if (!user) {
         //console.log('2');
         // Lưu lại vị trí trang hiện tại để sau khi login có thể quay lại

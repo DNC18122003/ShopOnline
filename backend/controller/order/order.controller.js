@@ -5,6 +5,14 @@ const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
 const User = require("../../models/User");
+const Review = require("../../models/order/Review");
+
+const statusFlow = {
+  pending: ["confirmed", "cancelled"],
+  confirmed: ["shipping"],
+  shipping: ["delivered", "delivery_failed"],
+  delivered: ["completed", "returned"],
+};
 
 const createOrder = async (req, res) => {
   try {
@@ -43,7 +51,7 @@ const createOrder = async (req, res) => {
      });
    }
 
-    if (!["COD", "MOMOPAY", "BANK"].includes(paymentMethod)) {
+    if (!["COD", "MOMOPAY"].includes(paymentMethod)) {
       return res
         .status(400)
         .json({ message: "Phương thức thanh toán không hợp lệ" });
@@ -226,10 +234,16 @@ const createOrder = async (req, res) => {
       );
 
       if (!updated) {
-        await Order.findByIdAndUpdate(newOrder._id, {
-          orderStatus: "cancelled",
-          note: "Hết hàng lúc xác nhận",
-        });
+       await Order.findByIdAndUpdate(newOrder._id, {
+         orderStatus: "cancelled",
+         $push: {
+           statusLogs: {
+             status: "cancelled",
+             note: "Hết hàng lúc xác nhận",
+             updatedBy: userId,
+           },
+         },
+       });
 
         return res.status(400).json({
           message: `Hết hàng sản phẩm ${item.nameSnapshot}`,
@@ -273,8 +287,9 @@ const getMyOrders = async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 5, search, status, fromDate, toDate } = req.query;
+
     const query = { customerId: userId };
-    
+
     if (search) {
       query.orderCode = { $regex: search, $options: "i" };
     }
@@ -297,11 +312,38 @@ const getMyOrders = async (req, res) => {
       .limit(Number(limit))
       .lean();
 
+    // 🔥 lấy tất cả review của user
+    const reviews = await Review.find({
+      userId,
+      isActive: true,
+    }).lean();
+
+    // 🔥 gắn review status vào order
+    const ordersWithReview = orders.map((order) => {
+      const items = order.items.map((item) => {
+        const reviewed = reviews.some(
+          (r) =>
+            r.orderId.toString() === order._id.toString() &&
+            r.productId.toString() === item.productId.toString()
+        );
+
+        return {
+          ...item,
+          reviewed,
+        };
+      });
+
+      return {
+        ...order,
+        items,
+      };
+    });
+
     const total = await Order.countDocuments(query);
 
     return res.json({
       success: true,
-      orders,
+      orders: ordersWithReview,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: Number(page),
@@ -315,20 +357,36 @@ const getMyOrders = async (req, res) => {
   }
 };
 const getOrderById = async (req, res) => {
-    try {
-        const {orderId} = req.params;
-        const userId = req.user._id;
+  try {
+    const { orderId } = req.params;
+    const userId = req.user._id;
+    const role = req.user.role;
 
-        const order = await Order.findOne({_id : orderId, customerId: userId}).lean();
-        if(!order){
-            return res.status(404).json({message:'Order not found !'});
-        }
-        res.json(order);
-        
-    } catch (error) {
-        res.status(500).json({message:"Get Order by Id fail"})
+    let order;
+
+    if (role === "admin" || role === "staff") {
+      order = await Order.findById(orderId).lean();
+    } else {
+      order = await Order.findOne({
+        _id: orderId,
+        customerId: userId,
+      }).lean();
     }
-}
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found!",
+      });
+    }
+
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({
+      message: "Get Order by Id fail",
+      error: error.message,
+    });
+  }
+};
 
 const getAllOrder = async (req, res) => {
     try {
@@ -345,24 +403,40 @@ const updateOrderStatus = async (req, res) => {
     const { status } = req.body;
     const staffId = req.user._id;
 
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      {
-        orderStatus: status,
-        $push: {
-          statusLogs: {
-            status: status,
-            note: "Staff updated order status",
-            updatedBy: staffId,
-          },
-        },
-      },
-      { new: true, runValidators: true }
-    );
+    const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({ message: "Order not found !" });
+      return res.status(404).json({ message: "Order not found" });
     }
+
+    const currentStatus = order.orderStatus;
+
+    const allowedNextStatus = statusFlow[currentStatus];
+
+    if (!allowedNextStatus || !allowedNextStatus.includes(status)) {
+      return res.status(400).json({
+        message: `Không thể chuyển từ ${currentStatus} sang ${status}`,
+      });
+    }
+
+    // Restock nếu huỷ
+    if (status === "cancelled") {
+      for (const item of order.items) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: item.quantity },
+        });
+      }
+    }
+
+    order.orderStatus = status;
+
+    order.statusLogs.push({
+      status,
+      note: "Staff updated order status",
+      updatedBy: staffId,
+    });
+
+    await order.save();
 
     res.json({
       message: "Update order status successful",

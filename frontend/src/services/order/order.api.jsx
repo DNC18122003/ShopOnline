@@ -50,15 +50,12 @@ export const getOrderDetail = async (orderId) => {
 // 5. Cập nhật trạng thái đơn 
 export const updateOrderStatus = async (orderId, newStatus) => {
   try {
-    const response = await customizeAPI.put(`/order/${orderId}/status`, {
+    const response = await customizeAPI.patch(`/order/${orderId}/status`, {
       status: newStatus,
     });
-    toast.success('Cập nhật trạng thái đơn hàng thành công');
+  
     return response;
   } catch (error) {
-    toast.error(
-      error.response?.data?.message || 'Không thể cập nhật trạng thái'
-    );
     throw error;
   }
 };

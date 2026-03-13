@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { getProfile, updateProfileService } from '@/services/order/profile.api';
-import { set } from 'date-fns';
+import { getAddress } from '@/services/order/order.api';
 import { toast } from 'react-toastify';
 
 const UserProfile = () => {
@@ -17,20 +17,24 @@ const UserProfile = () => {
         fullName: '',
         email: '',
         phone: '',
-        adress: '',
+        address: {
+            street: '',
+            ward: '',
+            province: '',
+        },
     });
 
     const [isEditing, setIsEditing] = useState(false);
 
     const [loading, setLoading] = useState(false);
     const [loadingUpdate, setLoadingUpdate] = useState(false);
-
+    const [loadingLocation, setLoadingLocation] = useState(false);
     // getData
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await getProfile();
-                // console.log('Profile data fetched:', response.myProfile?.phone); // log đươc data phone 1234456
+                console.log('Profile data fetched:', response.myProfile?.phone); // log đươc data phone 1234456
                 setData({
                     ...data,
                     userName: response.myProfile?.userName || '',
@@ -55,6 +59,16 @@ const UserProfile = () => {
             [e.target.name]: e.target.value,
         });
     };
+    // handle change input address
+    const handleChangeAddress = (e) => {
+        setData({
+            ...data,
+            address: {
+                ...data.address,
+                [e.target.name]: e.target.value,
+            },
+        });
+    };
 
     // handle upate
     const updateProfile = async () => {
@@ -67,7 +81,11 @@ const UserProfile = () => {
             const dataToUpdate = {
                 fullName: data.fullName.trim(),
                 phone: data.phone.trim(),
-                address: data.adress.trim(),
+                address: {
+                    street: data.address.street.trim(),
+                    ward: data.address.ward.trim(),
+                    province: data.address.province.trim(),
+                },
             };
             const response = await updateProfileService(dataToUpdate);
             console.log('Profile updated:', response);
@@ -79,6 +97,60 @@ const UserProfile = () => {
         } finally {
             setLoadingUpdate(false);
         }
+    };
+    // handle get current location
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            toast.error('Trình duyệt không hỗ trợ lấy vị trí');
+            return;
+        }
+
+        setLoadingLocation(true);
+
+        navigator.geolocation.getCurrentPosition(
+            async ({ coords }) => {
+                try {
+                    const data = await getAddress({
+                        lat: coords.latitude,
+                        lon: coords.longitude,
+                    });
+                    // handle data to set form
+                    console.log('Địa chỉ nhận được từ API:', data);
+                    console.log('Địa chỉ hiện tại:', data.fullAddress);
+                    console.log('Phường/Xã:', data.ward);
+                    console.log('Tỉnh/Thành phố:', data.province);
+                    setData((prev) => ({
+                        ...prev,
+                        address: {
+                            ...prev.address,
+                            street: data.fullAddress || '',
+                            ward: data.ward || '',
+                            province: data.province || '',
+                        },
+                    }));
+
+                    toast.success('Lấy địa chỉ hiện tại thành công!', {
+                        position: 'top-right',
+                        autoClose: 4000,
+                    });
+                } catch (err) {
+                    console.error('Lỗi khi lấy địa chỉ tự động:', err);
+                    setError('Không thể lấy địa chỉ tự động. Vui lòng nhập thủ công.');
+                    toast.error('Không thể lấy địa chỉ tự động.');
+                } finally {
+                    setLoadingLocation(false);
+                }
+            },
+            (err) => {
+                setLoadingLocation(false);
+                const msg =
+                    err.code === 1
+                        ? 'Bạn đã từ chối chia sẻ vị trí.'
+                        : 'Lỗi lấy vị trí. Vui lòng kiểm tra quyền truy cập.';
+                toast.error(msg);
+            },
+            { enableHighAccuracy: true, timeout: 7000, maximumAge: 0 },
+        );
     };
 
     if (loading) {
@@ -124,6 +196,9 @@ const UserProfile = () => {
                             >
                                 Hủy
                             </Button>
+                            <Button onClick={getCurrentLocation} disabled={loadingLocation} className="">
+                                {loadingLocation ? <>Đang lấy...</> : <>📍 Lấy địa chỉ hiện tại</>}
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -154,6 +229,17 @@ const UserProfile = () => {
                                 readOnly={!isEditing}
                             />
                         </div>
+                        <div>
+                            <Label className="text-sm font-medium text-gray-600">Tỉnh/Thành phố</Label>
+                            <Input
+                                type="text"
+                                className="mt-2 text-base text-gray-900 p-2 border border-gray-300 rounded"
+                                name="province"
+                                onChange={handleChangeAddress}
+                                value={data.address.province}
+                                readOnly={!isEditing}
+                            />
+                        </div>
                     </div>
 
                     {/* Right Column */}
@@ -178,16 +264,28 @@ const UserProfile = () => {
                                 readOnly={!isEditing}
                             />
                         </div>
+                        <div className="flex-1">
+                            <Label className="text-sm font-medium text-gray-600">Xã/Phường</Label>
+                            <Input
+                                type="text"
+                                className="mt-2 text-base text-gray-900 p-2 border border-gray-300 rounded"
+                                name="ward"
+                                onChange={handleChangeAddress}
+                                value={data.address.ward}
+                                readOnly={!isEditing}
+                            />
+                        </div>
                     </div>
                 </div>
+
                 <div className="mt-10">
-                    <Label className="text-sm font-medium text-gray-600">Địa chỉ</Label>
+                    <Label className="text-sm font-medium text-gray-600">Địa chỉ cụ thể </Label>
                     <Input
                         type="text"
                         className="mt-2 text-base text-gray-900 p-2 border border-gray-300 rounded"
                         name="address"
                         onChange={handleChange}
-                        value={data.address}
+                        value={data.address.street}
                         readOnly={!isEditing}
                     />
                 </div>

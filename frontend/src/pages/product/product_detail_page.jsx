@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
-import { getReviewByProductId } from '../../services/review/review.api';
+import { getReviewsByProduct } from '../../services/order/review.api';
 import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 import AddToCartButton from '@/components/customer/AddToCartButton';
 import commentService from '@/services/comment/comment.api';
+import RatingPage from '../order/RatingPage';
+
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
 // ============================================
@@ -141,7 +143,7 @@ export default function ProductDetailPage() {
             }
 
             try {
-                const response = await getReviewByProductId(productId);
+                const response = await getReviewsByProduct(productId);
                 const reviewsData = response.data?.data || response.data || [];
                 setReviews(Array.isArray(reviewsData) ? reviewsData : []);
             } catch (err) {
@@ -315,7 +317,11 @@ export default function ProductDetailPage() {
                                 </span>
                                 <span className="text-sm text-gray-600">({product.reviewCount || 0} đánh giá)</span>
                             </div>
-                            <span className="text-sm text-green-600 font-semibold">Còn hàng</span>
+                            {product.stock > 0 ? (
+                                <span className="text-sm text-green-600 font-semibold">Còn hàng ({product.stock} sản phẩm)</span>
+                            ) : (
+                                <span className="text-sm text-red-600 font-semibold">Hết hàng</span>
+                            )}
                         </div>
 
                         {/* Price */}
@@ -469,6 +475,8 @@ export default function ProductDetailPage() {
                                 ))
                             )}
                         </div>
+                        {/* <RatingPage productId={id} /> */}
+                        
                     </div>
                 </div>
                 {/* ========== PHẦN HỎI ĐÁP ========== */}
