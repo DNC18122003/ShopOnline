@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     User,
     MapPin,
@@ -127,7 +127,6 @@ const OrderDetailPage = () => {
 
                 <h1 className="text-2xl font-bold mb-6">Đơn hàng #{order.orderCode}</h1>
 
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* LEFT */}
                     <div className="lg:col-span-2 space-y-6">
@@ -148,7 +147,9 @@ const OrderDetailPage = () => {
                                         />
 
                                         <div>
-                                            <p className="font-medium">{item.nameSnapshot}</p>
+                                            <Link to={`/product/${item.productId}`}>
+                                                <p className="font-medium hover:text-blue-400">{item.nameSnapshot}</p>
+                                            </Link>
                                             <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
                                         </div>
                                     </div>

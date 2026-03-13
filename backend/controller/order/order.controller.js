@@ -5,6 +5,7 @@ const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
 const User = require("../../models/User");
+const Review = require("../../models/order/Review");
 
 const statusFlow = {
   pending: ["confirmed", "cancelled"],
@@ -286,8 +287,9 @@ const getMyOrders = async (req, res) => {
   try {
     const userId = req.user._id;
     const { page = 1, limit = 5, search, status, fromDate, toDate } = req.query;
+
     const query = { customerId: userId };
-    
+
     if (search) {
       query.orderCode = { $regex: search, $options: "i" };
     }
@@ -310,11 +312,38 @@ const getMyOrders = async (req, res) => {
       .limit(Number(limit))
       .lean();
 
+    // 🔥 lấy tất cả review của user
+    const reviews = await Review.find({
+      userId,
+      isActive: true,
+    }).lean();
+
+    // 🔥 gắn review status vào order
+    const ordersWithReview = orders.map((order) => {
+      const items = order.items.map((item) => {
+        const reviewed = reviews.some(
+          (r) =>
+            r.orderId.toString() === order._id.toString() &&
+            r.productId.toString() === item.productId.toString()
+        );
+
+        return {
+          ...item,
+          reviewed,
+        };
+      });
+
+      return {
+        ...order,
+        items,
+      };
+    });
+
     const total = await Order.countDocuments(query);
 
     return res.json({
       success: true,
-      orders,
+      orders: ordersWithReview,
       total,
       totalPages: Math.ceil(total / limit),
       currentPage: Number(page),

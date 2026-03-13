@@ -58,6 +58,7 @@ const MyOrderPage = () => {
     const [toDate, setToDate] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    
     const limit = 5;
     const navigate = useNavigate();
 
@@ -263,6 +264,22 @@ const MyOrderPage = () => {
                                                 <CircleX size={14} /> Hủy đơn
                                             </button>
                                         )}
+                                        {order.orderStatus === 'completed' &&
+                                            (order.items?.every((item) => item.reviewed) ? (
+                                                <button
+                                                    className="flex items-center gap-1 border border-gray-400 text-gray-500 px-3 py-2 rounded-lg text-sm"
+                                                    onClick={() => navigate(`/review/${order._id}`)}
+                                                >
+                                                    <Eye size={14} /> Xem đánh giá
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    className="flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-lg text-sm"
+                                                    onClick={() => navigate(`/review/${order._id}`)}
+                                                >
+                                                    <Star size={14} /> Đánh giá
+                                                </button>
+                                            ))}
                                         <button
                                             className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition"
                                             onClick={() => handleViewDetail(order._id)}
