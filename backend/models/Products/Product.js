@@ -134,6 +134,18 @@ const productSchema = new Schema(
       default: true,
       index: true,
     },
+    // trang thái sản phẩm: đang bán, ngừng bán, hết hàng
+    saleStatus: {
+    type: String,
+    enum: ["selling", "stopSelling", "outOfStock"],
+    default: "selling",
+    index: true
+  },
+  // tag marketing: new, sale, hot, featured, banner
+  labels: [{
+    type: String,
+    enum: ["new", "sale", "hot", "featured", "banner"]
+  }],
 
     // Người tạo
     createdBy: {

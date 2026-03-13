@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout_service } from '@/services/auth/authService';
 const navLinkItems = [
     {
-        href: '/sale/dashboard',
+        href: '/admin/dashboard',
 
         title: 'Trang chủ',
         icon: <Home />,
