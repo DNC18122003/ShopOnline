@@ -4,7 +4,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu } from 'lucide-react';
+import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, Clipboard, Star,  } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'react-toastify';
@@ -21,6 +21,16 @@ const navLinkItems = [
         href: '/sale/discount',
         title: 'Quản lý mã khuyến mại',
         icon: <Package />,
+    },
+    {
+        href: '/sale/orders/',
+        title: 'Đơn hàng',
+        icon: <Clipboard />,
+    },
+    {
+        href: '/sale/review/',
+        title: 'Đánh giá sản phẩm',
+        icon: <Star/>,
     },
     {
         href: '/sale/blog',

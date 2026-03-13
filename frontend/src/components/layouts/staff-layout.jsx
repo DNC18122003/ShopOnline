@@ -16,11 +16,7 @@ const navLinkItems = [
         title: 'Trang chủ',
         icon: <Home />,
     },
-    {
-        href: '/staff/orders/',
-        title: 'Đơn hàng',
-        icon: <Clipboard/>,
-    },
+   
     {
         href: '/staff/categories',
         title: 'Danh mục',

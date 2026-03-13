@@ -364,7 +364,7 @@ const getOrderById = async (req, res) => {
 
     let order;
 
-    if (role === "admin" || role === "staff") {
+    if (role === "admin" || role === "sale") {
       order = await Order.findById(orderId).lean();
     } else {
       order = await Order.findOne({

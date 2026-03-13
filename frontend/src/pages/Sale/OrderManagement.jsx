@@ -401,7 +401,7 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                                 <td className="font-medium">{formatPrice(order.finalAmount)}</td>
                                 <td className="text-center">
                                     <div className="flex justify-center items-center gap-2">
-                                        <button className="p-2 hover:bg-gray-100 rounded" onClick={()=> navigate(`/staff/orders/${order._id}`)}>
+                                        <button className="p-2 hover:bg-gray-100 rounded" onClick={()=> navigate(`/sale/orders/${order._id}`)}>
                                             <Eye size={18} />
                                         </button>
 
