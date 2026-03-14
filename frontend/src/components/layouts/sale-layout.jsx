@@ -4,9 +4,6 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-<<<<<<< HEAD
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, Clipboard, Star,  } from 'lucide-react';
-=======
 import {
     Menu,
     Home,
@@ -16,13 +13,11 @@ import {
     Users,
     ShoppingCart,
     Cpu,
-    CommandIcon,
-    CompassIcon,
+    Clipboard,
+    Star,
     ChartAreaIcon,
-    ChartNetwork,
     MessageCircleCode,
 } from 'lucide-react';
->>>>>>> master
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'react-toastify';
@@ -47,7 +42,7 @@ const navLinkItems = [
     {
         href: '/sale/review/',
         title: 'Đánh giá sản phẩm',
-        icon: <Star/>,
+        icon: <Star />,
     },
     {
         href: '/sale/blog',
