@@ -13,10 +13,9 @@ import {
     Users,
     ShoppingCart,
     Cpu,
-    CommandIcon,
-    CompassIcon,
+    Clipboard,
+    Star,
     ChartAreaIcon,
-    ChartNetwork,
     MessageCircleCode,
 } from 'lucide-react';
 
@@ -34,6 +33,16 @@ const navLinkItems = [
         href: '/sale/discount',
         title: 'Quản lý mã khuyến mại',
         icon: <Package />,
+    },
+    {
+        href: '/sale/orders/',
+        title: 'Đơn hàng',
+        icon: <Clipboard />,
+    },
+    {
+        href: '/sale/review/',
+        title: 'Đánh giá sản phẩm',
+        icon: <Star />,
     },
     {
         href: '/sale/blog',

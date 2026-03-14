@@ -17,12 +17,18 @@ const getProducts = async (req, res) => {
       maxPrice,
       sort,
       keyword,
+      labels
     } = req.query;
-    console.log("Query params:", req.query);
+   // console.log("Query params:", req.query);
     // ===== 1. Build filter =====
     const filter = {
       isActive: true,
     };
+    // --- Filter theo Labels (Mới bổ sung) ---
+    if (labels) {
+      const labelArray = labels.split(","); 
+      filter["labels"] = { $in: labelArray }; 
+    }
 
     // Filter theo Specs (Socket, RAM Type, Form Factor)
     if (req.query.socket) {
@@ -81,11 +87,16 @@ const getProducts = async (req, res) => {
       case "rating":
         sortOption = { averageRating: -1 };
         break;
+      case "updated":
+        sortOption = { updatedAt: -1 };
+        break;
       case "newest":
       default:
         sortOption = { createdAt: -1 };
         break;
     }
+    // test
+    console.log("Filter:", filter);
 
     // ===== 3. Pagination =====
     const currentPage = Number(page);

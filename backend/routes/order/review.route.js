@@ -17,11 +17,12 @@ router.get(
 );
 
 router.get("/my-reviews", authenticateToken, reviewController.getMyReviews);
-
 router.put("/:id", authenticateToken, reviewController.updateReview);
-
 router.delete("/:id", authenticateToken, reviewController.deleteReview);
-
 router.get("/check/:orderId/:productId", authenticateToken, reviewController.checkReview);
+
+router.get("/", authenticateToken, reviewController.getAllReviews);
+router.get("/:id", authenticateToken, reviewController.getReviewById);
+router.patch("/:id/status", authenticateToken, reviewController.toggleReviewStatus);
 
 module.exports = router;
