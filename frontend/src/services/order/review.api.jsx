@@ -83,3 +83,42 @@ export const checkReview = async (orderId, productId) => {
     const res = await customizeAPI.get(`/review/check/${orderId}/${productId}`);
     return res.data;
 };
+
+/**
+ * 7. Lấy tất cả review (admin)
+ */
+export const getAllReviews = async (params) => {
+    try {
+        const res = await customizeAPI.get('/review', { params });
+        return res.data || res;
+    } catch (error) {
+    
+        throw error;
+    }
+};
+
+/**
+ * 8. Lấy chi tiết review
+ */
+export const getReviewById = async (reviewId) => {
+    try {
+        const res = await customizeAPI.get(`/review/${reviewId}`);
+        return res.data || res;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/**
+ * 9. Toggle trạng thái review (ẩn / hiện)
+ */
+export const toggleReviewStatus = async (reviewId) => {
+    try {
+        const res = await customizeAPI.patch(`/review/${reviewId}/status`);
+
+        toast.success('Cập nhật trạng thái review thành công');
+        return res.data || res;
+    } catch (error) {
+        throw error;
+    }
+};

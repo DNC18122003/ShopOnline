@@ -1,52 +1,48 @@
 import { useEffect, useState } from 'react';
 import { Eye, Trash2, Star } from 'lucide-react';
+import { getAllReviews, toggleReviewStatus } from '../../services/order/review.api';
+import { useNavigate } from 'react-router-dom';
+
 
 const RatingManagement = () => {
     const [reviews, setReviews] = useState([]);
     const [search, setSearch] = useState('');
     const [ratingFilter, setRatingFilter] = useState('');
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
-    // Fake data (sau này thay API)
-    useEffect(() => {
-        const fakeReviews = [
-            {
-                _id: '1',
-                product: 'Hạt điều rang muối',
-                user: 'Nguyễn Văn A',
-                rating: 5,
-                comment: 'Sản phẩm rất ngon, sẽ mua lại!',
-                createdAt: '2026-03-10',
-                images: ['https://via.placeholder.com/100'],
-            },
-            {
-                _id: '2',
-                product: 'Hạt chia',
-                user: 'Trần Thị B',
-                rating: 3,
-                comment: 'Tạm ổn',
-                createdAt: '2026-03-09',
-                images: [],
-            },
-        ];
+    const fetchReviews = async () => {
+        try {
+            setLoading(true);
 
-        setReviews(fakeReviews);
-    }, []);
+            const res = await getAllReviews({
+                search,
+                rating: ratingFilter,
+            });
+           
 
-    const handleDelete = (id) => {
-        if (!window.confirm('Bạn có chắc muốn xóa đánh giá này?')) return;
-
-        setReviews((prev) => prev.filter((item) => item._id !== id));
+            setReviews(res.reviews || []);
+        } catch (error) {
+            console.error('Lỗi load review:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const filtered = reviews.filter((item) => {
-        const matchSearch =
-            item.product.toLowerCase().includes(search.toLowerCase()) ||
-            item.user.toLowerCase().includes(search.toLowerCase());
+    useEffect(() => {
+        fetchReviews();
+    }, [search, ratingFilter]);
 
-        const matchRating = ratingFilter ? item.rating === Number(ratingFilter) : true;
+    const handleToggleStatus = async (id) => {
+        if (!window.confirm('Bạn có chắc muốn thay đổi trạng thái review?')) return;
 
-        return matchSearch && matchRating;
-    });
+        try {
+            await toggleReviewStatus(id);
+            fetchReviews();
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
     return (
         <div className="p-6">
@@ -91,40 +87,54 @@ const RatingManagement = () => {
                     </thead>
 
                     <tbody>
-                        {filtered.map((item) => (
-                            <tr key={item._id} className="border-t">
-                                <td className="p-4">{item.product}</td>
-
-                                <td className="p-4">{item.user}</td>
-
-                                <td className="p-4">
-                                    <div className="flex gap-1 text-yellow-500">
-                                        {[...Array(item.rating)].map((_, i) => (
-                                            <Star key={i} size={16} fill="currentColor" />
-                                        ))}
-                                    </div>
-                                </td>
-
-                                <td className="p-4 max-w-xs truncate">{item.comment || 'Không có bình luận'}</td>
-
-                                <td className="p-4">{item.createdAt}</td>
-
-                                <td className="p-4 flex justify-center gap-3">
-                                    <button className="text-blue-600 hover:text-blue-800">
-                                        <Eye size={18} />
-                                    </button>
-
-                                    <button
-                                        onClick={() => handleDelete(item._id)}
-                                        className="text-red-600 hover:text-red-800"
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                        {loading && (
+                            <tr>
+                                <td colSpan="6" className="text-center p-6">
+                                    Đang tải dữ liệu...
                                 </td>
                             </tr>
-                        ))}
+                        )}
 
-                        {filtered.length === 0 && (
+                        {!loading &&
+                            reviews.map((item) => (
+                                <tr key={item._id} className="border-t">
+                                    <td className="p-4">{item.productId?.name || 'Không xác định'}</td>
+
+                                    <td className="p-4">
+                                        {item.userId?.fullName || item.userId?.userName || 'Không xác định'}
+                                    </td>
+
+                                    <td className="p-4">
+                                        <div className="flex gap-1 text-yellow-500">
+                                            {[...Array(item.rating)].map((_, i) => (
+                                                <Star key={i} size={16} fill="currentColor" />
+                                            ))}
+                                        </div>
+                                    </td>
+
+                                    <td className="p-4 max-w-xs truncate">{item.comment || 'Không có bình luận'}</td>
+
+                                    <td className="p-4">{new Date(item.createdAt).toLocaleDateString()}</td>
+
+                                    <td className="p-4 flex justify-center gap-3">
+                                        <button
+                                            onClick={() => navigate(`/sale/review/${item._id}`)}
+                                            className="text-blue-600 hover:text-blue-800"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
+
+                                        <button
+                                            onClick={() => handleToggleStatus(item._id)}
+                                            className="text-red-600 hover:text-red-800"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+
+                        {!loading && reviews.length === 0 && (
                             <tr>
                                 <td colSpan="6" className="text-center p-6 text-gray-500">
                                     Không có đánh giá

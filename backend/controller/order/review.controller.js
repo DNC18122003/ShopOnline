@@ -265,7 +265,7 @@ exports.getAllReviews = async (req, res) => {
 
     const reviews = await Review.find(query)
       .populate("productId", "name images")
-      .populate("userId", "name email avatar")
+      .populate("userId", "fullName userName email avatar")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
