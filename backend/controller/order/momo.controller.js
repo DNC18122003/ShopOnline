@@ -1,9 +1,9 @@
 const crypto = require("crypto");
 const axios = require("axios");
 
-const Order = require("../../models/order/Order");
+const Order = require("../../models/Order/Order");
 const Product = require("../../models/Products/Product");
-const Cart = require("../../models/order/Cart");
+const Cart = require("../../models/Order/Cart");
 
 const momoConfig = {
   partnerCode: process.env.MOMO_PARTNER_CODE || "MOMO",
