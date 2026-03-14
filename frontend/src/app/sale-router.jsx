@@ -39,7 +39,7 @@ export const saleRoutes = [
             },
             {
                 path: 'review/:id',
-                element: <ReviewDetail/>,
+                element: <ReviewDetail />,
             },
         ],
     },

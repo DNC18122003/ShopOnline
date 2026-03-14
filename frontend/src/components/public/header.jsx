@@ -26,7 +26,7 @@ import { toast } from 'react-toastify';
 
 import { logout_service } from '@/services/auth/authService';
 
-const header = () => {
+const Header = () => {
     const { setUser } = useContext(AuthContext);
     const navigate = useNavigate();
     const data_ui = JSON.parse(localStorage.getItem('data_ui'));
@@ -37,6 +37,7 @@ const header = () => {
         { name: 'Cấu hình PC', url: '/pc-templates' },
         { name: 'Về chúng tôi', url: '/about' },
         { name: 'Liên hệ', url: '/contact' },
+        { name: 'Tin tức', url: ''},
     ];
     const handleLogut = async () => {
         try {
@@ -218,4 +219,4 @@ const header = () => {
     );
 };
 
-export default header;
+export default Header;

@@ -58,7 +58,7 @@ const login = () => {
 
             //console.log('Login successful api:', response);
             // set data in auth context
-            console.log('User data from API response:', response.user);
+            //console.log('User data from API response:', response.user);
             setUser(response.user);
             await fetchCart();
             // set data in local storage
@@ -70,14 +70,18 @@ const login = () => {
             };
 
             localStorage.setItem('data_ui', JSON.stringify(data_ui));
+            // check active account
+            if (!response.user.isActive) {
+                localStorage.setItem('emailForOtp', response.user.email.trim());
+            }
 
             // alert('Login successful!');
             toast.success(`Đăng nhập thành công, chào ${response.user.userName}`);
-            console.log('role', response.user.role);
+            //console.log('role', response.user.role);
             setTimeout(() => {
                 // check role and navigate
                 if (response.user.role === 'admin') {
-                    navigate('/admin');
+                    navigate('/admin/dashboard');
                 } else if (response.user.role === 'sale') {
                     navigate('/sale/discount');
                 } else if (response.user.role === 'staff') {

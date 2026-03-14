@@ -66,7 +66,7 @@ const ComponentOtp = ({ title, email, message, handleClose, otp, setOtp }) => {
                 <div className="flex items-center justify-center bg-blue-400 h-10 w-10 rounded-full ">
                     <BadgeQuestionMark />
                 </div>
-                <h4 class="font-semibold text-slate-900">{title}</h4>
+                <h4 className="font-semibold text-slate-900">{title}</h4>
                 <p className="text-sm text-slate-500">Vui lòng nhập mã otp 6 chữ số được gửi tới email của bạn</p>
                 <p className="text-slate-500">
                     Gửi đến: <span className="text-black">{maskEmail(email)}</span>

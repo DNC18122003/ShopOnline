@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Cpu, Mail, User, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { Cpu, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,8 @@ import { toast } from 'react-toastify';
 const register = () => {
     const navigate = useNavigate();
     const [formRegister, setFormRegister] = React.useState({
-        userName: '',
         email: '',
+        phoneNumber: '',
         password: '',
         confirmPassword: '',
     });
@@ -26,12 +26,6 @@ const register = () => {
     };
     const validateForm = (form) => {
         const errors = {};
-        // validate user name
-        if (!form.userName.trim()) {
-            errors.userNameError = 'Profile name is required';
-        } else {
-            errors.userNameError = '';
-        }
         // validate email
         if (!form.email.trim()) {
             errors.emailError = 'Địa chỉ email không được để trống !';
@@ -39,6 +33,14 @@ const register = () => {
             errors.emailError = 'Địa chỉ email không hợp lệ !';
         } else {
             errors.emailError = '';
+        }
+        // validate phone number
+        if (!form.phoneNumber.trim()) {
+            errors.phoneNumberError = 'Số điện thoại không được để trống !';
+        } else if (!/^\d{10}$/.test(form.phoneNumber.trim())) {
+            errors.phoneNumberError = 'Số điện thoại phải có 10 chữ số !';
+        } else {
+            errors.phoneNumberError = '';
         }
         // validate password
         if (!form.password.trim() || form.password.trim().length < 8) {
@@ -56,15 +58,15 @@ const register = () => {
         e.preventDefault();
         const errors = validateForm(formRegister);
         setMessageError(errors);
-        if (errors.userNameError || errors.emailError || errors.passwordError || errors.confirmPasswordError) {
+        if (errors.phoneNumberError || errors.emailError || errors.passwordError || errors.confirmPasswordError) {
             return;
         }
-        // console.log('Register form data:', formRegister);
+        console.log('Register form data:', formRegister);
         try {
             setLoadingLogin(true);
             const response = await register_service(
-                formRegister.userName.trim(),
                 formRegister.email.trim(),
+                formRegister.phoneNumber.trim(),
                 formRegister.password.trim(),
             );
             // console.log('Register successful api:', response.data);
@@ -75,7 +77,7 @@ const register = () => {
                 navigate('/verify_otp');
             }, 1000);
         } catch (error) {
-            toast.error(error.response.data.message);
+            //      toast.error(error.response.data.message);
             console.error('Register failed:', error);
         } finally {
             setLoadingLogin(false);
@@ -94,24 +96,6 @@ const register = () => {
             {/* Descrition */}
             <p className="text-gray-600 text-center text-sm mb-6">Đăng kí ngay để có trải nghiệm mua sắm tuyệt vời</p>
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* profile name */}
-                <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Tên người dùng</label>
-
-                    <Input
-                        type="text"
-                        placeholder="Nhập tên người dùng của bạn"
-                        name="userName"
-                        value={formRegister.userName}
-                        onChange={handleChange}
-                        className=" border-gray-300 focus:border-blue-500 text-gray-900"
-                    />
-
-                    {messageError?.userNameError && (
-                        <p className="text-red-500 text-sm mt-1">{messageError.userNameError}</p>
-                    )}
-                </div>
-
                 {/* email */}
                 <div>
                     <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
@@ -125,6 +109,23 @@ const register = () => {
                     />
 
                     {messageError?.emailError && <p className="text-red-500 text-sm mt-1">{messageError.emailError}</p>}
+                </div>
+                {/* phone number */}
+                <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-2">Số điện thoại</label>
+
+                    <Input
+                        type="text"
+                        placeholder="Nhập số điện thoại của bạn"
+                        name="phoneNumber"
+                        value={formRegister.phoneNumber}
+                        onChange={handleChange}
+                        className=" border-gray-300 focus:border-blue-500 text-gray-900"
+                    />
+
+                    {messageError?.phoneNumberError && (
+                        <p className="text-red-500 text-sm mt-1">{messageError.phoneNumberError}</p>
+                    )}
                 </div>
                 {/* password */}
                 <div>

@@ -2,7 +2,7 @@ const express = require("express");
 const discountController = require("../../controller/discount/discountController");
 const { isAuth } = require("../../middleware/authorization");
 const router = express.Router();
-// 1. GET: Lấy danh sách mã giảm giá (Có thể filter ?code=...&status=...)
+// 1. GET: Lấy danh sách mã giảm giá (Có thể filter)
 router.get("/", discountController.getAllDiscounts);
 
 // 1.1 GET: Lấy mã giảm giá có sẵn

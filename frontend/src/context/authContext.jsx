@@ -13,7 +13,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const res = await getMe();
                 // res CHÍNH LÀ response.data
-                //console.log('get me res:', res.data.user);
+                console.log('get me res:', res.data.user);
                 setUser(res.data.user);
             } catch (error) {
                 setUser(null);

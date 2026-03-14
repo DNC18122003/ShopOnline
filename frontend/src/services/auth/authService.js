@@ -9,11 +9,11 @@ export const login_service = async (email, password) => {
         throw error;
     }
 };
-export const register_service = async (userName, email, password) => {
+export const register_service = async (email, phoneNumber, password) => {
     // console.log('Register service called with:', userName, email, password);
     // console.log('API_BASE_URL:', `${API_BASE_URL}/auth/register`);
     try {
-        const response = await customizeAPI.post(`${API_BASE_URL}/auth/register`, { userName, email, password });
+        const response = await customizeAPI.post(`${API_BASE_URL}/auth/register`, { email, phoneNumber, password });
         return response;
     } catch (error) {
         throw error;

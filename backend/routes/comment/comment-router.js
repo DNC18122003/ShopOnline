@@ -3,4 +3,5 @@ const commentController = require("../../controller/comment/commentController");
 const { isAuth } = require("../../middleware/authorization");
 const router = express.Router();
 router.get("/:productId", commentController.getCommentsByProduct);
+router.post("/", commentController.createComment);
 module.exports = router;

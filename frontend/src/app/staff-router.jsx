@@ -7,6 +7,8 @@ import { BuildPcTemplateManagement } from '@/pages/Staff/BuildPcTemplateManageme
 import { CreateProduct } from '@/pages/Staff/CreateProduct';
 import { ProductManagement } from '@/pages/Staff/ProductManagement';
 
+import Dashboard from '@/pages/Staff/Dashboard';
+
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
     {
@@ -17,6 +19,10 @@ export const staffRoutes = [
             </ProtectedRoute>
         ),
         children: [
+            {
+                path: 'dashboard',
+                element: <Dashboard />,
+            },
             {
                 path: 'profile',
                 element: <UserProfile />,

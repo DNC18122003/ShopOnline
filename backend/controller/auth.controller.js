@@ -63,18 +63,13 @@ const loginController = async (req, res) => {
 };
 // controller for register
 const registerController = async (req, res) => {
-  const { userName, email, password } = req.body;
-  const userNameParsed = userName.trim();
+  const {  email, phoneNumber, password } = req.body;
+  // vallidate data in backend
   const emailParsed = email.trim();
+  const phoneNumberParsed = phoneNumber.trim();
   const passwordParsed = password.trim();
-  // console.log(
-  //   "Register controller called in backend:",
-  //   userNameParsed,
-  //   emailParsed,
-  //   passwordParsed
-  // );
-  // validate data in backend
-  if (!userNameParsed || !emailParsed || !passwordParsed) {
+  // find email exist
+  if (!phoneNumberParsed || !emailParsed || !passwordParsed) {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
   try {
@@ -83,19 +78,17 @@ const registerController = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({ message: "Email đã được sử dụng" });
     }
-    // check userName exist
-    const existingUserName = await User.findOne({ userName: userNameParsed });
-    if (existingUserName) {
-      return res.status(400).json({ message: "Tên người dùng đã được sử dụng" });
-    }
     //hash password
     const hash_Password = await hashPassword(passwordParsed);
+    // create auto generate userName from email
+    const userNameParsed = emailParsed.split("@")[0] + Math.floor(Math.random() * 10000);
+    console.log("Generated userName:", userNameParsed);
     const newUser = new User({
       userName: userNameParsed,
       email: emailParsed,
       password: hash_Password,
       fullName: null,        // Tên đầy đủ không có
-      phone: null,           // Số điện thoại không có
+      phone: phoneNumberParsed,        
       avatar: null,          // Avatar không có
       role: 'customer',      // Mặc định là customer
       isActive: false,       // Mặc định là chưa active
