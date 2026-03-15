@@ -159,6 +159,10 @@ const orderSchema = new Schema(
     momoTransId: {
       type: String,
     },
+    reservationExpiresAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

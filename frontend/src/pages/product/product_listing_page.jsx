@@ -48,7 +48,7 @@ const buildPriceQuery = (selectedPriceRange) => {
 // ============================================
 // PRODUCT CARD COMPONENT
 // ============================================
-function ProductCard({ _id, name, price, averageRating, reviewCount, images }) {
+function ProductCard({ _id, name, price, averageRating, reviewCount, images ,stock}) {
     const navigate = useNavigate();
 
     return (
@@ -92,7 +92,11 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images }) {
 
             {/* Nút thêm vào giỏ hàng */}
             <div className="px-4 pb-4">
-                <AddToCartButton productId={_id} name={name} price={price} image={images?.[0]?.url || images} />
+                {stock > 1 ? (
+                    <AddToCartButton productId={_id} name={name} price={price} image={images?.[0]?.url || images} />
+                ) : (
+                    <div className="text-center text-sm text-red-500 font-medium">Hết hàng</div>
+                )}
             </div>
         </div>
     );

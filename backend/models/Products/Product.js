@@ -71,6 +71,12 @@ const productSchema = new Schema(
       min: 0,
       default: 0,
     },
+    // Được thêm bởi Tuấn để giữ hàng
+    reservedStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
 
     // Danh mục và thương hiệu
     category: {
@@ -136,16 +142,18 @@ const productSchema = new Schema(
     },
     // trang thái sản phẩm: đang bán, ngừng bán, hết hàng
     saleStatus: {
-    type: String,
-    enum: ["selling", "stopSelling", "outOfStock"],
-    default: "selling",
-    index: true
-  },
-  // tag marketing: new, sale, hot, featured, banner
-  labels: [{
-    type: String,
-    enum: ["new", "sale", "hot", "featured", "banner"]
-  }],
+      type: String,
+      enum: ["selling", "stopSelling", "outOfStock"],
+      default: "selling",
+      index: true,
+    },
+    // tag marketing: new, sale, hot, featured, banner
+    labels: [
+      {
+        type: String,
+        enum: ["new", "sale", "hot", "featured", "banner"],
+      },
+    ],
 
     // Người tạo
     createdBy: {
@@ -156,6 +164,6 @@ const productSchema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 module.exports = mongoose.model("Product", productSchema);
