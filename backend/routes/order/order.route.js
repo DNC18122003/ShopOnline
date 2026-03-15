@@ -13,7 +13,7 @@ router.post("/create", orderController.createOrder);
 router.get("/:orderId", orderController.getOrderById);
 
 router.get("/",checkRoleAndStatus(["admin", "staff"]),orderController.getAllOrder);
-router.put("/:orderId/status",checkRoleAndStatus(["admin", "staff"]),orderController.updateOrderStatus);
+router.patch("/:orderId/status",checkRoleAndStatus(["admin", "staff"]),orderController.updateOrderStatus);
 router.patch("/:orderId/cancel", orderController.cancelMyOrder);
 router.post("/momo/confirm", confirmMomoPayment);
 

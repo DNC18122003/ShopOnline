@@ -16,7 +16,16 @@ const statusLogSchema = new Schema(
   {
     status: {
       type: String,
-      enum: ["pending", "confirmed", "shipping", "completed", "cancelled"],
+      enum: [
+        "pending",
+        "confirmed",
+        "shipping",
+        "delivered",
+        "completed",
+        "cancelled",
+        "delivery_failed",
+        "returned",
+      ],
       required: true,
     },
 
@@ -130,7 +139,16 @@ const orderSchema = new Schema(
 
     orderStatus: {
       type: String,
-      enum: ["pending", "confirmed", "shipping", "completed", "cancelled"],
+      enum: [
+        "pending",
+        "confirmed",
+        "shipping",
+        "delivered",
+        "completed",
+        "cancelled",
+        "delivery_failed",
+        "returned",
+      ],
       default: "pending",
       index: true,
     },

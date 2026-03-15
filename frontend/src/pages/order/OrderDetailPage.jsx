@@ -1,12 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { User, MapPin, CreditCard, CheckCircle, Truck, Phone, Mail, Notebook, Clock } from 'lucide-react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import {
+    User,
+    MapPin,
+    CreditCard,
+    CheckCircle,
+    Truck,
+    Phone,
+    Mail,
+    Notebook,
+    Clock,
+    XCircle,
+    RotateCcw,
+} from 'lucide-react';
 
 import { getOrderDetail } from '@/services/order/order.api';
 
 const Card = ({ children }) => <div className="bg-white rounded-xl shadow-sm border p-5">{children}</div>;
 
-const ORDER_STEPS = ['pending', 'confirmed', 'shipping', 'completed'];
+
+const ORDER_STEPS = ['pending', 'confirmed', 'shipping', 'delivered', 'completed'];
 
 const STEP_CONFIG = {
     pending: {
@@ -21,11 +34,42 @@ const STEP_CONFIG = {
         label: 'Đang giao',
         icon: Truck,
     },
+    delivered: {
+        label: 'Đã giao',
+        icon: Truck,
+    },
     completed: {
         label: 'Hoàn thành',
         icon: CheckCircle,
     },
+
+    cancelled: {
+        label: 'Đã huỷ',
+        icon: XCircle,
+    },
+
+    delivery_failed: {
+        label: 'Giao thất bại',
+        icon: XCircle,
+    },
+
+    returned: {
+        label: 'Đã hoàn hàng',
+        icon: RotateCcw,
+    },
 };
+
+const STATUS_COLOR = {
+    pending: 'bg-yellow-100 text-yellow-600',
+    confirmed: 'bg-teal-100 text-teal-600',
+    shipping: 'bg-blue-100 text-blue-600',
+    delivered: 'bg-indigo-100 text-indigo-600',
+    completed: 'bg-green-100 text-green-600',
+    cancelled: 'bg-red-100 text-red-600',
+    delivery_failed: 'bg-red-200 text-red-700',
+    returned: 'bg-orange-100 text-orange-600',
+};
+
 
 const OrderDetailPage = () => {
     const { id } = useParams();
@@ -34,6 +78,7 @@ const OrderDetailPage = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
 
     useEffect(() => {
         const fetchOrderDetail = async () => {
@@ -51,21 +96,27 @@ const OrderDetailPage = () => {
         if (id) fetchOrderDetail();
     }, [id]);
 
-    /* format date VN */
+
     const formatDate = (date) => {
         if (!date) return '';
         return new Date(date).toLocaleString('vi-VN');
     };
 
-    /* lấy thời gian của từng step */
+
+
     const getStepTime = (status) => {
         const log = order?.statusLogs?.find((l) => l.status === status);
         return log?.updatedAt;
     };
 
+
     if (loading) return <div className="p-6">Đang tải...</div>;
     if (error) return <div className="p-6 text-red-500">{error}</div>;
     if (!order) return null;
+
+    const isFailStatus = ['cancelled', 'delivery_failed', 'returned'].includes(order.orderStatus);
+
+    const currentIndex = ORDER_STEPS.indexOf(order.orderStatus);
 
     return (
         <div className="bg-gray-50 min-h-screen p-6">
@@ -79,7 +130,7 @@ const OrderDetailPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* LEFT */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Products */}
+                        {/* PRODUCTS */}
                         <Card>
                             <h2 className="font-semibold mb-4">Sản phẩm đã đặt</h2>
 
@@ -96,7 +147,9 @@ const OrderDetailPage = () => {
                                         />
 
                                         <div>
-                                            <p className="font-medium">{item.nameSnapshot}</p>
+                                            <Link to={`/product/${item.productId}`}>
+                                                <p className="font-medium hover:text-blue-400">{item.nameSnapshot}</p>
+                                            </Link>
                                             <p className="text-sm text-gray-500">Số lượng: {item.quantity}</p>
                                         </div>
                                     </div>
@@ -108,7 +161,6 @@ const OrderDetailPage = () => {
                             ))}
                         </Card>
 
-                        {/* Summary */}
                         <Card>
                             <h2 className="font-semibold mb-4">Tổng kết đơn hàng</h2>
 
@@ -135,7 +187,6 @@ const OrderDetailPage = () => {
 
                     {/* RIGHT */}
                     <div className="space-y-6">
-                        {/* Customer */}
                         <Card>
                             <h2 className="font-semibold mb-4">Thông tin khách hàng</h2>
 
@@ -162,7 +213,7 @@ const OrderDetailPage = () => {
                             </div>
                         </Card>
 
-                        {/* Address */}
+                        {/* ADDRESS */}
                         <Card>
                             <h2 className="font-semibold mb-4">Địa chỉ giao hàng</h2>
 
@@ -177,7 +228,7 @@ const OrderDetailPage = () => {
                             </div>
                         </Card>
 
-                        {/* Payment */}
+                        {/* PAYMENT */}
                         <Card>
                             <h2 className="font-semibold mb-4">Thanh toán</h2>
 
@@ -200,8 +251,6 @@ const OrderDetailPage = () => {
                     </div>
                 </div>
 
-                {/* STATUS TIMELINE */}
-
                 <div className="pt-10">
                     <Card>
                         <div className="flex justify-between items-center mb-6">
@@ -209,30 +258,22 @@ const OrderDetailPage = () => {
 
                             <span
                                 className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                    order.orderStatus === 'pending'
-                                        ? 'bg-yellow-100 text-yellow-600'
-                                        : order.orderStatus === 'confirmed'
-                                        ? 'bg-teal-100 text-teal-600'
-                                        : order.orderStatus === 'shipping'
-                                        ? 'bg-blue-100 text-blue-600'
-                                        : order.orderStatus === 'completed'
-                                        ? 'bg-green-100 text-green-600'
-                                        : 'bg-red-100 text-red-600'
+                                    STATUS_COLOR[order.orderStatus] || 'bg-gray-100 text-gray-600'
                                 }`}
                             >
-                                {STEP_CONFIG[order.orderStatus]?.label || 'Đã huỷ'}
+                                {STEP_CONFIG[order.orderStatus]?.label || order.orderStatus}
                             </span>
                         </div>
 
-                        {order.orderStatus !== 'cancelled' ? (
+                        {isFailStatus ? (
+                            <div className="text-center py-6 text-red-500 font-medium">
+                                {STEP_CONFIG[order.orderStatus]?.label}
+                            </div>
+                        ) : (
                             <div className="flex items-center justify-between relative">
                                 {ORDER_STEPS.map((step, index) => {
-                                    const currentIndex = ORDER_STEPS.indexOf(order.orderStatus);
-
                                     const isActive = index <= currentIndex;
-
                                     const Icon = STEP_CONFIG[step].icon;
-
                                     const stepTime = getStepTime(step);
 
                                     return (
@@ -264,8 +305,6 @@ const OrderDetailPage = () => {
                                     );
                                 })}
                             </div>
-                        ) : (
-                            <div className="text-center py-6 text-red-500 font-medium">Đơn hàng đã bị huỷ</div>
                         )}
                     </Card>
                 </div>

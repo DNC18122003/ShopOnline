@@ -24,7 +24,6 @@ module.exports = (app) => {
   app.use(api + "/product", productRouter);
   app.use(api + "/brands", brandRouter);
   app.use(api + "/categories", categoryRouter);
-  app.use(api + "/reviews", reviewRouter);
   app.use(api + "/review", reviewRouter);
   app.use(api + "/blogs", blogRouter);
   app.use(api + "/discounts", discountRouter);
