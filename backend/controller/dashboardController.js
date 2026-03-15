@@ -1,4 +1,4 @@
-const Order = require("../models/Order/Order");
+const Order = require("../models/order/Order");
 const Product = require("../models/Products/Product");
 const Category = require("../models/Category/Category");
 const Brand = require("../models/Brands/Brand");
@@ -23,16 +23,31 @@ const getStaffDashboardData = async (req, res) => {
     for (let order of latestOrders) {
       // Phân logic màu sắc trạng thái
       let statusColor = "bg-gray-100 text-gray-800";
-      if (order.orderStatus === "pending") statusColor = "bg-yellow-100 text-yellow-800";
-      if (order.orderStatus === "shipping") statusColor = "bg-blue-100 text-blue-800";
-      if (order.orderStatus === "delivered" || order.orderStatus === "completed") statusColor = "bg-green-100 text-green-800";
-      if (["cancelled", "delivery_failed", "returned"].includes(order.orderStatus)) statusColor = "bg-red-100 text-red-800";
+      if (order.orderStatus === "pending")
+        statusColor = "bg-yellow-100 text-yellow-800";
+      if (order.orderStatus === "shipping")
+        statusColor = "bg-blue-100 text-blue-800";
+      if (
+        order.orderStatus === "delivered" ||
+        order.orderStatus === "completed"
+      )
+        statusColor = "bg-green-100 text-green-800";
+      if (
+        ["cancelled", "delivery_failed", "returned"].includes(order.orderStatus)
+      )
+        statusColor = "bg-red-100 text-red-800";
 
       recentOrdersFormatted.push({
         id: order.orderCode || order._id,
-        customer: order.customerId ? order.customerId.fullName : "Khách Vãng Lai",
-        date: order.createdAt ? new Date(order.createdAt).toLocaleDateString("vi-VN") : "N/A",
-        total: order.finalAmount ? order.finalAmount.toLocaleString("vi-VN") + "đ" : "0đ",
+        customer: order.customerId
+          ? order.customerId.fullName
+          : "Khách Vãng Lai",
+        date: order.createdAt
+          ? new Date(order.createdAt).toLocaleDateString("vi-VN")
+          : "N/A",
+        total: order.finalAmount
+          ? order.finalAmount.toLocaleString("vi-VN") + "đ"
+          : "0đ",
         status: order.orderStatus,
         statusColor: statusColor,
       });
@@ -40,8 +55,9 @@ const getStaffDashboardData = async (req, res) => {
 
     // 3. Lấy sản phẩm sắp hết hàng (số lượng < 10)
     const lowStockThreshold = 10;
-    const productsLowStock = await Product.find({ stock: { $lt: lowStockThreshold } })
-      .limit(10); // Lấy tối đa 10 sản phẩm
+    const productsLowStock = await Product.find({
+      stock: { $lt: lowStockThreshold },
+    }).limit(10); // Lấy tối đa 10 sản phẩm
 
     // Tiền xử lý dữ liệu sản phẩm
     const lowStockProductsFormatted = [];
@@ -51,7 +67,9 @@ const getStaffDashboardData = async (req, res) => {
         name: product.name,
         sku: product._id.toString().substring(0, 8),
         stock: product.stock,
-        price: product.price ? product.price.toLocaleString("vi-VN") + "đ" : "0đ",
+        price: product.price
+          ? product.price.toLocaleString("vi-VN") + "đ"
+          : "0đ",
       });
     }
 
@@ -69,7 +87,6 @@ const getStaffDashboardData = async (req, res) => {
         lowStockProducts: lowStockProductsFormatted,
       },
     });
-
   } catch (error) {
     console.error("Lỗi API Dashboard:", error);
     return res.status(500).json({

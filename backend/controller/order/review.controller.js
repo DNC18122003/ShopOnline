@@ -1,5 +1,5 @@
-const Review = require("../../models/Order/Review");
-const Order = require("../../models/Order/Order");
+const Review = require("../../models/order/Review");
+const Order = require("../../models/order/Order");
 const { uploadMediaToCloudinary, uploadToCloudinary } = require("../../middleware/upload");
 /**
  * Tạo đánh giá sản phẩm
