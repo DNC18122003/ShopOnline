@@ -1,54 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { 
-    ShoppingCart, 
     Package, 
     FolderOpen, 
     Tag, 
     Clock, 
-    Eye, 
-    TrendingUp,
-    RefreshCw
+    RefreshCw,
+    Box
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { getStaffDashboardData } from '@/services/dashboard/dashboard.api';
 
 const Dashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats] = useState({
-        totalOrders: 0,
         totalProducts: 0,
         totalCategories: 0,
         totalBrands: 0,
     });
-    const [recentOrders, setRecentOrders] = useState([]);
+    const [latestProducts, setLatestProducts] = useState([]);
     const [lowStockProducts, setLowStockProducts] = useState([]);
 
     const fetchDashboardData = async () => {
         try {
             setIsLoading(true);
-            // Giả lập load API 
-            await new Promise(resolve => setTimeout(resolve, 500));
+            const response = await getStaffDashboardData();
             
-            // Dữ liệu mẫu (sẽ thay bằng API sau)
-            setStats({
-                totalOrders: 145,
-                totalProducts: 432,
-                totalCategories: 12,
-                totalBrands: 25,
-            });
-            
-            setRecentOrders([
-                { id: "ORD-001", customer: "Nguyễn Văn A", date: new Date().toLocaleDateString('vi-VN'), total: "1.500.000đ", status: "Chờ lấy hàng", statusColor: "bg-yellow-100 text-yellow-800" },
-                { id: "ORD-002", customer: "Trần Thị B", date: new Date().toLocaleDateString('vi-VN'), total: "3.200.000đ", status: "Đang giao hàng", statusColor: "bg-blue-100 text-blue-800" },
-                { id: "ORD-003", customer: "Lê Văn C", date: new Date().toLocaleDateString('vi-VN'), total: "550.000đ", status: "Giao thành công", statusColor: "bg-green-100 text-green-800" },
-                { id: "ORD-004", customer: "Phạm Thị D", date: new Date().toLocaleDateString('vi-VN'), total: "2.100.000đ", status: "Đã hủy", statusColor: "bg-red-100 text-red-800" },
-            ]);
-            
-            setLowStockProducts([
-                { id: 1, name: "Bàn ăn mặt đá Ceramic", sku: "BA-001", stock: 3, price: "4.500.000đ" },
-                { id: 2, name: "Ghế Sofa phòng khách chữ L", sku: "SF-002", stock: 1, price: "12.000.000đ" },
-                { id: 3, name: "Giường ngủ bọc da cao cấp", sku: "GN-003", stock: 2, price: "8.500.000đ" },
-            ]);
+            if (response.success) {
+                setStats(response.data.stats);
+                setLatestProducts(response.data.latestProducts);
+                setLowStockProducts(response.data.lowStockProducts);
+            }
         } catch (error) {
             console.error("Failed to fetch staff dashboard data", error);
             toast.error("Không thể tải dữ liệu thống kê!");
@@ -77,7 +59,7 @@ const Dashboard = () => {
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">Tổng quan Nhân viên</h2>
                     <p className="text-sm text-gray-500">
-                        Theo dõi hoạt động kinh doanh và quản lý cửa hàng
+                        Quản lý toàn diện sản phẩm, danh mục và thương hiệu
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -95,27 +77,15 @@ const Dashboard = () => {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-white border border-gray-200 p-6 hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-500 text-sm font-medium mb-1">Tổng đơn hàng</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+                            <p className="text-gray-500 text-sm font-medium mb-1">Sản phẩm kích hoạt</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.totalProducts}</p>
                         </div>
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-full">
-                            <ShoppingCart className="w-6 h-6" />
-                        </div>
-                    </div>
-                </Card>
-
-                <Card className="bg-white border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-gray-500 text-sm font-medium mb-1">Sản phẩm</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
-                        </div>
-                        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-full">
-                            <Package className="w-6 h-6" />
+                        <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl">
+                            <Package className="w-8 h-8" />
                         </div>
                     </div>
                 </Card>
@@ -124,10 +94,10 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-gray-500 text-sm font-medium mb-1">Danh mục</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.totalCategories}</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.totalCategories}</p>
                         </div>
-                        <div className="p-3 bg-orange-50 text-orange-600 rounded-full">
-                            <FolderOpen className="w-6 h-6" />
+                        <div className="p-4 bg-orange-50 text-orange-600 rounded-2xl">
+                            <FolderOpen className="w-8 h-8" />
                         </div>
                     </div>
                 </Card>
@@ -136,56 +106,70 @@ const Dashboard = () => {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-gray-500 text-sm font-medium mb-1">Thương hiệu</p>
-                            <p className="text-2xl font-bold text-gray-900">{stats.totalBrands}</p>
+                            <p className="text-3xl font-bold text-gray-900">{stats.totalBrands}</p>
                         </div>
-                        <div className="p-3 bg-purple-50 text-purple-600 rounded-full">
-                            <Tag className="w-6 h-6" />
+                        <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl">
+                            <Tag className="w-8 h-8" />
                         </div>
                     </div>
                 </Card>
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Recent Orders */}
+                {/* Latest Products */}
                 <Card className="xl:col-span-2 border border-gray-200 bg-white shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                        <h3 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Sản phẩm mới thêm</h3>
+                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">Xem tất cả</button>
                     </div>
                     <div className="p-0 overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="text-xs text-gray-500 bg-white uppercase border-b border-gray-100">
                                 <tr>
-                                    <th className="px-6 py-4 font-medium">Mã ĐH</th>
-                                    <th className="px-6 py-4 font-medium">Khách hàng</th>
-                                    <th className="px-6 py-4 font-medium">Ngày đặt</th>
-                                    <th className="px-6 py-4 font-medium">Tổng tiền</th>
+                                    <th className="px-6 py-4 font-medium">Sản phẩm</th>
+                                    <th className="px-6 py-4 font-medium">Danh mục</th>
+                                    <th className="px-6 py-4 font-medium">Ngày thêm</th>
+                                    <th className="px-6 py-4 font-medium">Giá</th>
                                     <th className="px-6 py-4 font-medium text-center">Trạng thái</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {recentOrders.length > 0 ? (
-                                    recentOrders.map((order, idx) => (
+                                {latestProducts.length > 0 ? (
+                                    latestProducts.map((product, idx) => (
                                         <tr key={idx} className="bg-white hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-gray-900">{order.id}</td>
-                                            <td className="px-6 py-4 text-gray-700">{order.customer}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="font-semibold text-gray-900">{product.name}</span>
+                                                    <span className="text-[10px] text-gray-400">SKU: {product.sku}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-xs">
+                                                    {product.category}
+                                                </span>
+                                            </td>
                                             <td className="px-6 py-4 text-gray-500">
                                                 <div className="flex items-center">
                                                     <Clock className="w-3.5 h-3.5 mr-1" />
-                                                    {order.date}
+                                                    {product.date}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 font-medium text-gray-900">{order.total}</td>
+                                            <td className="px-6 py-4 font-bold text-gray-900">{product.price}</td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${order.statusColor}`}>
-                                                    {order.status}
+                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                                                    product.isActive 
+                                                    ? "bg-green-100 text-green-700" 
+                                                    : "bg-gray-100 text-gray-400"
+                                                }`}>
+                                                    {product.isActive ? "ĐANG BÁN" : "ẨN"}
                                                 </span>
                                             </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                                            Chưa có đơn hàng nào gần đây
+                                        <td colSpan="5" className="px-6 py-8 text-center text-gray-50">
+                                            Chưa có sản phẩm nào
                                         </td>
                                     </tr>
                                 )}
@@ -207,17 +191,17 @@ const Dashboard = () => {
                     <div className="p-6 space-y-5 flex-1">
                         {lowStockProducts.length > 0 ? (
                             lowStockProducts.map((product) => (
-                                <div key={product.id} className="flex items-start gap-3">
-                                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex-shrink-0 flex items-center justify-center border border-gray-200">
-                                        <Package className="w-5 h-5 text-gray-500" />
+                                <div key={product.id} className="flex items-start gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex-shrink-0 flex items-center justify-center border border-gray-200">
+                                        <Box className="w-6 h-6 text-gray-400" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900 truncate" title={product.name}>
+                                        <p className="text-sm font-bold text-gray-900 truncate" title={product.name}>
                                             {product.name}
                                         </p>
                                         <div className="flex items-center justify-between mt-1">
-                                            <span className="text-xs text-gray-500">SKU: {product.sku}</span>
-                                            <span className="text-xs font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-md">
+                                            <span className="text-[10px] text-gray-400 font-medium">SKU: {product.sku}</span>
+                                            <span className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg">
                                                 Còn {product.stock}
                                             </span>
                                         </div>
@@ -226,8 +210,8 @@ const Dashboard = () => {
                             ))
                         ) : (
                             <div className="flex flex-col items-center justify-center text-gray-500 h-full py-8">
-                                <Package className="w-10 h-10 text-gray-300 mb-2" />
-                                <p>Không có sản phẩm nào sắp hết hàng</p>
+                                <Package className="w-12 h-12 text-gray-200 mb-2" />
+                                <p className="font-medium">Kho hàng ổn định</p>
                             </div>
                         )}
                     </div>
