@@ -18,12 +18,12 @@ const navLinkItems = [
         icon: <Home />,
     },
     {
-        href: '/link_2',
-        title: 'Ten tab số 2',
-        icon: <Package />,
+        href: '/admin/manage-user',
+        title: 'Quản lý người dùng',
+        icon: <Users />,
     },
     {
-        href: '/link_3',
+        href: '/admin/link_3',
         title: 'Ten tab số 3',
         icon: <FolderOpen />,
     },
@@ -122,7 +122,7 @@ const AdminLayout = () => {
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-auto">
+                <main className="flex-1 p-5 bg-white shadow-md rounded-lg m-5">
                     <Outlet />
                 </main>
             </section>
