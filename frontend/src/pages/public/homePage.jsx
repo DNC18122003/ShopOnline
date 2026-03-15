@@ -50,7 +50,7 @@ const homePage = () => {
         // Fetch new products
         const fetchNewProducts = async () => {
             try {
-                const response = await getProducts({ sort: 'newest', limit: 5 });
+                const response = await getProducts({ sort: 'updated', limit: 5, labels: ['new'] });
                 setDataNewProducts(response.data || []);
             } catch (error) {
                 console.error('Error fetching new products:', error);

@@ -1,11 +1,11 @@
-const Order = require("../../models/order/Order");
-const Cart = require("../../models/order/Cart");
+const Order = require("../../models/Order/Order");
+const Cart = require("../../models/Order/Cart");
 const Product = require("../../models/Products/Product");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
 const User = require("../../models/User");
-const Review = require("../../models/order/Review");
+const Review = require("../../models/Order/Review");
 
 const statusFlow = {
   pending: ["confirmed", "cancelled"],
