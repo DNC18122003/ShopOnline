@@ -145,7 +145,7 @@ export function SalesDashboard({ vouchers = [] }) {
                 <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white">
                     <div className="flex items-start justify-between">
                         <div>
-                            <p className="text-blue-100 text-sm mb-1">Lượt xem blog</p>
+                            <p className="text-blue-100 text-sm mb-1">Tin tức mới</p>
                             <p className="text-3xl font-bold">{totalViews.toLocaleString()}</p>
                         </div>
                         <div className="p-2 bg-white/20 rounded-lg">

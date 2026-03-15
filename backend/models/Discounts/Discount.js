@@ -35,6 +35,10 @@ const discountSchema = new Schema(
       type: Number,
       default: 1,
     },
+    usedCount: {
+      type: Number,
+      default: 0,
+    },
     validFrom: {
       type: Date,
       required: true,
