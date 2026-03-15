@@ -9,6 +9,8 @@ const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const { passportConfig } = require("./configs/passport");
 const session = require("express-session");
+const cron = require("node-cron");
+const releaseReservedStock = require("./services/releaseReservedStock");
 app.use(
   cors({
     credentials: true,
@@ -39,6 +41,10 @@ passportConfig(passport);
 router(app);
 
 connectDB(); // connectDB
+
+cron.schedule("*/5 * * * *", async () => {
+  await releaseReservedStock();
+});
 
 app.get("/", (req, res) => {
   res.send("Server is running with MongoDB Atlas !!!");

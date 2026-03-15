@@ -1,144 +1,145 @@
 import React, { useContext, useMemo } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import {
-    Menu,
-    Home,
-    Package,
-    FolderOpen,
-    LogOut,
-    Users,
-    ShoppingCart,
-    Cpu,
-    Clipboard,
-    Star,
-    ChartAreaIcon,
-    MessageCircleCode,
-} from 'lucide-react';
+import { Package, FolderOpen, LogOut, Cpu, Clipboard, Star, ChartAreaIcon, MessageCircleCode } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'react-toastify';
-
 import { logout_service } from '@/services/auth/authService';
+
 const navLinkItems = [
     {
         href: '/sale/dashboard',
         title: 'Dashboard',
-        icon: <ChartAreaIcon />,
+        icon: <ChartAreaIcon className="w-5 h-5" />,
     },
     {
         href: '/sale/discount',
         title: 'Quản lý mã khuyến mại',
-        icon: <Package />,
+        icon: <Package className="w-5 h-5" />,
     },
     {
-        href: '/sale/orders/',
+        href: '/sale/orders',
         title: 'Đơn hàng',
-        icon: <Clipboard />,
+        icon: <Clipboard className="w-5 h-5" />,
     },
     {
-        href: '/sale/review/',
+        href: '/sale/review',
         title: 'Đánh giá sản phẩm',
-        icon: <Star />,
+        icon: <Star className="w-5 h-5" />,
     },
     {
         href: '/sale/blog',
         title: 'Quản lý Blog',
-        icon: <FolderOpen />,
+        icon: <FolderOpen className="w-5 h-5" />,
     },
     {
-        href: '',
+        href: '/sale/comment',
         title: 'Quản lý comment',
-        icon: <MessageCircleCode />,
+        icon: <MessageCircleCode className="w-5 h-5" />,
     },
 ];
+
 const SaleLayout = () => {
-    //hook
     const { setUser } = useContext(AuthContext);
-    // state
-    const data_ui = JSON.parse(localStorage.getItem('data_ui'));
+
     const navigate = useNavigate();
-    const handleLogut = async () => {
+    const location = useLocation();
+
+    const data_ui = JSON.parse(localStorage.getItem('data_ui'));
+
+    const handleLogout = async () => {
         try {
             await logout_service();
+
             localStorage.removeItem('data_ui');
             setUser(null);
-            toast.success('Đăng xuất thành công !');
+
+            toast.success('Đăng xuất thành công!');
+
             setTimeout(() => {
                 navigate('/login');
-            }, 1000);
+            }, 800);
         } catch (error) {
             console.log(error);
+            toast.error('Đăng xuất thất bại');
         }
     };
 
     const currentNav = useMemo(() => {
-        return navLinkItems.find((link) => link.href === location.pathname);
+        return navLinkItems.find((link) => location.pathname.startsWith(link.href));
     }, [location.pathname]);
+
     return (
         <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-            {/* header */}
-            <header className="bg-white py-3 flex items-center gap-5 border-b">
-                {/* Logo Web */}
-                <div className="flex items-center gap-2 px-6 w-auto md:w-64 border-r ">
+            {/* HEADER */}
+            <header className="bg-white py-3 flex items-center gap-5 border-b shadow-sm">
+                {/* LOGO */}
+                <div className="flex items-center gap-2 px-6 w-auto md:w-64 border-r">
                     <div className="h-8 w-8 flex items-center justify-center">
-                        <Cpu className="text-blue-700" />
+                        <Cpu className="text-blue-700 w-6 h-6" />
                     </div>
+
                     <span className="font-bold text-blue-700 hidden md:block">TechStore</span>
                 </div>
-                {/* Ten menu */}
-                <div className="flex items-center gap-2 px-2 ">
+
+                {/* PAGE TITLE */}
+                <div className="flex items-center gap-2 px-2">
                     <div className="h-8 w-8 flex items-center justify-center text-blue-700">{currentNav?.icon}</div>
-                    <span className="font-bold text-blue-700">{currentNav?.title}</span>
+
+                    <span className="font-bold text-blue-700">{currentNav?.title || 'Dashboard'}</span>
                 </div>
             </header>
 
-            {/* section - thay h-full bằng flex-1 */}
+            {/* BODY */}
             <section className="flex flex-1 min-h-0">
-                {/* Sidebar */}
+                {/* SIDEBAR */}
                 <aside className="w-auto md:w-64 bg-white border-r p-3 flex flex-col">
                     <nav className="space-y-2 flex-1">
                         {navLinkItems.map((link, index) => {
-                            const isActive = location.pathname === link.href;
-                            // console.log('SaleLayout - location.pathname:', location.pathname);
-                            // console.log('SaleLayout - link.href:', link.href);
-                            // console.log('isActive:', isActive);
+                            const isActive = location.pathname.startsWith(link.href);
+
                             return (
                                 <NavLink
                                     key={index}
                                     to={link.href}
                                     className={cn(
-                                        'flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium',
+                                        'flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition',
                                         isActive ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100',
                                     )}
                                 >
                                     {link.icon}
+
                                     <span className="hidden md:block">{link.title}</span>
                                 </NavLink>
                             );
                         })}
                     </nav>
-                    {/* Profile */}
+
+                    {/* PROFILE */}
                     {data_ui && (
-                        <div className="p-3">
-                            <div className="flex flex-col md:flex-row items-center justify-center gap-2">
+                        <div className="p-3 border-t">
+                            <div className="flex flex-col md:flex-row items-center gap-2">
                                 <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
                                     <AvatarImage src={data_ui.avatar} />
+
                                     <AvatarFallback>
-                                        {' '}
                                         {data_ui?.fullName?.charAt(0)?.toUpperCase() || 'U'}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="flex-1">
+
+                                <div className="flex-1 text-center md:text-left">
                                     <p className="font-semibold text-gray-800 md:text-sm text-[0.65rem]">
                                         {data_ui.userName}
                                     </p>
-                                    <p className="text-xs text-gray-500 md:block hidden">{data_ui.email}</p>
+
+                                    <p className="text-xs text-gray-500 hidden md:block">{data_ui.email}</p>
                                 </div>
-                                <button className="text-gray-400 hover:text-gray-600" onClick={handleLogut}>
+
+                                <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition">
                                     <LogOut className="w-5 h-5" />
                                 </button>
                             </div>
@@ -146,8 +147,8 @@ const SaleLayout = () => {
                     )}
                 </aside>
 
-                {/* Main Content */}
-                <main className="flex-1 overflow-auto">
+              
+                <main className="flex-1 overflow-auto bg-gray-50">
                     <Outlet />
                 </main>
             </section>

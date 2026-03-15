@@ -318,7 +318,9 @@ export default function ProductDetailPage() {
                                 <span className="text-sm text-gray-600">({product.reviewCount || 0} đánh giá)</span>
                             </div>
                             {product.stock > 0 ? (
-                                <span className="text-sm text-green-600 font-semibold">Còn hàng ({product.stock} sản phẩm)</span>
+                                <span className="text-sm text-green-600 font-semibold">
+                                    Còn hàng ({product.stock} sản phẩm)
+                                </span>
                             ) : (
                                 <span className="text-sm text-red-600 font-semibold">Hết hàng</span>
                             )}
@@ -356,19 +358,36 @@ export default function ProductDetailPage() {
 
                         {/* Action Buttons */}
                         <div className="px-4 pb-4 space-y-3">
-                            <AddToCartButton
-                                productId={id}
-                                name={product.name}
-                                price={product.price}
-                                image={product.images?.[0] || ''}
-                            />
+                            {product.stock > 1 ? (
+                                <>
+                                    <AddToCartButton
+                                        productId={_id}
+                                        name={name}
+                                        price={price}
+                                        image={images?.[0]?.url || images}
+                                    />
 
-                            <button
-                                onClick={() => handleBuyNow()}
-                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition"
-                            >
-                                Mua ngay
-                            </button>
+                                    <button
+                                        onClick={() => handleBuyNow()}
+                                        className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold transition"
+                                    >
+                                        Mua ngay
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-center text-sm text-red-500 font-medium">
+                                        Sản phẩm này sẽ được cửa hàng bổ sung sớm !
+                                    </div>
+
+                                    <button
+                                        disabled
+                                        className="w-full bg-gray-300 text-gray-500 py-3 rounded-lg font-semibold cursor-not-allowed"
+                                    >
+                                        Mua ngay
+                                    </button>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -476,7 +495,6 @@ export default function ProductDetailPage() {
                             )}
                         </div>
                         {/* <RatingPage productId={id} /> */}
-                        
                     </div>
                 </div>
                 {/* ========== PHẦN HỎI ĐÁP ========== */}
@@ -658,12 +676,21 @@ export default function ProductDetailPage() {
                                             : 'Liên hệ'}
                                     </p>
                                     <div onClick={(e) => e.stopPropagation()}>
-                                        <AddToCartButton
-                                            productId={similarProduct._id || similarProduct.id}
-                                            name={similarProduct.name}
-                                            price={similarProduct.price}
-                                            image={similarProduct.images?.[0] || ''}
-                                        />
+                                        {product.stock > 1 ? (
+                                            <AddToCartButton
+                                                productId={_id}
+                                                name={name}
+                                                price={price}
+                                                image={images?.[0]?.url || images}
+                                            />
+                                        ) : (
+                                            <button
+                                                disabled
+                                                className="w-full py-2 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
+                                            >
+                                                Hết hàng
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
