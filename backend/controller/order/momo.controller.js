@@ -1,9 +1,9 @@
 const crypto = require("crypto");
 const axios = require("axios");
 
-const Order = require("../../models/order/Order");
+const Order = require("../../models/Order/Order");
 const Product = require("../../models/Products/Product");
-const Cart = require("../../models/order/Cart");
+const Cart = require("../../models/Order/Cart");
 
 const momoConfig = {
   partnerCode: process.env.MOMO_PARTNER_CODE || "MOMO",
@@ -98,10 +98,12 @@ exports.confirmMomoPayment = async (req, res) => {
 
     //  Trừ stock chỉ khi update thành công
     for (const item of order.items) {
-      await Product.findOneAndUpdate(
-        { _id: item.productId, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } }
-      );
+     await Product.findByIdAndUpdate(item.productId, {
+       $inc: {
+         stock: -item.quantity,
+         reservedStock: -item.quantity,
+       },
+     });
     }
 
     //  Xóa khỏi cart

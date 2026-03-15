@@ -12,8 +12,8 @@ router.get("/my-orders", orderController.getMyOrders);
 router.post("/create", orderController.createOrder);
 router.get("/:orderId", orderController.getOrderById);
 
-router.get("/",checkRoleAndStatus(["admin", "staff"]),orderController.getAllOrder);
-router.patch("/:orderId/status",checkRoleAndStatus(["admin", "staff"]),orderController.updateOrderStatus);
+router.get("/",checkRoleAndStatus(["admin", "sale"]),orderController.getAllOrder);
+router.patch("/:orderId/status",checkRoleAndStatus(["admin", "sale"]),orderController.updateOrderStatus);
 router.patch("/:orderId/cancel", orderController.cancelMyOrder);
 router.post("/momo/confirm", confirmMomoPayment);
 

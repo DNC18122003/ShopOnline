@@ -55,7 +55,7 @@ const discountSchema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 const Discount = mongoose.model("Discount", discountSchema);

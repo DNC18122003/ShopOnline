@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Product = require("../models/Products/Product");
 const Brand = require("../models/Brands/Brand");
 const Category = require("../models/Category/Category");
@@ -17,12 +18,21 @@ const getProducts = async (req, res) => {
       maxPrice,
       sort,
       keyword,
+      labels
     } = req.query;
-    console.log("Query params:", req.query);
+   // console.log("Query params:", req.query);
     // ===== 1. Build filter =====
-    const filter = {
-      isActive: true,
-    };
+    const filter = {};
+
+    // Mặc định chỉ lấy sản phẩm active trừ khi có showAll=true
+    if (req.query.showAll !== "true") {
+      filter.isActive = true;
+    }
+    // --- Filter theo Labels (Mới bổ sung) ---
+    if (labels) {
+      const labelArray = labels.split(","); 
+      filter["labels"] = { $in: labelArray }; 
+    }
 
     // Filter theo Specs (Socket, RAM Type, Form Factor)
     if (req.query.socket) {
@@ -35,26 +45,40 @@ const getProducts = async (req, res) => {
       filter["specifications.form_factor"] = req.query.form_factor;
     }
 
-    // ===== 2. Filter theo CATEGORY SLUG =====
+    // ===== 2. Filter theo CATEGORY IDs hoặc SLUGs =====
     if (category) {
-      const slugs = category.split(","); // ["vga", "cpu"]
+      const parts = category.split(",");
+      const objectIds = parts.filter(p => mongoose.Types.ObjectId.isValid(p));
+      const slugs = parts.filter(p => !mongoose.Types.ObjectId.isValid(p));
 
-      const categories = await Category.find({ slug: slugs });
+      let categoryIds = [...objectIds];
 
-      const categoryIds = categories.map((c) => c._id);
+      if (slugs.length > 0) {
+        const categoriesFound = await Category.find({ slug: { $in: slugs } });
+        categoryIds = [...categoryIds, ...categoriesFound.map((c) => c._id)];
+      }
 
-      filter.category = categoryIds;
+      if (categoryIds.length > 0) {
+        filter.category = { $in: categoryIds };
+      }
     }
 
-    // ===== 3. Filter theo BRAND SLUG =====
+    // ===== 3. Filter theo BRAND IDs hoặc SLUGs =====
     if (brand) {
-      const slugs = brand.split(",");
+      const parts = brand.split(",");
+      const objectIds = parts.filter(p => mongoose.Types.ObjectId.isValid(p));
+      const slugs = parts.filter(p => !mongoose.Types.ObjectId.isValid(p));
 
-      const brands = await Brand.find({ slug: slugs });
+      let brandIds = [...objectIds];
 
-      const brandIds = brands.map((b) => b._id);
+      if (slugs.length > 0) {
+        const brandsFound = await Brand.find({ slug: { $in: slugs } });
+        brandIds = [...brandIds, ...brandsFound.map((b) => b._id)];
+      }
 
-      filter.brand = brandIds;
+      if (brandIds.length > 0) {
+        filter.brand = { $in: brandIds };
+      }
     }
     // Lọc theo giá
     if (minPrice || maxPrice) {
@@ -81,11 +105,16 @@ const getProducts = async (req, res) => {
       case "rating":
         sortOption = { averageRating: -1 };
         break;
+      case "updated":
+        sortOption = { updatedAt: -1 };
+        break;
       case "newest":
       default:
         sortOption = { createdAt: -1 };
         break;
     }
+    // test
+    console.log("Filter:", filter);
 
     // ===== 3. Pagination =====
     const currentPage = Number(page);
@@ -199,4 +228,110 @@ const getSimilarProducts = async (req, res) => {
   }
 };
 
-module.exports = { getProducts, getProductById, getSimilarProducts };
+/**
+ * POST /api/product
+ * Tạo sản phẩm mới
+ */
+const createProduct = async (req, res) => {
+  try {
+    const productData = req.body;
+    
+    // Đảm bảo các trường số là Number
+    if (productData.price) productData.price = Number(productData.price);
+    if (productData.stock) productData.stock = Number(productData.stock);
+
+    const newProduct = new Product(productData);
+    await newProduct.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Tạo sản phẩm thành công",
+      data: newProduct,
+    });
+  } catch (error) {
+    console.error("Create product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi tạo sản phẩm",
+    });
+  }
+};
+
+/**
+ * PUT /api/product/:id
+ * Cập nhật sản phẩm
+ */
+const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Đảm bảo các trường số là Number nếu có truyền lên
+    if (updateData.price !== undefined) updateData.price = Number(updateData.price);
+    if (updateData.stock !== undefined) updateData.stock = Number(updateData.stock);
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sản phẩm để cập nhật",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Cập nhật sản phẩm thành công",
+      data: updatedProduct,
+    });
+  } catch (error) {
+    console.error("Update product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi cập nhật sản phẩm",
+    });
+  }
+};
+
+/**
+ * DELETE /api/product/:id
+ * Xóa sản phẩm
+ */
+const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedProduct = await Product.findByIdAndDelete(id);
+
+    if (!deletedProduct) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sản phẩm để xóa",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Xóa sản phẩm thành công",
+    });
+  } catch (error) {
+    console.error("Delete product error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server khi xóa sản phẩm",
+    });
+  }
+};
+
+module.exports = { 
+  getProducts, 
+  getProductById, 
+  getSimilarProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct
+};

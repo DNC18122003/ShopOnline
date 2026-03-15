@@ -26,19 +26,26 @@ const ChangePasswordPage = () => {
         if (!currentPassword || !newPassword || !confirmPassword) {
             errors.emptyFieldError = 'Vui lòng nhập đầy đủ thông tin';
         }
+        // check new password and confirm new password
+        // check length of new password
+        if (newPassword.length < 8) {
+            errors.newPasswordError = 'Mật khẩu mới cần tối thiểu 8 kí tự !';
+        }
         if (newPassword !== confirmPassword) {
             errors.confirmPasswordError = 'Mật khẩu mới và xác nhận mật khẩu mới không khớp !';
         }
         return errors;
     };
     const handleSubmitForm = async () => {
-        //console.log('hi');
+        console.log('hi');
         const errors = validateForm(formPassword);
+        console.log('errors:', errors);
+        console.log('status', Object.keys(errors).length > 0);
         if (Object.keys(errors).length > 0) {
-            toast.error(errors.emptyFieldError || errors.confirmPasswordError);
+            toast.error(errors.emptyFieldError || errors.newPasswordError || errors.confirmPasswordError);
             return;
         }
-        //console.log('hi submit');
+        console.log('hi submit');
         try {
             setLoading(true);
             const response = await changePasswordByOldPassword(

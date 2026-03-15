@@ -1,11 +1,11 @@
-const Order = require("../../models/order/Order");
-const Cart = require("../../models/order/Cart");
+const Order = require("../../models/Order/Order");
+const Cart = require("../../models/Order/Cart");
 const Product = require("../../models/Products/Product");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
 const User = require("../../models/User");
-const Review = require("../../models/order/Review");
+const Review = require("../../models/Order/Review");
 
 const statusFlow = {
   pending: ["confirmed", "cancelled"],
@@ -93,11 +93,21 @@ const createOrder = async (req, res) => {
         });
       }
 
-      if (product.stock < cartItem.quantity) {
-        return res.status(400).json({
-          message: `Sản phẩm "${cartItem.nameSnapshot}" chỉ còn ${product.stock} sản phẩm`,
-        });
-      }
+     const availableStock = product.stock - (product.reservedStock || 0);
+
+     if (paymentMethod === "MOMOPAY") {
+       if (availableStock < cartItem.quantity) {
+         return res.status(400).json({
+           message: `Sản phẩm "${product.name}" đang được giữ bởi đơn hàng khác`,
+         });
+       }
+     } else {
+       if (product.stock < cartItem.quantity) {
+         return res.status(400).json({
+           message: `Số lượng không đủ`,
+         });
+       }
+     }
 
       if (!cartItem.quantity || cartItem.quantity <= 0) {
         return res.status(400).json({
@@ -204,10 +214,18 @@ const createOrder = async (req, res) => {
     });
 
     await newOrder.save();
+    // Giu hang trong 5
+    if (paymentMethod === "MOMOPAY") {
+      for (const item of orderItems) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { reservedStock: item.quantity },
+        });
+      }
 
-    // =========================
+      newOrder.reservationExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await newOrder.save();
+    }
     // 6. MOMO PAYMENT
-    // =========================
     if (paymentMethod === "MOMOPAY") {
       try {
         const payUrl = await createMomoPayment(newOrder);
@@ -364,7 +382,7 @@ const getOrderById = async (req, res) => {
 
     let order;
 
-    if (role === "admin" || role === "staff") {
+    if (role === "admin" || role === "sale") {
       order = await Order.findById(orderId).lean();
     } else {
       order = await Order.findOne({

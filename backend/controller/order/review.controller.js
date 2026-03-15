@@ -1,5 +1,5 @@
-const Review = require("../../models/order/Review");
-const Order = require("../../models/order/Order");
+const Review = require("../../models/Order/Review");
+const Order = require("../../models/Order/Order");
 const { uploadMediaToCloudinary, uploadToCloudinary } = require("../../middleware/upload");
 /**
  * Tạo đánh giá sản phẩm
@@ -248,6 +248,89 @@ exports.checkReview = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Lỗi kiểm tra review",
+      error: error.message,
+    });
+  }
+};
+
+exports.getAllReviews = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, rating, search } = req.query;
+
+    const query = { isActive: true };
+
+    if (rating) {
+      query.rating = Number(rating);
+    }
+
+    const reviews = await Review.find(query)
+      .populate("productId", "name images")
+      .populate("userId", "fullName userName email avatar")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    const total = await Review.countDocuments(query);
+
+    res.json({
+      reviews,
+      pagination: {
+        page: Number(page),
+        totalPages: Math.ceil(total / limit),
+        total,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi lấy danh sách review",
+      error: error.message,
+    });
+  }
+};
+
+exports.getReviewById = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id)
+      .populate("productId", "name images price")
+      .populate("userId", "name avatar email")
+      .populate("orderId", "_id createdAt");
+
+    if (!review) {
+      return res.status(404).json({
+        message: "Review không tồn tại",
+      });
+    }
+
+    res.json(review);
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi lấy chi tiết review",
+      error: error.message,
+    });
+  }
+};
+
+exports.toggleReviewStatus = async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+
+    if (!review) {
+      return res.status(404).json({
+        message: "Review không tồn tại",
+      });
+    }
+
+    review.isActive = !review.isActive;
+
+    await review.save();
+
+    res.json({
+      message: "Cập nhật trạng thái review thành công",
+      review,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Lỗi cập nhật trạng thái review",
       error: error.message,
     });
   }

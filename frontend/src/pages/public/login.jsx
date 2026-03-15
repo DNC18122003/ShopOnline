@@ -81,7 +81,7 @@ const login = () => {
             setTimeout(() => {
                 // check role and navigate
                 if (response.user.role === 'admin') {
-                    navigate('/admin');
+                    navigate('/admin/dashboard');
                 } else if (response.user.role === 'sale') {
                     navigate('/sale/discount');
                 } else if (response.user.role === 'staff') {

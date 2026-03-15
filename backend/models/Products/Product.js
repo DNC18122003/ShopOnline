@@ -71,6 +71,12 @@ const productSchema = new Schema(
       min: 0,
       default: 0,
     },
+    // Được thêm bởi Tuấn để giữ hàng
+    reservedStock: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
 
     // Danh mục và thương hiệu
     category: {
@@ -134,6 +140,13 @@ const productSchema = new Schema(
       default: true,
       index: true,
     },
+    // tag marketing: new, sale, hot, featured, banner
+    labels: {
+      type: [String],
+      enum: ["new", "sale", "hot", "banner"],
+      default: [],
+      index: true
+    },
 
     // Người tạo
     createdBy: {
@@ -144,6 +157,6 @@ const productSchema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 module.exports = mongoose.model("Product", productSchema);

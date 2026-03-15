@@ -6,8 +6,9 @@ import { BrandManagement } from '@/pages/Staff/BrandManagement';
 import { BuildPcTemplateManagement } from '@/pages/Staff/BuildPcTemplateManagement';
 import { CreateProduct } from '@/pages/Staff/CreateProduct';
 import { ProductManagement } from '@/pages/Staff/ProductManagement';
-import OrderManagement from '@/pages/Staff/OrderManagement';
-import OrderDetailPage from '@/pages/order/OrderDetailPage';
+
+import Dashboard from '@/pages/Staff/Dashboard';
+
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
     {
@@ -18,6 +19,10 @@ export const staffRoutes = [
             </ProtectedRoute>
         ),
         children: [
+            {
+                path: 'dashboard',
+                element: <Dashboard />,
+            },
             {
                 path: 'profile',
                 element: <UserProfile />,
@@ -37,14 +42,6 @@ export const staffRoutes = [
             {
                 path: 'products/create',
                 element: <CreateProduct />,
-            },
-            {
-                path: 'orders',
-                element: <OrderManagement />,
-            },
-            {
-                path: 'orders/:id',
-                element: <OrderDetailPage />,
             },
             {
                 path: 'build-pc-templates',
