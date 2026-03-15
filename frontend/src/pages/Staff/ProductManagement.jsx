@@ -27,6 +27,9 @@ export function ProductManagement() {
         totalPages: 0,
     });
 
+    const [filterCategory, setFilterCategory] = useState('');
+    const [filterBrand, setFilterBrand] = useState('');
+
     // Edit modal state
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
@@ -59,6 +62,8 @@ export function ProductManagement() {
                 limit: 6,
                 keyword: searchTerm || undefined,
                 showAll: true,
+                category: filterCategory || undefined,
+                brand: filterBrand || undefined,
             };
 
             const response = await getProducts(params);
@@ -87,7 +92,7 @@ export function ProductManagement() {
 
     useEffect(() => {
         fetchProducts();
-    }, [currentPage, searchTerm]);
+    }, [currentPage, searchTerm, filterCategory, filterBrand]);
 
     useEffect(() => {
         fetchCategoriesAndBrands();
@@ -289,16 +294,49 @@ export function ProductManagement() {
             <div className="p-8">
                 {/* Search & Add Button */}
                 <div className="flex items-center justify-between mb-6">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                        <input
-                            type="text"
-                            placeholder="Tìm kiếm sản phẩm..."
-                            value={searchTerm}
-                            onChange={handleSearchChange}
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
+                    <div className="flex items-center flex-1 gap-4">
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Tìm kiếm sản phẩm..."
+                                value={searchTerm}
+                                onChange={handleSearchChange}
+                                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                        </div>
+                    
+                        <div className="flex items-center space-x-3">
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => {
+                                    setFilterCategory(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[150px]"
+                            >
+                                <option value="">Tất cả danh mục</option>
+                                {categories.map(cat => (
+                                    <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                ))}
+                            </select>
+
+                            <select
+                                value={filterBrand}
+                                onChange={(e) => {
+                                    setFilterBrand(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white min-w-[150px]"
+                            >
+                                <option value="">Tất cả thương hiệu</option>
+                                {brands.map(brand => (
+                                    <option key={brand._id} value={brand._id}>{brand.name}</option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
+
                     <button
                         onClick={() => navigate('/staff/products/create')}
                         className="ml-4 flex items-center space-x-2 px-5 py-2.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-sm"
