@@ -1,4 +1,4 @@
-const Order = require("../models/order/Order");
+const Order = require("../models/Order/Order");
 const Product = require("../models/Products/Product");
 
 const releaseReservedStock = async () => {
