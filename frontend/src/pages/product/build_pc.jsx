@@ -260,11 +260,11 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
                 : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-50' : 'bg-red-50')
             }`}>
               <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                Object.keys(selectedItems || {}).length === 0 
-                  ? 'bg-gray-300' 
+                Object.keys(selectedItems || {}).length < 2
+                  ? 'bg-gray-300'
                   : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-500' : 'bg-red-500')
               }`}>
-                {Object.keys(selectedItems || {}).length === 0 ? (
+                {Object.keys(selectedItems || {}).length < 2 ? (
                   <Info size={14} className="text-white" />
                 ) : (!compatibilityResult || compatibilityResult.isCompatible ? (
                   <Check size={14} className="text-white" />
@@ -407,6 +407,8 @@ export default function BuildPcPage() {
   const [compatibilityResult, setCompatibilityResult] = useState(null);
   const [compatibilityLoading, setCompatibilityLoading] = useState(false);
   const [sortOption, setSortOption] = useState('default');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [savedConfigs, setSavedConfigs] = useState([]);
@@ -414,6 +416,11 @@ export default function BuildPcPage() {
   const getBuildPcStorageKey = useCallback(() => {
     const userId = user?._id || user?.id;
     return userId ? `buildpc_configs_${userId}` : 'buildpc_configs_guest';
+  }, [user]);
+
+  const getBuildPcSelectionKey = useCallback(() => {
+    const userId = user?._id || user?.id;
+    return userId ? `buildpc_selected_${userId}` : 'buildpc_selected_guest';
   }, [user]);
 
   useEffect(() => {
@@ -434,6 +441,22 @@ export default function BuildPcPage() {
       setSavedConfigs([]);
     }
   }, [user, authLoading, getBuildPcStorageKey]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    const selectionKey = getBuildPcSelectionKey();
+    const savedSelection = localStorage.getItem(selectionKey);
+    if (savedSelection) {
+      try {
+        const parsed = JSON.parse(savedSelection);
+        if (parsed && typeof parsed === 'object') {
+          setSelectedItems(parsed);
+        }
+      } catch (e) {
+        console.error('Load selected items error:', e);
+      }
+    }
+  }, [user, authLoading, getBuildPcSelectionKey]);
 
   const handleSaveConfig = () => {
     if (!user) {
@@ -611,6 +634,7 @@ export default function BuildPcPage() {
       }
 
       await fetchProductsForCategory(activeCategory, constraints);
+      setCurrentPage(1);
       setLoading(false);
     };
 
@@ -620,6 +644,16 @@ export default function BuildPcPage() {
   const handleSelect = (product) => {
     setSelectedItems(prev => ({ ...prev, [activeCategory]: product }));
   };
+
+  useEffect(() => {
+    if (authLoading) return;
+    const selectionKey = getBuildPcSelectionKey();
+    if (Object.keys(selectedItems).length > 0) {
+      localStorage.setItem(selectionKey, JSON.stringify(selectedItems));
+    } else {
+      localStorage.removeItem(selectionKey);
+    }
+  }, [selectedItems, authLoading, getBuildPcSelectionKey]);
 
   const handleRemove = (key) => {
     setSelectedItems(prev => {
@@ -647,6 +681,13 @@ export default function BuildPcPage() {
         return products;
     }
   }, [rawDisplayProducts, sortOption]);
+
+  const totalPages = Math.max(1, Math.ceil(displayProducts.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedProducts = displayProducts.slice(
+    (safePage - 1) * itemsPerPage,
+    safePage * itemsPerPage
+  );
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-8">
@@ -713,24 +754,65 @@ export default function BuildPcPage() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {displayProducts.length > 0 ? (
-                  displayProducts.map((product) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      onSelect={handleSelect}
-                      onRemove={() => handleRemove(activeCategory)}
-                      isSelected={selectedItems[activeCategory]?._id === product._id}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                    <div className="text-gray-300 mb-4 flex justify-center">{activeGroup?.icon}</div>
-                    <p className="text-gray-500 font-bold">Không tìm thấy sản phẩm {activeGroup?.label}</p>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {paginatedProducts.length > 0 ? (
+                    paginatedProducts.map((product) => (
+                      <ProductCard
+                        key={product._id}
+                        product={product}
+                        onSelect={handleSelect}
+                        onRemove={() => handleRemove(activeCategory)}
+                        isSelected={selectedItems[activeCategory]?._id === product._id}
+                      />
+                    ))
+                  ) : (
+                    <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                      <div className="text-gray-300 mb-4 flex justify-center">{activeGroup?.icon}</div>
+                      <p className="text-gray-500 font-bold">Không tìm thấy sản phẩm {activeGroup?.label}</p>
+                    </div>
+                  )}
+                </div>
+
+                {displayProducts.length > itemsPerPage && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
+                    <p className="text-xs text-gray-500">
+                      Hiển thị {(safePage - 1) * itemsPerPage + 1} - {Math.min(safePage * itemsPerPage, displayProducts.length)} trên tổng {displayProducts.length} sản phẩm
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={safePage === 1}
+                        className="px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 disabled:text-gray-300 disabled:border-gray-100 disabled:cursor-not-allowed hover:bg-gray-50"
+                      >
+                        Trước
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-9 h-9 rounded-lg text-sm font-semibold border transition-colors ${
+                              page === safePage
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={safePage === totalPages}
+                        className="px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 disabled:text-gray-300 disabled:border-gray-100 disabled:cursor-not-allowed hover:bg-gray-50"
+                      >
+                        Sau
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
+              </>
             )}
           </main>
 
