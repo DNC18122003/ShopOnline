@@ -115,10 +115,10 @@ const UserProfile = () => {
                         lon: coords.longitude,
                     });
                     // handle data to set form
-                    console.log('Địa chỉ nhận được từ API:', data);
-                    console.log('Địa chỉ hiện tại:', data.fullAddress);
-                    console.log('Phường/Xã:', data.ward);
-                    console.log('Tỉnh/Thành phố:', data.province);
+                    // console.log('Địa chỉ nhận được từ API:', data);
+                    // console.log('Địa chỉ hiện tại:', data.fullAddress);
+                    // console.log('Phường/Xã:', data.ward);
+                    // console.log('Tỉnh/Thành phố:', data.province);
                     setData((prev) => ({
                         ...prev,
                         address: {

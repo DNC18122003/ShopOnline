@@ -169,4 +169,4 @@ const orderSchema = new Schema(
 
 orderSchema.index({ customerId: 1, createdAt: -1 });
 
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = mongoose.models.Order || mongoose.model("Order", orderSchema);

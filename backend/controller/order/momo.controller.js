@@ -1,9 +1,9 @@
 const crypto = require("crypto");
 const axios = require("axios");
 
-const Order = require("../../models/Order/Order");
+const Order = require("../../models/order/Order");
 const Product = require("../../models/Products/Product");
-const Cart = require("../../models/Order/Cart");
+const Cart = require("../../models/order/Cart");
 
 const momoConfig = {
   partnerCode: process.env.MOMO_PARTNER_CODE || "MOMO",
@@ -13,7 +13,6 @@ const momoConfig = {
   redirectUrl: "http://localhost:5173/payment-result",
   ipnUrl: "https://example.com/ipn",
 };
-
 
 exports.createMomoPayment = async (order) => {
   try {
@@ -69,7 +68,6 @@ exports.createMomoPayment = async (order) => {
   }
 };
 
-
 exports.confirmMomoPayment = async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -82,7 +80,7 @@ exports.confirmMomoPayment = async (req, res) => {
           paymentStatus: "paid",
           orderStatus: "confirmed",
         },
-         $push: {
+        $push: {
           statusLogs: {
             status: "confirmed",
             note: "Thanh toán MoMo thành công",
@@ -98,12 +96,12 @@ exports.confirmMomoPayment = async (req, res) => {
 
     //  Trừ stock chỉ khi update thành công
     for (const item of order.items) {
-     await Product.findByIdAndUpdate(item.productId, {
-       $inc: {
-         stock: -item.quantity,
-         reservedStock: -item.quantity,
-       },
-     });
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: {
+          stock: -item.quantity,
+          reservedStock: -item.quantity,
+        },
+      });
     }
 
     //  Xóa khỏi cart
