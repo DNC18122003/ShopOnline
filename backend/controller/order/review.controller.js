@@ -12,6 +12,7 @@ exports.createReview = async (req, res) => {
 
     let images = [];
     let videos = [];
+    
 
     if (req.files && req.files.length > 0) {
       const imageFiles = req.files.filter((file) =>
@@ -39,8 +40,8 @@ exports.createReview = async (req, res) => {
           imageFiles,
           "reviews/images/"
         );
-
-        images = uploadedImages.map((img) => img.Url); //  chỉ lưu URL
+       
+         images = uploadedImages.filter(Boolean);//  chỉ lưu URL
       }
 
       if (videoFiles.length > 0) {
@@ -49,7 +50,7 @@ exports.createReview = async (req, res) => {
           "reviews/videos/"
         );
 
-        videos = uploadedVideos.map((video) => video.Url); //  chỉ lưu URL
+        videos = uploadedVideos; //  chỉ lưu URL
       }
     }
 
@@ -121,10 +122,21 @@ exports.getReviewsByProduct = async (req, res) => {
       productId,
       isActive: true,
     })
-      .populate("userId", "name avatar")
+      .populate("userId", "userName avatar")
       .sort({ createdAt: -1 });
 
-    res.json(reviews);
+    const total = reviews.length;
+
+    const averageRating =
+      total > 0
+        ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1)
+        : 0;
+
+    res.json({
+      reviews,
+      total,
+      averageRating,
+    });
   } catch (error) {
     res.status(500).json({
       message: "Lỗi lấy review",
@@ -132,6 +144,7 @@ exports.getReviewsByProduct = async (req, res) => {
     });
   }
 };
+
 
 /**
  * Lấy review của user

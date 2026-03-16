@@ -22,15 +22,9 @@ export const createReview = async (formData) => {
  * 2. Lấy review theo sản phẩm
  */
 export const getReviewsByProduct = async (productId) => {
-    try {
-        const res = await customizeAPI.get(`/review/product/${productId}`);
-        return res.data || res;
-    } catch (error) {
-        console.error('Lỗi getReviewsByProduct:', error);
-        throw error;
-    }
+    const res = await customizeAPI.get(`/review/product/${productId}`);
+    return res.data || res;
 };
-
 /**
  * 3. Lấy review của tôi
  */

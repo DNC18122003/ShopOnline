@@ -31,11 +31,8 @@ const uploadToCloudinary = async (files, folder = "pc_store/") => {
           resource_type: "image",
         },
         (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
+          if (error) reject(error);
+          else resolve(result.secure_url);
         }
       );
 
@@ -43,15 +40,9 @@ const uploadToCloudinary = async (files, folder = "pc_store/") => {
     });
   });
 
-  const results = await Promise.all(uploadPromises);
-
-  return results.map((result, index) => ({
-    Url: result.secure_url,
-    IsPrimary: index === 0,
-    Ordinal: index,
-    AltText: files[index].originalname,
-  }));
+  return Promise.all(uploadPromises);
 };
+
 const uploadMediaToCloudinary = async (files, folder = "pc_store/") => {
   const uploadPromises = files.map((file) => {
     return new Promise((resolve, reject) => {

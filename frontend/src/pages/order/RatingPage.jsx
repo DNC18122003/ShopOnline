@@ -29,7 +29,7 @@ export default function RatingPage() {
             setRatings(data);
 
             // kiểm tra user đã review chưa
-            const myReview = data.find((r) => r.orderId === orderId);
+            const myReview = data.find((r) => r.orderId?._id === orderId || r.orderId === orderId);
 
             if (myReview) {
                 setHasReviewed(true);
@@ -67,30 +67,34 @@ export default function RatingPage() {
 
     useEffect(() => {
         return () => {
-            images.forEach((img) => URL.revokeObjectURL(img.preview));
-            videos.forEach((vid) => URL.revokeObjectURL(vid.preview));
+            images.forEach((img) => img.preview && URL.revokeObjectURL(img.preview));
+            videos.forEach((vid) => vid.preview && URL.revokeObjectURL(vid.preview));
         };
-    }, [images, videos]);
+    }, []);
 
-  const handleImageUpload = (e) => {
-      const files = Array.from(e.target.files);
+    const handleImageUpload = (e) => {
+        const files = Array.from(e.target.files);
 
-      if (images.length + files.length > 5) {
-          toast.error('Chỉ được upload tối đa 5 ảnh');
-          return;
-      }
-      if (files.size > 5 * 1024 * 1024) {
-          toast.error('Ảnh tối đa 5MB');
-          return;
-      }
+        if (images.length + files.length > 5) {
+            toast.error('Chỉ được upload tối đa 5 ảnh');
+            return;
+        }
 
-      const newImages = files.map((file) => ({
-          file,
-          preview: URL.createObjectURL(file),
-      }));
+        const validFiles = files.filter((file) => {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('Ảnh tối đa 5MB');
+                return false;
+            }
+            return true;
+        });
 
-      setImages((prev) => [...prev, ...newImages]);
-  };
+        const newImages = validFiles.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file),
+        }));
+
+        setImages((prev) => [...prev, ...newImages]);
+    };
    const handleVideoUpload = (e) => {
        const file = e.target.files[0];
 
@@ -119,31 +123,33 @@ export default function RatingPage() {
        setVideos([]);
    };
 
-  const handleSubmit = async (e) => {
-      e.preventDefault();
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
-      if (!product) {
-          toast.error('Không tìm thấy sản phẩm để đánh giá');
-          return;
-      }
+    if (!product) {
+        toast.error('Không tìm thấy sản phẩm để đánh giá');
+        return;
+    }
 
-      if (!rating) {
-          toast.error('Vui lòng chọn số sao');
-          return;
-      }
+    if (!rating) {
+        toast.error('Vui lòng chọn số sao');
+        return;
+    }
 
-      if (!comment.trim()) {
-          toast.error('Vui lòng nhập nội dung đánh giá');
-          return;
-      }
+    if (!comment.trim()) {
+        toast.error('Vui lòng nhập nội dung đánh giá');
+        return;
+    }
 
-      try {
-          const formData = new FormData();
+    try {
+        setLoading(true); // ⭐ thêm
 
-          formData.append('productId', product.productId);
-          formData.append('orderId', orderId);
-          formData.append('rating', rating);
-          formData.append('comment', comment);
+        const formData = new FormData();
+
+        formData.append('productId', product.productId);
+        formData.append('orderId', orderId);
+        formData.append('rating', rating);
+        formData.append('comment', comment);
 
         images.forEach((img) => {
             formData.append('media', img.file);
@@ -152,23 +158,24 @@ export default function RatingPage() {
         videos.forEach((vid) => {
             formData.append('media', vid.file);
         });
-        
-          await createReview(formData);
 
-          toast.success('Đánh giá thành công');
+        await createReview(formData);
 
-          setRating(0);
-          setComment('');
-          setImages([]);
-          setVideos([]);
+        toast.success('Đánh giá thành công');
 
-          fetchReviews();
-      } catch (error) {
-          console.error('Lỗi tạo review:', error);
+        setRating(0);
+        setComment('');
+        setImages([]);
+        setVideos([]);
 
-          toast.error(error.response?.data?.message || 'Không thể tạo đánh giá');
-      }
-  };
+        fetchReviews();
+    } catch (error) {
+        console.error('Lỗi tạo review:', error);
+        toast.error(error.response?.data?.message || 'Không thể tạo đánh giá');
+    } finally {
+        setLoading(false); // ⭐ thêm
+    }
+};
 
     const average =
         ratings.length > 0 ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1) : 0;
@@ -309,13 +316,24 @@ export default function RatingPage() {
                                 accept="image/*"
                                 multiple
                                 className="hidden"
-                                onChange={handleImageUpload}
+                                onChange={(e) => {
+                                    handleImageUpload(e);
+                                    e.target.value = null;
+                                }}
                             />
                         </label>
 
                         <label className="border-dashed border-2 p-4 rounded-lg cursor-pointer">
                             <Video />
-                            <input type="file" accept="video/*" className="hidden" onChange={handleVideoUpload} />
+                            <input
+                                type="file"
+                                accept="video/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    handleVideoUpload(e);
+                                    e.target.value = null;
+                                }}
+                            />
                         </label>
                     </div>
                     <div className="flex gap-4 mt-4 flex-wrap">
@@ -392,6 +410,28 @@ export default function RatingPage() {
                             </div>
 
                             <p className="mt-4 text-gray-700">{r.comment}</p>
+                            {/* images */}
+                            {r.images?.length > 0 && (
+                                <div className="flex gap-3 mt-3 flex-wrap">
+                                    {r.images.map((img, i) => (
+                                        <img
+                                            key={i}
+                                            src={img}
+                                            className="w-28 h-28 object-cover rounded-lg cursor-pointer"
+                                            onClick={() => setPreviewImage(img)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* videos */}
+                            {r.videos?.length > 0 && (
+                                <div className="flex gap-3 mt-3 flex-wrap">
+                                    {r.videos.map((vid, i) => (
+                                        <video key={i} src={vid} controls className="w-40 rounded-lg" />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))
                 )}
@@ -404,11 +444,7 @@ export default function RatingPage() {
                     onClick={() => setPreviewImage(null)}
                     className="fixed inset-0 bg-black/80 flex items-center justify-center"
                 >
-                    <img
-                        src={img.preview}
-                        onClick={() => setPreviewImage(img.preview)}
-                        className="w-24 h-24 object-cover rounded-lg cursor-pointer"
-                    />
+                    <img src={previewImage} className="max-h-[90%] max-w-[90%]" />
                 </div>
             )}
         </div>
