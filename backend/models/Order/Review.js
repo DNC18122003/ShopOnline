@@ -57,5 +57,4 @@ const reviewSchema = new Schema(
 );
 
 reviewSchema.index({ productId: 1, orderId: 1, userId: 1 }, { unique: true });
-
-module.exports = mongoose.model("Review", reviewSchema);
+module.exports = mongoose.models.Review || mongoose.model("Review", reviewSchema);

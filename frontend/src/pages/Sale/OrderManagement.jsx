@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import StatusDropdown from '../../components/ui/StatusDropdown';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import warningIcon from '../../assets/warning.png';
 const statusFlow = {
     pending: ['confirmed', 'cancelled'],
     confirmed: ['shipping'],
@@ -364,8 +365,30 @@ const handleUpdateStatus = async (orderId, newStatus) => {
 
                     <tbody>
                         {filteredOrders.map((order) => (
-                            <tr key={order._id} className="border-t hover:bg-gray-50">
-                                <td className="p-4 text-blue-600 font-medium">#{order.orderCode?.slice(0, 8)}</td>
+                            <tr
+                                key={order._id}
+                                className={`border-t hover:bg-gray-50 ${order.stockWarning ? 'bg-red-300' : ''}`}
+                            >
+                                <td className="p-4 font-medium flex items-center gap-2">
+                                    <span className={order.isOverSell ? 'text-red-600' : 'text-blue-600'}>
+                                        #{order.orderCode?.slice(0, 8)}
+                                    </span>
+
+                                    {order.stockWarning && (
+                                        <div className="relative group">
+                                            <img src={warningIcon} className="w-4 h-4 cursor-pointer" />
+
+                                            <div
+                                                className="absolute bottom-6 left-1/2 -translate-x-1/2 
+                                                hidden group-hover:block 
+                                                text-red-400 text-xs 
+                                                px-2 py-1 rounded whitespace-nowrap"
+                                            >
+                                                Đơn này đang thiếu hàng
+                                            </div>
+                                        </div>
+                                    )}
+                                </td>
 
                                 <td>
                                     <p className="font-medium">{order.shippingAddress?.fullName}</p>
@@ -401,7 +424,10 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                                 <td className="font-medium">{formatPrice(order.finalAmount)}</td>
                                 <td className="text-center">
                                     <div className="flex justify-center items-center gap-2">
-                                        <button className="p-2 hover:bg-gray-100 rounded" onClick={()=> navigate(`/sale/orders/${order._id}`)}>
+                                        <button
+                                            className="p-2 hover:bg-gray-100 rounded"
+                                            onClick={() => navigate(`/sale/orders/${order._id}`)}
+                                        >
                                             <Eye size={18} />
                                         </button>
 

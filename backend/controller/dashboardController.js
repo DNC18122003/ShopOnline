@@ -1,4 +1,4 @@
-const Order = require("../models/Order/Order");
+const Order = require("../models/order/Order");
 const Product = require("../models/Products/Product");
 const Category = require("../models/Category/Category");
 const Brand = require("../models/Brands/Brand");
@@ -30,8 +30,9 @@ const getStaffDashboardData = async (req, res) => {
 
     // 3. Lấy sản phẩm sắp hết hàng (số lượng < 10)
     const lowStockThreshold = 10;
-    const productsLowStock = await Product.find({ stock: { $lt: lowStockThreshold } })
-      .limit(10); // Lấy tối đa 10 sản phẩm
+    const productsLowStock = await Product.find({
+      stock: { $lt: lowStockThreshold },
+    }).limit(10); // Lấy tối đa 10 sản phẩm
 
     // Tiền xử lý dữ liệu sản phẩm
     const lowStockProductsFormatted = productsLowStock.map(product => ({
@@ -55,7 +56,6 @@ const getStaffDashboardData = async (req, res) => {
         lowStockProducts: lowStockProductsFormatted,
       },
     });
-
   } catch (error) {
     console.error("Lỗi API Dashboard Staff:", error);
     return res.status(500).json({

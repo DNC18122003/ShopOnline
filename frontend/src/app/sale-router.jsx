@@ -46,6 +46,10 @@ export const saleRoutes = [
                 path: 'review/:id',
                 element: <ReviewDetail />,
             },
+            {
+                path: 'dashboard',
+                element: <SalesDashboard/>
+            },
         ],
     },
 ];
