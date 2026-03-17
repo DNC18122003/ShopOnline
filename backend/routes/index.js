@@ -16,6 +16,7 @@ const customerRouter = require("./user.route");
 const buildPcTemplateRouter = require("./buildPcTemplate.route");
 const otpRouter = require("./otp.route");
 const dashboardRouter = require("./dashboard.route");
+const adminRouter = require("./admin.route");
 module.exports = (app) => {
   const api = "/api";
   app.use(api + "/upload", uploadRouter); //Test upload
@@ -34,4 +35,5 @@ module.exports = (app) => {
   app.use(api + "/otp", otpRouter);
   app.use(api + "/dashboard", saleDashboardRouter);
   app.use(api + "/dashboard", dashboardRouter);
+  app.use(api + "/admin", adminRouter);
 };

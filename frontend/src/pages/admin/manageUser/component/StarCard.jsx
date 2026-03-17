@@ -8,7 +8,7 @@ const StarCard = ({ title, value, description, icon }) => {
                 {icon && <div className="text-muted-foreground">{icon}</div>}
             </CardHeader>
             <CardContent className="flex flex-col gap-1">
-                <div className="text-2xl font-bold">{value.toLocaleString()}</div>
+                <div className="text-2xl font-bold">{value}</div>
                 {description && <p className="text-xs text-muted-foreground">{description}</p>}
             </CardContent>
         </Card>

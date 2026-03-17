@@ -10,4 +10,5 @@ const router = express.Router();
 router.get('/profile', isAuth, getProfileController);
 router.put('/profile', isAuth, updateProfileController);
 router.put('/profile/avatar', isAuth, upload.single("avatar"),  updateAvatarController);
+
 module.exports = router;

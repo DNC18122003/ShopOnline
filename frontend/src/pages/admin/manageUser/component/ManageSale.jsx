@@ -1,48 +1,22 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+import { Badge, DollarSign, Eye, FileText, Filter, ListRestart, Loader, ShoppingBag } from 'lucide-react';
+
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Badge, DollarSign, FileText, Filter, Plus, ShoppingBag } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-const data = [
-    {
-        id: 1,
-        name: 'Nguyen Van A',
-        email: 'vana@gmail.com',
-        phone: '0987654321',
-        ordersHandled: 5,
-        revenueGenerated: 1200,
-        avatar: 'https://i.pravatar.cc/150?img=1',
-        status: 'Active',
-    },
-    {
-        id: 2,
-        name: 'Tran Thi B',
-        email: 'thib@gmail.com',
-        phone: '0987654322',
-        ordersHandled: 3,
-        revenueGenerated: 800,
-        avatar: 'https://i.pravatar.cc/150?img=2',
-        status: 'Disabled',
-    },
-    {
-        id: 3,
-        name: 'Le Van C',
-        email: 'vanc@gmail.com',
-        phone: '0987654323',
-        ordersHandled: 7,
-        revenueGenerated: 1500,
-        avatar: 'https://i.pravatar.cc/150?img=3',
-        status: 'Blocked',
-    },
-];
+import { toast } from 'react-toastify';
+import { Pagination } from '@/components/public/pagination';
+import { getUserSale } from '@/services/account/account.api';
+
 const salesInfo = {
     name: 'Nguyễn Văn Sale',
     email: 'sale.petech@gmail.com',
@@ -67,8 +41,86 @@ const blogList = [
     { id: 2, title: 'Cách chọn nguồn (PSU) cho dàn máy Gaming', date: '01/03/2026', views: '320' },
 ];
 const ManageSale = () => {
-    const [showAddButton, setShowAddButton] = useState(true);
-    const [openDialogDetail, setOpenDialogDetail] = useState(false);
+    // ==================== STATE ====================
+    // URL & ROUTING STATE
+    const [searchParams, setSearchParams] = useSearchParams();
+    const filter = useMemo(
+        () => ({
+            search: searchParams.get('search') || '',
+            status: searchParams.get('status') || 'all',
+            sort: searchParams.get('sort') || 'newest',
+            page: Number(searchParams.get('page')) || 1,
+            minGeneratedAmount: searchParams.get('min-generated-amount') || '',
+            maxGeneratedAmount: searchParams.get('max-generated-amount') || '',
+            fromOrders: searchParams.get('from-orders') || '',
+            toOrders: searchParams.get('to-orders') || '',
+        }),
+        [searchParams],
+    );
+    // DATA STATE
+    const [dataUser, setDataUser] = useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    // UI STATE
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // TEMPORAY STATE (Pending actions)
+
+    // LOADING STATE
+    const [loading, setLoading] = useState(false);
+
+    // DERIVED STATE
+
+    // ==================== USE EFFECT ====================
+    // FETCH ONE TIME
+    // FETCH MANY TIME
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                //console.log('Fetching customers with filter:', filter);
+                const response = await getUserSale(filter);
+                setDataUser(response.data);
+                //console.log('Total pages from response:', response.pagination.totalItems);
+                setTotalPages(Math.ceil(response.pagination.totalPages));
+                setTotalItems(response.pagination.total);
+                //console.log('Fetched customers:', response);
+            } catch (error) {
+                toast.error('Đã có lỗi xảy ra khi lấy dữ liệu khách hàng');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [filter]);
+
+    // ==================== EVENT HANDLERS ====================
+    // ---- PAGINATION & FILTER ----
+    const handlePageChange = (page) => {
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('page', page);
+            return newParams;
+        });
+    };
+    const handleChangeInput = (e) => {
+        // sử dụng useDebounce đoạn này
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set(e.target.name, e.target.value);
+            return newParams;
+        });
+    };
+    const handleResetFilter = () => {
+        setSearchParams({});
+    };
+    const handleChangeSelectFilter = (value, filterName) => {
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set(filterName, value);
+            return newParams;
+        });
+    };
     const getInitials = (name) => {
         return name
             .split(' ')
@@ -80,20 +132,31 @@ const ManageSale = () => {
         <div>
             <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 md:gap-4">
                 <div className="flex gap-4 flex-wrap items-center justify-between">
-                    {' '}
                     {/* Search Input */}
                     <div>
-                        <Input placeholder="Search users..." className="h-9" />
+                        <Input
+                            placeholder="Tìm kiếm theo tên..."
+                            className="h-9"
+                            name="search"
+                            value={filter.search}
+                            onChange={handleChangeInput}
+                        />
                     </div>
                     {/* Status Filter */}
-                    <Select>
+                    <Select
+                        value={filter.status || 'all'}
+                        onValueChange={(value) => {
+                            // console.log('value:', value);
+                            handleChangeSelectFilter(value, 'status');
+                        }}
+                    >
                         <SelectTrigger className="h-9">
                             <SelectValue placeholder="Trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                            <SelectItem value="active">Hoạt động</SelectItem>
-                            <SelectItem value="disabled">Tạm ngưng</SelectItem>
+                            <SelectItem value="true">Hoạt động</SelectItem>
+                            <SelectItem value="false">Tạm ngưng</SelectItem>
                             <SelectItem value="blocked">Đã chặn</SelectItem>
                         </SelectContent>
                     </Select>
@@ -109,9 +172,23 @@ const ManageSale = () => {
                             <div className="space-y-4">
                                 <h4 className="font-medium leading-none">Số lượng đơn</h4>
                                 <div className="flex items-center gap-2">
-                                    <Input type="number" placeholder="Từ" className="h-8" />
+                                    <Input
+                                        type="number"
+                                        placeholder="Từ"
+                                        className="h-8"
+                                        name="from-orders"
+                                        value={filter.fromOrders}
+                                        onChange={handleChangeInput}
+                                    />
                                     <span className="text-muted-foreground">-</span>
-                                    <Input type="number" placeholder="Đến" className="h-8" />
+                                    <Input
+                                        type="number"
+                                        placeholder="Đến"
+                                        className="h-8"
+                                        name="to-orders"
+                                        value={filter.toOrders}
+                                        onChange={handleChangeInput}
+                                    />
                                 </div>
                                 <Button size="sm" className="w-full">
                                     Áp dụng
@@ -131,9 +208,23 @@ const ManageSale = () => {
                             <div className="space-y-4">
                                 <h4 className="font-medium leading-none">Khoảng giá ($)</h4>
                                 <div className="flex items-center gap-2">
-                                    <Input type="number" placeholder="Min" className="h-8" />
+                                    <Input
+                                        type="number"
+                                        placeholder="Min"
+                                        className="h-8"
+                                        name="min-generated-amount"
+                                        value={filter.minGeneratedAmount}
+                                        onChange={handleChangeInput}
+                                    />
                                     <span className="text-muted-foreground">-</span>
-                                    <Input type="number" placeholder="Max" className="h-8" />
+                                    <Input
+                                        type="number"
+                                        placeholder="Max"
+                                        className="h-8"
+                                        name="max-generated-amount"
+                                        value={filter.maxGeneratedAmount}
+                                        onChange={handleChangeInput}
+                                    />
                                 </div>
                                 <Button size="sm" className="w-full">
                                     Áp dụng
@@ -142,8 +233,13 @@ const ManageSale = () => {
                         </PopoverContent>
                     </Popover>
                     {/* Sort Dropdown */}
-                    <Select>
-                        <SelectTrigger className="w-[180px] h-9">
+                    <Select
+                        value={filter.sort || 'newest'}
+                        onValueChange={(value) => {
+                            handleChangeSelectFilter(value, 'sort');
+                        }}
+                    >
+                        <SelectTrigger className="w-45 h-9">
                             <SelectValue placeholder="Sắp xếp theo" />
                         </SelectTrigger>
                         <SelectContent>
@@ -162,13 +258,11 @@ const ManageSale = () => {
                             <SelectItem value="name-desc">Tên: Z → A</SelectItem>
                         </SelectContent>
                     </Select>
-                    {/* Add User Button */}
-                    {showAddButton && (
-                        <Button className="gap-2" size="sm">
-                            <Plus className="h-4 w-4" />
-                            <span className="hidden sm:inline">Add User</span>
-                        </Button>
-                    )}
+                    {/* Reset filter */}
+                    <Button className="gap-2" size="sm" variant="outline" onClick={handleResetFilter}>
+                        <ListRestart className="h-4 w-4" />
+                        <span classame="hidden sm:inline">Cài đặt lại</span>
+                    </Button>
                 </div>
                 <div className="space-y-4">
                     <div className="overflow-x-auto rounded-lg border border-border">
@@ -176,8 +270,8 @@ const ManageSale = () => {
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
                                     <TableHead className="font-semibold">Avatar</TableHead>
-                                    <TableHead className="font-semibold">Tên</TableHead>
                                     <TableHead className="font-semibold">Email</TableHead>
+                                    <TableHead className="font-semibold">Tên nhân viên</TableHead>
                                     <TableHead className="font-semibold">Số điện thoại</TableHead>
                                     <TableHead className="font-semibold">Số đơn đã xử lý</TableHead>
                                     <TableHead className="font-semibold">Số tiền tạo ra</TableHead>
@@ -185,55 +279,71 @@ const ManageSale = () => {
                                     <TableHead className="font-semibold text-right">Hành động</TableHead>
                                 </TableRow>
                             </TableHeader>
-
-                            <TableBody>
-                                {data.map((user) => (
-                                    <TableRow
-                                        key={user.id}
-                                        className="hover:bg-muted/50"
-                                        onClick={() => setOpenDialogDetail(true)}
-                                    >
-                                        <TableCell>
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user.avatar} />
-                                                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                                            </Avatar>
-                                        </TableCell>
-
-                                        <TableCell className="font-medium">{user.name}</TableCell>
-
-                                        <TableCell>{user.email}</TableCell>
-
-                                        <TableCell>{user.phone}</TableCell>
-
-                                        <TableCell>{user.ordersHandled}</TableCell>
-
-                                        <TableCell>${user.revenueGenerated}</TableCell>
-
-                                        <TableCell>
-                                            <span
-                                                className={`text-sm ${user.status === 'Active' ? 'text-green-500' : user.status === 'Disabled' ? 'text-gray-500' : 'text-red-500'}`}
-                                            >
-                                                {user.status}
-                                            </span>
-                                        </TableCell>
-
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm">
-                                                Edit
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="ml-2">
-                                                Delete
-                                            </Button>
+                            {loading ? (
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center">
+                                            <Loader />
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
+                                </TableBody>
+                            ) : (
+                                <TableBody>
+                                    {dataUser.map((user) => (
+                                        <TableRow
+                                            key={user.id}
+                                            className="hover:bg-muted/50"
+                                            onClick={() => setOpenDialogDetail(true)}
+                                        >
+                                            <TableCell>
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={user.avatar} />
+                                                    <AvatarFallback>{getInitials(user.userName)}</AvatarFallback>
+                                                </Avatar>
+                                            </TableCell>
+
+                                            <TableCell>{user.email}</TableCell>
+
+                                            <TableCell className="font-medium">{user.userName}</TableCell>
+
+                                            <TableCell>{user.phone || 'Chưa cập nhật'}</TableCell>
+
+                                            <TableCell>{user.processedOrders}</TableCell>
+
+                                            <TableCell>${user.generatedAmount}</TableCell>
+
+                                            <TableCell>
+                                                <Switch
+                                                    checked={user.isActive}
+                                                    className="data-[state=checked]:bg-green-500"
+                                                />
+                                            </TableCell>
+
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            )}
                         </Table>
                     </div>
+                    {/* Pagination */}
+                    {loading ? null : (
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Tổng {totalItems} nhân viên</span>
+                            <Pagination
+                                currentPage={filter.page}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
-            <Dialog open={openDialogDetail} onOpenChange={setOpenDialogDetail}>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[900px] lg:max-w-[1100px] w-[95vw] max-h-[90vh] overflow-y-auto p-0">
                     <div className="p-6 space-y-6 bg-slate-50">
                         {/* Header Info */}
