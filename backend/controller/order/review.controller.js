@@ -118,24 +118,52 @@ exports.getReviewsByProduct = async (req, res) => {
   try {
     const { productId } = req.params;
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
+    const skip = (page - 1) * limit;
+
+    // lấy review theo trang
     const reviews = await Review.find({
       productId,
       isActive: true,
     })
       .populate("userId", "userName avatar")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    const total = reviews.length;
+    // tổng số review
+    const total = await Review.countDocuments({
+      productId,
+      isActive: true,
+    });
+
+    // tính average rating
+    const ratingStats = await Review.aggregate([
+      {
+        $match: {
+          productId: new require("mongoose").Types.ObjectId(productId),
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          avgRating: { $avg: "$rating" },
+        },
+      },
+    ]);
 
     const averageRating =
-      total > 0
-        ? (reviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1)
-        : 0;
+      ratingStats.length > 0 ? ratingStats[0].avgRating.toFixed(1) : 0;
 
     res.json({
       reviews,
       total,
       averageRating,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
   } catch (error) {
     res.status(500).json({
@@ -268,7 +296,17 @@ exports.checkReview = async (req, res) => {
 
 exports.getAllReviews = async (req, res) => {
   try {
-    const { page = 1, limit = 10, rating, search } = req.query;
+    const {
+      page = 1,
+      limit = 5,
+      rating,
+      search,
+      startDate,
+      endDate,
+    } = req.query;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
 
     const query = { isActive: true };
 
@@ -276,20 +314,31 @@ exports.getAllReviews = async (req, res) => {
       query.rating = Number(rating);
     }
 
+    if (search) {
+      query.comment = { $regex: search, $options: "i" };
+    }
+
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate),
+      };
+    }
+
     const reviews = await Review.find(query)
       .populate("productId", "name images")
       .populate("userId", "fullName userName email avatar")
       .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+      .skip((pageNumber - 1) * limitNumber)
+      .limit(limitNumber);
 
     const total = await Review.countDocuments(query);
 
     res.json({
       reviews,
       pagination: {
-        page: Number(page),
-        totalPages: Math.ceil(total / limit),
+        page: pageNumber,
+        totalPages: Math.ceil(total / limitNumber),
         total,
       },
     });
