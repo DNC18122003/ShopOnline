@@ -1,74 +1,55 @@
 import { Star, TrendingUp, ShoppingCart, Eye, Users, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { useState } from 'react';
-
-export function SalesDashboard({ vouchers = [] }) {
-    const totalRevenue = 945250000;
-    const totalOrders = 127;
-    const totalViews = 8744280;
-    const totalUsers = 89;
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import saleDashboardService from '@/services/SaleDashboard/saleDashboard.api';
+export default function SalesDashboard() {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
 
     const [selectedMonth, setSelectedMonth] = useState(currentMonth);
     const [selectedYear, setSelectedYear] = useState(currentYear);
+    const navigate = useNavigate();
 
-    const topProducts = [
-        {
-            id: 1,
-            name: 'SSS Samsung 32B',
-            sku: 'SKU-STM',
-            image: 'https://via.placeholder.com/60x60?text=Product1',
-            rating: 5,
-            price: '19,999,000',
-            date: '10/03/2026',
-            status: 'Active',
-        },
-        {
-            id: 2,
-            name: 'Neutro Cosmic AM2002',
-            sku: 'SKU-AM2',
-            image: 'https://via.placeholder.com/60x60?text=Product2',
-            rating: 4,
-            price: '5,299,000',
-            date: '09/03/2026',
-            status: 'Active',
-        },
-        {
-            id: 3,
-            name: 'Mastercard ASUS ROG 3090',
-            sku: 'SKU-ASUS',
-            image: 'https://via.placeholder.com/60x60?text=Product3',
-            rating: 4,
-            price: '12,999,000',
-            date: '08/03/2026',
-            status: 'Active',
-        },
-        {
-            id: 4,
-            name: 'Niggle Cooler Master 750K',
-            sku: 'SKU-COOL',
-            image: 'https://via.placeholder.com/60x60?text=Product4',
-            rating: 3,
-            price: '8,499,000',
-            date: '07/03/2026',
-            status: 'Active',
-        },
-    ];
-
-    const years = Array.from({ length: 4 }, (_, i) => currentYear - 3 + i);
-    // Thêm logic lọc dữ liệu dựa trên Tháng và Năm
-    const filteredProducts = topProducts.filter((product) => {
-        const [day, month, year] = product.date.split('/');
-        const productMonth = parseInt(month, 10);
-        const productYear = parseInt(year, 10);
-
-        const matchMonth = selectedMonth === 0 || productMonth === selectedMonth;
-        const matchYear = selectedYear === 0 || productYear === selectedYear;
-
-        return matchMonth && matchYear;
+    const [dashboardData, setDashboardData] = useState({
+        totalRevenue: 0,
+        totalOrders: 0,
+        totalBlogs: 0,
+        totalReviews: 0,
+        topDiscounts: [],
+        topBlogs: [],
+        orderCurrent: [],
     });
+    const [isLoading, setIsLoading] = useState(false);
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            setIsLoading(true);
+            try {
+                const response = await saleDashboardService.getDashboardSummary(selectedMonth, selectedYear);
 
+                const result = response.data?.data || response.data;
+
+                if (result) {
+                    setDashboardData({
+                        totalRevenue: result.totalRevenue || 0,
+                        totalOrders: result.totalOrders || 0,
+                        totalBlogs: result.totalBlogs || 0,
+                        totalReviews: result.totalReviews || 0,
+                        topDiscounts: result.topDiscounts || [],
+                        topBlogs: result.topBlogs || [],
+                        orderRecent: result.orderRecent || [],
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi khi tải dữ liệu dashboard:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [selectedMonth, selectedYear]);
+    const years = Array.from({ length: 4 }, (_, i) => currentYear - 3 + i);
     return (
         <div className="space-y-6">
             {/* 2. Header & Filter Section */}
@@ -122,7 +103,7 @@ export function SalesDashboard({ vouchers = [] }) {
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-blue-100 text-sm mb-1">Doanh thu</p>
-                            <p className="text-3xl font-bold">{totalRevenue.toLocaleString()}đ</p>
+                            <p className="text-3xl font-bold">{dashboardData.totalRevenue}đ</p>
                         </div>
                         <div className="p-2 bg-white/20 rounded-lg">
                             <TrendingUp className="w-5 h-5" />
@@ -130,11 +111,14 @@ export function SalesDashboard({ vouchers = [] }) {
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white">
+                <Card
+                    className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white"
+                    onClick={() => navigate('/sale/orders')}
+                >
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-blue-100 text-sm mb-1">Đơn hàng</p>
-                            <p className="text-3xl font-bold">{totalOrders.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">{dashboardData.totalOrders}</p>
                         </div>
                         <div className="p-2 bg-white/20 rounded-lg">
                             <ShoppingCart className="w-5 h-5" />
@@ -142,11 +126,14 @@ export function SalesDashboard({ vouchers = [] }) {
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white">
+                <Card
+                    className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white"
+                    onClick={() => navigate('/sale/blog')}
+                >
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-blue-100 text-sm mb-1">Tin tức mới</p>
-                            <p className="text-3xl font-bold">{totalViews.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">{dashboardData.totalBlogs}</p>
                         </div>
                         <div className="p-2 bg-white/20 rounded-lg">
                             <Eye className="w-5 h-5" />
@@ -154,11 +141,14 @@ export function SalesDashboard({ vouchers = [] }) {
                     </div>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white">
+                <Card
+                    className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white"
+                    onClick={() => navigate('/sale/review')}
+                >
                     <div className="flex items-start justify-between">
                         <div>
                             <p className="text-blue-100 text-sm mb-1">Đánh giá mới</p>
-                            <p className="text-3xl font-bold">{totalUsers.toLocaleString()}</p>
+                            <p className="text-3xl font-bold">{dashboardData.totalReviews}</p>
                         </div>
                         <div className="p-2 bg-white/20 rounded-lg">
                             <Users className="w-5 h-5" />
@@ -167,62 +157,87 @@ export function SalesDashboard({ vouchers = [] }) {
                 </Card>
             </div>
 
-            {/* Promotions and Best Sellers */}
+            {/* Promotions and Blog */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Promotions */}
                 <Card className="p-6 border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Mã giảm giá được sử dụng nhiều</h3>
                     <div className="space-y-3">
-                        {vouchers.length > 0 ? (
-                            vouchers.slice(0, 3).map((voucher) => (
+                        {isLoading ? (
+                            <p className="text-center text-gray-500 py-4">Đang tải...</p>
+                        ) : dashboardData.topDiscounts?.length > 0 > 0 ? (
+                            dashboardData.topDiscounts.slice(0, 5).map((discount, index) => (
                                 <div
-                                    key={voucher.id}
+                                    key={index}
                                     className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors"
                                 >
                                     <div className="flex items-start justify-between">
                                         <div>
-                                            <p className="font-semibold text-gray-900">{voucher.code}</p>
-                                            <p className="text-sm text-gray-600">Valid until {voucher.endDate}</p>
+                                            {/* Tên mã code */}
+                                            <p className="font-semibold text-gray-900">{discount.code}</p>
+                                            {/* Số lượt đã sử dụng */}
+                                            <p className="text-sm text-gray-600">Đã dùng: {discount.usedCount} lượt</p>
                                         </div>
-                                        <span className="text-sm font-bold text-blue-600">{voucher.discountValue}</span>
+                                        {/* Giá trị giảm: Kiểm tra xem là % hay tiền mặt */}
+                                        <span className="text-sm font-bold text-blue-600">
+                                            {discount.discountType === 'percent'
+                                                ? `Giảm ${discount.value}%`
+                                                : `Giảm ${discount.value.toLocaleString()}đ`}
+                                        </span>
                                     </div>
                                 </div>
                             ))
                         ) : (
-                            <p className="text-center text-gray-500 py-8">No active promotions</p>
+                            <p className="text-center text-gray-500 py-8">Không có mã giảm giá nào</p>
                         )}
                     </div>
                 </Card>
 
                 {/* Best Sellers */}
                 <Card className="p-6 border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Bài viết được xem nhiều</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Bài viết nổi bật</h3>
                     <div className="space-y-3">
-                        {/* Đổi topProducts thành filteredProducts để áp dụng bộ lọc */}
-                        {filteredProducts.slice(0, 3).map((product) => (
-                            <div
-                                key={product.id}
-                                className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
-                            >
-                                <img
-                                    src={product.image}
-                                    alt={product.name}
-                                    className="w-12 h-12 rounded object-cover bg-gray-100"
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-semibold text-gray-900 truncate">{product.name}</p>
-                                    <p className="text-xs text-gray-600">SKU: {product.sku}</p>
-                                </div>
-                                <div className="flex gap-1">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star
-                                            key={i}
-                                            className={`w-3 h-3 ${i < product.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                        {isLoading ? (
+                            <p className="text-center text-gray-500 py-4">Đang tải...</p>
+                        ) : dashboardData.topBlogs?.length > 0 /* Đã sửa lỗi dư chữ > 0 ở đây */ ? (
+                            dashboardData.topBlogs.slice(0, 5).map((blog, index) => (
+                                <div
+                                    key={index}
+                                    className="border border-gray-200 rounded-lg p-3 hover:border-blue-300 transition-colors bg-white"
+                                >
+                                    {/* Dùng flex và gap-4 để tạo khoảng cách giữa ảnh và nội dung */}
+                                    <div className="flex items-center gap-4">
+                                        {/* 1. Phần Ảnh Thumbnail */}
+                                        <img
+                                            // Nếu không có thumbnail thì hiện ảnh placeholder tạm thời
+                                            src={blog.thumbnail || 'https://placehold.co/400x300?text=No+Image'}
+                                            alt={blog.title}
+                                            className="w-16 h-16 object-cover rounded-md border border-gray-100 flex-shrink-0"
                                         />
-                                    ))}
+
+                                        {/* 2. Phần Nội dung (Tiêu đề, Tác giả, Lượt xem) */}
+                                        <div className="flex-1 min-w-0">
+                                            {/* Tiêu đề bài viết (dùng line-clamp-1 để cắt dấu ... nếu tên quá dài) */}
+                                            <p className="font-semibold text-gray-900 truncate" title={blog.title}>
+                                                {blog.title}
+                                            </p>
+
+                                            {/* Tác giả */}
+                                            <p className="text-sm text-gray-600 mt-0.5">
+                                                Tác giả: {blog.author || 'Quản trị viên'}
+                                            </p>
+
+                                            {/* Lượt xem */}
+                                            <p className="text-xs text-gray-500 mt-1 inline-flex items-center bg-gray-100 px-2 py-0.5 rounded-full">
+                                                👁 Lượt xem: {blog.viewCount}
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <p className="text-center text-gray-500 py-8">Không có bài viết nào được tạo mới</p>
+                        )}
                     </div>
                 </Card>
             </div>
@@ -230,75 +245,98 @@ export function SalesDashboard({ vouchers = [] }) {
             {/* Product Quality and Sales Table */}
             <Card className="p-6 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Chất lượng sản phẩm</h3>
-                    <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">View all</button>
+                    <h3 className="text-lg font-semibold text-gray-900">Đơn hàng gần đây</h3>
+                    <button
+                        onClick={() => navigate('/sale/orders')}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                        Xem tất cả
+                    </button>
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="border-b border-gray-200 bg-gray-50">
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Product</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                                    Manufacturer
+                                <th className="px-4 py-3 text-sm font-semibold text-gray-700">Mã đơn hàng</th>
+                                <th className="px-4 py-3 text-sm font-semibold text-gray-700">Ngày tạo</th>
+                                <th className="px-4 py-3 text-sm font-semibold text-gray-700">
+                                    Phương thức Thanh Toán
                                 </th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Rating</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Price</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Supplier</th>
+                                <th className="px-4 py-3 text-sm font-semibold text-gray-700">Thanh toán</th>
+                                <th className="px-4 py-3 text-sm font-semibold text-gray-700">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {/* Đổi topProducts thành filteredProducts để bảng tự động lọc */}
-                            {filteredProducts.length > 0 ? (
-                                filteredProducts.map((product) => (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-8 text-gray-500">
+                                        Đang tải dữ liệu...
+                                    </td>
+                                </tr>
+                            ) : dashboardData.orderRecent?.length > 0 ? (
+                                dashboardData.orderRecent.map((order) => (
                                     <tr
-                                        key={product.id}
-                                        className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
+                                        key={order._id}
+                                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                                     >
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-3">
-                                                <img
-                                                    src={product.image}
-                                                    alt={product.name}
-                                                    className="w-10 h-10 rounded object-cover bg-gray-100"
-                                                />
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                                                    <p className="text-xs text-gray-600">{product.sku}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">Tech Corp</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex gap-1">
-                                                {[...Array(5)].map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`w-3 h-3 ${i < product.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                                            {product.price}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">{product.date}</td>
-                                        <td className="px-4 py-3">
-                                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                {product.status}
+                                        <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                                            {/* Rút gọn mã đơn hàng nếu quá dài */}
+                                            <span
+                                                className="truncate max-w-[150px] inline-block"
+                                                title={order.orderCode}
+                                            >
+                                                {order.orderCode}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-center">
-                                            <span className="inline-block w-6 h-4 text-lg">🇻🇳</span>
+                                        <td className="px-4 py-3 text-sm text-gray-600">
+                                            {new Date(order.createdAt).toLocaleString('vi-VN')}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-600 font-medium">
+                                            {order.paymentMethod}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    order.paymentStatus === 'paid'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-yellow-100 text-yellow-700'
+                                                }`}
+                                            >
+                                                {order.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                                    order.orderStatus === 'confirmed'
+                                                        ? 'bg-blue-100 text-blue-700'
+                                                        : order.orderStatus === 'pending'
+                                                          ? 'bg-orange-100 text-orange-700'
+                                                          : order.orderStatus === 'completed'
+                                                            ? 'bg-green-100 text-green-700' /* Thêm màu xanh lá cho hoàn thành */
+                                                            : order.orderStatus === 'cancelled'
+                                                              ? 'bg-red-100 text-red-700' /* Thêm màu đỏ cho đã hủy */
+                                                              : 'bg-gray-100 text-gray-700'
+                                                }`}
+                                            >
+                                                {order.orderStatus === 'confirmed'
+                                                    ? 'Đã xác nhận'
+                                                    : order.orderStatus === 'pending'
+                                                      ? 'Chờ xử lý'
+                                                      : order.orderStatus === 'completed'
+                                                        ? 'Hoàn thành' /* Hiển thị text tiếng Việt */
+                                                        : order.orderStatus === 'cancelled'
+                                                          ? 'Đã hủy' /* Hiển thị text tiếng Việt */
+                                                          : order.orderStatus}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                                        Không có dữ liệu
+                                    <td colSpan="5" className="text-center py-8 text-gray-500">
+                                        Không có đơn hàng nào trong thời gian này
                                     </td>
                                 </tr>
                             )}

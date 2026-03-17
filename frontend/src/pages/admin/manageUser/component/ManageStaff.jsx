@@ -1,53 +1,20 @@
-import React from 'react';
-import { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Badge, Box, Calendar, Layers, Mail, Plus, Tag } from 'lucide-react';
+import { Badge, Box, Calendar, Eye, Layers, ListRestart, Loader, Mail, Plus, Tag } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-const data = [
-    {
-        id: 1,
-        name: 'Nguyen Van A',
-        email: 'vana@gmail.com',
-        phone: '0987654321',
-        createdProduct: 5, // Số sản phẩm đã tạo
-        createdBrand: 3, // Số thương hiệu đã tạo
-        createdCategory: 4, // Số danh mục đã tạo
-        avatar: 'https://i.pravatar.cc/150?img=1',
-        status: 'Active',
-    },
-    {
-        id: 2,
-        name: 'Tran Thi B',
-        email: 'thib@gmail.com',
-        phone: '0987654322',
-        createdProduct: 8,
-        createdBrand: 2,
-        createdCategory: 5,
+import { toast } from 'react-toastify';
 
-        avatar: 'https://i.pravatar.cc/150?img=2',
-        status: 'Disabled',
-    },
-    {
-        id: 3,
-        name: 'Le Van C',
-        email: 'vanc@gmail.com',
-        phone: '0987654323',
-        createdProduct: 12,
-        createdBrand: 6,
-        createdCategory: 7,
+import { Pagination } from '@/components/public/pagination';
 
-        avatar: 'https://i.pravatar.cc/150?img=3',
-        status: 'Blocked',
-    },
-];
+import { getUserStaff } from '@/services/account/account.api';
+
 const staffInfo = {
     name: 'Lê Văn Staff',
     email: 'staff.inventory@techstore.com',
@@ -62,8 +29,82 @@ const staffInfo = {
     },
 };
 const ManageStaff = () => {
-    const [showAddButton, setShowAddButton] = useState(true);
-    const [openDialogDetail, setOpenDialogDetail] = useState(false);
+    // ==================== STATE ====================
+    // URL & ROUTING STATE
+    const [searchParams, setSearchParams] = useSearchParams();
+    const filter = useMemo(
+        () => ({
+            search: searchParams.get('search') || '',
+            status: searchParams.get('status') || 'all',
+            sort: searchParams.get('sort') || 'newest',
+            page: Number(searchParams.get('page')) || 1,
+        }),
+        [searchParams],
+    );
+    // DATA STATE
+    const [dataUser, setDataUser] = useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    // UI STATE (Popups, Dialogs)
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    // TEMPORARY STATE (Pending actions)
+
+    // LOADING STATE
+    const [loading, setLoading] = useState(false);
+
+    // DERIVED STATE (Tính toán - XÓA state thừa)
+
+    // ==================== USE EFFECT ====================
+    // FETCH ONE TIME
+    // FETCH MANY TIME
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                //console.log('Fetching customers with filter:', filter);
+                const response = await getUserStaff(filter);
+                setDataUser(response.data);
+                //console.log('Total pages from response:', response.pagination.totalItems);
+                setTotalPages(Math.ceil(response.pagination.totalPages));
+                setTotalItems(response.pagination.total);
+                //console.log('Fetched customers:', response);
+            } catch (error) {
+                toast.error('Đã có lỗi xảy ra khi lấy dữ liệu khách hàng');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, [filter]);
+
+    // ==================== EVENT HANDLERS ====================
+    // ---- PAGINATION & FILTER ----
+    const handlePageChange = (page) => {
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('page', page);
+            return newParams;
+        });
+    };
+    const handleChangeInput = (e) => {
+        // sử dụng useDebounce đoạn này
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set(e.target.name, e.target.value);
+            return newParams;
+        });
+    };
+    const handleChangeSelectFilter = (value, filterName) => {
+        setSearchParams((prev) => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set(filterName, value);
+            return newParams;
+        });
+    };
+    const handleResetFilter = () => {
+        setSearchParams({});
+    };
     const getInitials = (name) => {
         return name
             .split(' ')
@@ -74,45 +115,59 @@ const ManageStaff = () => {
     return (
         <div>
             <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 md:gap-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-3">
                     {/* Search Input */}
                     <div>
-                        <Input placeholder="Search users..." className="h-9" />
+                        <Input
+                            placeholder="Tìm kiếm theo tên..."
+                            className="h-9"
+                            name="search"
+                            value={filter.search}
+                            onChange={handleChangeInput}
+                        />
                     </div>
 
                     {/* Status Filter */}
-                    <Select>
+                    <Select
+                        value={filter.status || 'all'}
+                        onValueChange={(value) => {
+                            // console.log('value:', value);
+                            handleChangeSelectFilter(value, 'status');
+                        }}
+                    >
                         <SelectTrigger className="h-9">
                             <SelectValue placeholder="All Status" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="disabled">Disabled</SelectItem>
-                            <SelectItem value="blocked">Blocked</SelectItem>
+                            <SelectItem value="all">Trạng thái</SelectItem>
+                            <SelectItem value="true">Hoat động</SelectItem>
+                            <SelectItem value="false">Ngưng hoạt động</SelectItem>
+                            <SelectItem value="blocked">Bị cấm</SelectItem>
                         </SelectContent>
                     </Select>
 
                     {/* Sort Dropdown */}
-                    <Select>
-                        <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Sort" />
+                    <Select
+                        value={filter.sort || 'newest'}
+                        onValueChange={(value) => {
+                            handleChangeSelectFilter(value, 'sort');
+                        }}
+                    >
+                        <SelectTrigger className="w-45 h-9">
+                            <SelectValue placeholder="Sắp xếp theo" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="newest">Newest First</SelectItem>
-                            <SelectItem value="oldest">Oldest First</SelectItem>
-                            <SelectItem value="name-asc">Name A-Z</SelectItem>
-                            <SelectItem value="name-desc">Name Z-A</SelectItem>
+                            {/* Nhóm Thời gian */}
+                            <SelectItem value="newest">Mới nhất (Đăng ký)</SelectItem>
+                            <SelectItem value="oldest">Cũ nhất</SelectItem>
                         </SelectContent>
                     </Select>
 
-                    {/* Add User Button */}
-                    {showAddButton && (
-                        <Button className="gap-2" size="sm">
-                            <Plus className="h-4 w-4" />
-                            <span className="hidden sm:inline">Add User</span>
-                        </Button>
-                    )}
+                    {/* Reset filter */}
+                    <Button className="gap-2" size="sm" variant="outline" onClick={handleResetFilter}>
+                        <ListRestart className="h-4 w-4" />
+                        <span classame="hidden sm:inline">Cài đặt lại</span>
+                    </Button>
                 </div>
                 <div className="space-y-4">
                     <div className="overflow-x-auto rounded-lg border border-border">
@@ -120,64 +175,74 @@ const ManageStaff = () => {
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
                                     <TableHead className="font-semibold">Avatar</TableHead>
-                                    <TableHead className="font-semibold">Tên</TableHead>
                                     <TableHead className="font-semibold">Email</TableHead>
+                                    <TableHead className="font-semibold">Tên nhân viên</TableHead>
                                     <TableHead className="font-semibold">Số sản phẩm đã tạo</TableHead>
-                                    <TableHead className="font-semibold">Số thương hiệu đã tạo</TableHead>
-                                    <TableHead className="font-semibold">Số danh mục đã tạo</TableHead>
                                     <TableHead className="font-semibold">Trạng thái</TableHead>
                                     <TableHead className="font-semibold text-right">Hành động</TableHead>
                                 </TableRow>
                             </TableHeader>
-
-                            <TableBody>
-                                {data.map((user) => (
-                                    <TableRow
-                                        key={user.id}
-                                        className="hover:bg-muted/50"
-                                        onClick={() => setOpenDialogDetail(true)}
-                                    >
-                                        <TableCell>
-                                            <Avatar className="h-8 w-8">
-                                                <AvatarImage src={user.avatar} />
-                                                <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                                            </Avatar>
-                                        </TableCell>
-
-                                        <TableCell className="font-medium">{user.name}</TableCell>
-
-                                        <TableCell>{user.email}</TableCell>
-
-                                        <TableCell>{user.createdProduct}</TableCell>
-
-                                        <TableCell>{user.createdBrand}</TableCell>
-
-                                        <TableCell>{user.createdCategory}</TableCell>
-
-                                        <TableCell>
-                                            <span
-                                                className={`text-sm ${user.status === 'Active' ? 'text-green-500' : user.status === 'Disabled' ? 'text-gray-500' : 'text-red-500'}`}
-                                            >
-                                                {user.status}
-                                            </span>
-                                        </TableCell>
-
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm">
-                                                Edit
-                                            </Button>
-                                            <Button variant="destructive" size="sm" className="ml-2">
-                                                Delete
-                                            </Button>
+                            {loading ? (
+                                <TableBody>
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-24 text-center">
+                                            <Loader />
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
+                                </TableBody>
+                            ) : (
+                                <TableBody>
+                                    {dataUser.map((user) => (
+                                        <TableRow
+                                            key={user.id}
+                                            className="hover:bg-muted/50"
+                                            onClick={() => setOpenDialogDetail(true)}
+                                        >
+                                            <TableCell>
+                                                <Avatar className="h-8 w-8">
+                                                    <AvatarImage src={user.avatar} />
+                                                    <AvatarFallback>{getInitials(user.userName)}</AvatarFallback>
+                                                </Avatar>
+                                            </TableCell>
+
+                                            <TableCell className="font-medium">{user.userName}</TableCell>
+
+                                            <TableCell>{user.email}</TableCell>
+
+                                            <TableCell>{user.totalProducts}</TableCell>
+
+                                            <TableCell>
+                                                <Switch
+                                                    checked={user.isActive}
+                                                    className="data-[state=checked]:bg-green-500"
+                                                />{' '}
+                                            </TableCell>
+
+                                            <TableCell className="text-center">
+                                                <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+                                                    <Eye className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            )}
                         </Table>
                     </div>
+                    {/* Pagination */}
+                    {loading ? null : (
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Tổng {totalItems} quản trị viên</span>
+                            <Pagination
+                                currentPage={filter.page}
+                                totalPages={totalPages}
+                                onPageChange={handlePageChange}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
-            <Dialog open={openDialogDetail} onOpenChange={setOpenDialogDetail}>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-[900px] lg:max-w-[1100px] w-[95vw] max-h-[90vh] overflow-y-auto p-0">
                     <div className="p-6 bg-white rounded-lg space-y-8">
                         {/* 1. Profile Header */}
