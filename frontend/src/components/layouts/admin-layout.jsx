@@ -54,7 +54,7 @@ const AdminLayout = () => {
         return navLinkItems.find((link) => link.href === location.pathname);
     }, [location.pathname]);
     return (
-        <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+        <div className="h-screen flex flex-col bg-gray-50">
             {/* header */}
             <header className="bg-white py-3 flex items-center gap-5 border-b">
                 {/* Logo Web */}
@@ -122,7 +122,7 @@ const AdminLayout = () => {
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 p-5 bg-white">
+                <main className="flex-1 p-5 bg-white overflow-y-auto">
                     <Outlet />
                 </main>
             </section>
