@@ -1,9 +1,8 @@
-
 import axios from 'axios';
-import customizeAPI from '../customizeApi'; 
+import customizeAPI from '../customizeApi';
 import { toast } from 'react-toastify';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:9999'; 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:9999';
 
 export const getAddress = async ({ lat, lon }) => {
     try {
@@ -19,14 +18,13 @@ export const getAddress = async ({ lat, lon }) => {
 
 // 2. Tạo đơn hàng mới
 export const createOrder = async (orderPayload) => {
-  try {
-    const response = await customizeAPI.post('/order/create', orderPayload);
-    return response; // { order, message }
-  } catch (error) {
-    throw error;
-  }
+    try {
+        const response = await customizeAPI.post('/order/create', orderPayload);
+        return response; // { order, message }
+    } catch (error) {
+        throw error;
+    }
 };
-
 
 // 3. Lấy danh sách đơn hàng của tôi
 export const getMyOrders = async (params) => {
@@ -37,58 +35,53 @@ export const getMyOrders = async (params) => {
 
 // 4. Lấy chi tiết một đơn hàng
 export const getOrderDetail = async (orderId) => {
-  try {
-    const response = await customizeAPI.get(`/order/${orderId}`);
-    return response;
-  } catch (error) {
-    console.error(`Lỗi lấy chi tiết đơn ${orderId}:`, error);
-    throw error;
-  }
+    try {
+        const response = await customizeAPI.get(`/order/${orderId}`);
+        return response;
+    } catch (error) {
+        console.error(`Lỗi lấy chi tiết đơn ${orderId}:`, error);
+        throw error;
+    }
 };
 
-
-// 5. Cập nhật trạng thái đơn 
+// 5. Cập nhật trạng thái đơn
 export const updateOrderStatus = async (orderId, newStatus) => {
-  try {
-    const response = await customizeAPI.patch(`/order/${orderId}/status`, {
-      status: newStatus,
-    });
-  
-    return response;
-  } catch (error) {
-    throw error;
-  }
+    try {
+        const response = await customizeAPI.patch(`/order/${orderId}/status`, {
+            status: newStatus,
+        });
+
+        return response;
+    } catch (error) {
+        throw error;
+    }
 };
 
 // 6. Xác nhận thanh toán MoMo (local project)
 export const confirmMomoPayment = async (orderId) => {
-  try {
-    const response = await customizeAPI.post('/order/momo/confirm', {
-      orderId,
-    });
+    try {
+        const response = await customizeAPI.post('/order/momo/confirm', {
+            orderId,
+        });
 
-    return response.data;
-  } catch (error) {
-    console.error('Lỗi confirm MoMo:', error);
-    throw error;
-  }
+        return response.data;
+    } catch (error) {
+        console.error('Lỗi confirm MoMo:', error);
+        throw error;
+    }
 };
 
 // 7. Hủy đơn hàng (chỉ khi pending)
 export const cancelOrder = async (orderId) => {
-  try {
-    const response = await customizeAPI.patch(
-      `/order/${orderId}/cancel`
-    );
+    try {
+        const response = await customizeAPI.patch(`/order/${orderId}/cancel`);
 
-    toast.success('Hủy đơn hàng thành công');
-    return response;
-  } catch (error) {
-    toast.error(
-      error.response?.data?.message || 'Không thể hủy đơn hàng'
-    );
-    throw error;
-  }
+        toast.success('Hủy đơn hàng thành công');
+        return response;
+    } catch (error) {
+        toast.error(error.response?.data?.message || 'Không thể hủy đơn hàng');
+        throw error;
+    }
 };
 
 // 8. Lấy tất cả đơn hàng (admin / staff)
@@ -105,3 +98,6 @@ export const getAllOrders = async () => {
     }
 };
 
+export const getTotalOrder = async () => {
+    return customizeAPI.get('/admin/total-orders');
+};
