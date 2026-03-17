@@ -1,11 +1,11 @@
-const Order = require("../../models/Order/Order");
-const Cart = require("../../models/Order/Cart");
+const Order = require("../../models/order/Order");
+const Cart = require("../../models/order/Cart");
 const Product = require("../../models/Products/Product");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
 const User = require("../../models/User");
-const Review = require("../../models/Order/Review");
+const Review = require("../../models/order/Review");
 
 const statusFlow = {
   pending: ["confirmed", "cancelled"],
@@ -177,7 +177,12 @@ const createOrder = async (req, res) => {
 
       const updateUsage = await Discount.findOneAndUpdate(
         { _id: discount._id, usageLimit: { $gt: 0 } },
-        { $inc: { usageLimit: -1 } },
+        {
+          $inc: {
+            usageLimit: -1,
+            usedCount: 1,
+          },
+        },
         { new: true }
       );
 
@@ -407,13 +412,61 @@ const getOrderById = async (req, res) => {
 };
 
 const getAllOrder = async (req, res) => {
-    try {
-        const order = await Order.find().sort({createdAt: -1}).lean();
-        res.json(order);
-    } catch (error) {
-        res.status(500).json({message:'Get all order fail'});
+  try {
+    const orders = await Order.find()
+      .sort({ createdAt: -1 }) // mới -> cũ
+      .lean();
+
+    const productStockMap = {};
+    const productCache = {};
+    const oversellDetected = {};
+
+    for (const order of orders) {
+      order.stockWarning = false;
+
+      if (
+        !["pending", "confirmed", "shipping", "delivered"].includes(
+          order.orderStatus
+        )
+      ) {
+        continue;
+      }
+
+      for (const item of order.items) {
+        const productId = item.productId.toString();
+
+        if (!productStockMap[productId]) {
+          if (!productCache[productId]) {
+            productCache[productId] = await Product.findById(productId).lean();
+          }
+
+          const product = productCache[productId];
+
+          // bắt đầu từ stock hiện tại
+          productStockMap[productId] = product.stock || 0;
+        }
+
+        // nếu stock đã âm trước đó -> đơn này gây oversell
+        if (
+          order.paymentMethod === "COD" &&
+          order.orderStatus === "pending" &&
+          productStockMap[productId] < 0 &&
+          !oversellDetected[productId]
+        ) {
+          order.stockWarning = true;
+          oversellDetected[productId] = true;
+        }
+
+        // hoàn lại stock để tính order trước đó
+        productStockMap[productId] += item.quantity;
+      }
     }
-}
+
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: "Get all order fail" });
+  }
+};
 
 const updateOrderStatus = async (req, res) => {
   try {

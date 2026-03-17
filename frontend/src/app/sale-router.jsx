@@ -7,6 +7,7 @@ import OrderManagement from '@/pages/Sale/OrderManagement';
 import OrderDetailPage from '@/pages/order/OrderDetailPage';
 import RatingManagement from '@/pages/Sale/RatingManagement';
 import ReviewDetail from '@/pages/Sale/ReviewDetail';
+import SalesDashboard from '@/pages/SaleDashboard/page';
 // Chỉ export mảng object, không tạo router tại đây
 export const saleRoutes = [
     {
@@ -26,6 +27,10 @@ export const saleRoutes = [
                 element: <BlogPage />,
             },
             {
+                path: 'dashboard',
+                element: <SalesDashboard />,
+            },
+            {
                 path: 'orders',
                 element: <OrderManagement />,
             },
@@ -40,6 +45,10 @@ export const saleRoutes = [
             {
                 path: 'review/:id',
                 element: <ReviewDetail />,
+            },
+            {
+                path: 'dashboard',
+                element: <SalesDashboard/>
             },
         ],
     },

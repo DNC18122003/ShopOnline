@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 import customizeAPI from '@/services/customizeApi';
 import AddToCartButton from '@/components/customer/AddToCartButton';
 import commentService from '@/services/comment/comment.api';
-import RatingPage from '../order/RatingPage';
+import ProductReviewList from './ProductReviewList';
 
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
@@ -361,10 +361,10 @@ export default function ProductDetailPage() {
                             {product.stock > 1 ? (
                                 <>
                                     <AddToCartButton
-                                        productId={_id}
-                                        name={name}
-                                        price={price}
-                                        image={images?.[0]?.url || images}
+                                        productId={product._id}
+                                        name={product.name}
+                                        price={product.price}
+                                        image={product.images?.[0]}
                                     />
 
                                     <button
@@ -444,57 +444,8 @@ export default function ProductDetailPage() {
 
                     <div className="mb-8">
                         <h2 className="text-2xl font-bold text-gray-900 mb-6">ĐÁNH GIÁ {product.name}</h2>
-                        <div className="bg-gray-100 rounded p-6 mb-6">
-                            <div className="flex items-center gap-4">
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <Star className="w-7 h-7 fill-yellow-400 text-yellow-400" />
-                                        <span className="text-lg font-bold text-gray-900">
-                                            {product.averageRating || '0'}
-                                        </span>
-                                        <span className="text-lg text-gray-400">/5</span>
-                                        <span className="text-base text-gray-600">
-                                            ({product.reviewCount || 0} đánh giá)
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Reviews */}
-                        <div className="space-y-4">
-                            {reviews.length === 0 ? (
-                                <p className="text-gray-600 py-4">Chưa có đánh giá nào cho sản phẩm này.</p>
-                            ) : (
-                                reviews.map((review) => (
-                                    <div
-                                        key={review._id}
-                                        className="border border-gray-200 rounded p-4 hover:bg-gray-50 transition"
-                                    >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                                                {review.userId?.userName?.charAt(0) || 'U'}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-gray-900">
-                                                    {review.userId?.userName || 'Anonymous'}
-                                                </p>
-                                                <div className="flex gap-0.5">
-                                                    {[...Array(review.rating)].map((_, j) => (
-                                                        <Star
-                                                            key={j}
-                                                            className="w-3 h-3 fill-yellow-400 text-yellow-400"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p className="text-sm text-gray-600">{review.comment}</p>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                        {/* <RatingPage productId={id} /> */}
+                        <ProductReviewList productId={id} />
                     </div>
                 </div>
                 {/* ========== PHẦN HỎI ĐÁP ========== */}
@@ -678,10 +629,10 @@ export default function ProductDetailPage() {
                                     <div onClick={(e) => e.stopPropagation()}>
                                         {product.stock > 1 ? (
                                             <AddToCartButton
-                                                productId={_id}
-                                                name={name}
-                                                price={price}
-                                                image={images?.[0]?.url || images}
+                                                productId={product._id}
+                                                name={product.name}
+                                                price={product.price}
+                                                image={product.images?.[0]}
                                             />
                                         ) : (
                                             <button

@@ -10,7 +10,7 @@ const addressSchema = new Schema(
     province: String,
     note: String,
   },
-  { _id: false }
+  { _id: false },
 );
 const statusLogSchema = new Schema(
   {
@@ -44,7 +44,7 @@ const statusLogSchema = new Schema(
       default: Date.now,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const orderItemSchema = new Schema(
@@ -76,7 +76,7 @@ const orderItemSchema = new Schema(
       min: 1,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const orderSchema = new Schema(
@@ -164,9 +164,9 @@ const orderSchema = new Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 orderSchema.index({ customerId: 1, createdAt: -1 });
 
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = mongoose.models.Order || mongoose.model("Order", orderSchema);

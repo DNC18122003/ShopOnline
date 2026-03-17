@@ -28,7 +28,7 @@ const saleDashboardController = {
         totalBlogs,
         topDiscounts,
         topBlogs,
-        ReviewRating,
+        orderRecent,
       ] = await Promise.all([
         // Truy vấn doanh thu và số đơn hàng
         Order.aggregate([
@@ -53,23 +53,54 @@ const saleDashboardController = {
         Blog.countDocuments({
           createdAt: { $gte: startDate, $lt: endDate },
         }),
-        Discount.aggregate([
-          { $match: { status: "active" } },
-          { $sort: { usedCount: -1 } }, // Sắp xếp theo số lượt dùng có sẵn
-          { $limit: 5 },
+        Order.aggregate([
+          // 1. Lọc đơn hàng trong tháng có chứa mã giảm giá (và đã thanh toán thành công)
           {
-            // Chọn các trường muốn trả về
+            $match: {
+              createdAt: { $gte: startDate, $lt: endDate },
+              paymentStatus: { $in: ["paid"] },
+              discountCode: { $ne: null, $exists: true, $ne: "" },
+            },
+          },
+          // 2. Nhóm theo mã giảm giá và đếm số lượng
+          {
+            $group: {
+              _id: "$discountCode",
+              usedCount: { $sum: 1 },
+            },
+          },
+          // 3. Sắp xếp giảm dần và lấy top 5
+          { $sort: { usedCount: -1 } },
+          { $limit: 5 },
+          // 4. JOIN sang bảng discounts để lấy thông tin value và discountType
+          {
+            $lookup: {
+              from: "discounts",
+              localField: "_id",
+              foreignField: "code",
+              as: "discountInfo",
+            },
+          },
+          // 5. Giải nén mảng (bắt buộc sau khi dùng lookup)
+          { $unwind: "$discountInfo" },
+          // 6. Định dạng lại cấu trúc JSON trả về cho giống FE
+          {
             $project: {
-              _id: 0, // Ẩn id mặc định
-              code: "$code",
-              discountType: 1,
-              value: 1,
+              _id: 0,
+              code: "$_id",
               usedCount: 1,
+              discountType: "$discountInfo.discountType",
+              value: "$discountInfo.value",
             },
           },
         ]),
         Blog.aggregate([
-          { $match: { status: "published" } },
+          {
+            $match: {
+              createdAt: { $gte: startDate, $lt: endDate },
+              status: "published",
+            },
+          },
           { $sort: { viewCount: -1 } },
           { $limit: 5 },
           {
@@ -82,29 +113,32 @@ const saleDashboardController = {
             },
           },
         ]),
-        Review.aggregate([
+        Order.aggregate([
           {
             $match: {
               createdAt: { $gte: startDate, $lt: endDate },
-              isActive: true,
             },
           },
+          { $sort: { createdAt: -1 } },
+          { $limit: 5 },
           {
-            $group: {
-              _id: "$rating", // Nhóm theo số sao
-              count: { $sum: 1 }, // Đếm số lượng của từng mức sao
+            // Chọn các trường muốn trả về
+            $project: {
+              // Các trường ở mức ngoài cùng (root level)
+              paymentMethod: 1,
+              paymentStatus: 1,
+              orderStatus: 1,
+              orderCode: 1,
+              createdAt: 1, // Khuyên dùng: thường Dashboard sẽ cần hiển thị ngày đặt hàng
+
+              // // Trường nằm trong object shippingAddress
+              // "shippingAddress.fullName": 1,
+
+              // // Trường nằm trong mảng items
+              // "items.nameSnapshot": 1,
+              // "items.imageSnapshot": 1,
             },
           },
-          {
-            $group: {
-              _id: null,
-              totalReviews: { $sum: "$count" }, // Tổng tất cả review
-              ratingDetails: {
-                $push: { rating: "$_id", count: "$count" }, // Lưu lại chi tiết từng mức sao
-              },
-            },
-          },
-          { $project: { _id: 0 } }, // Loại bỏ _id: null ngay từ database
         ]),
       ]);
 
@@ -123,7 +157,7 @@ const saleDashboardController = {
       summaryData.totalBlogs = totalBlogs;
       summaryData.topDiscounts = topDiscounts;
       summaryData.topBlogs = topBlogs;
-      summaryData.ReviewRating = ReviewRating;
+      summaryData.orderRecent = orderRecent;
 
       return res.status(200).json({
         success: true,
