@@ -1,3 +1,4 @@
+// Model Mainboard
 const mongoose = require("mongoose");
 const { Schema, Types } = mongoose;
 
@@ -17,32 +18,25 @@ const priceHistorySchema = new Schema(
   { _id: false },
 );
 
-// Schema chính cho Product
-const productSchema = new Schema(
+const mainboardSchema = new Schema(
   {
-    // Thông tin cơ bản
     name: {
       type: String,
       required: true,
       trim: true,
       index: "text",
     },
-
     description: {
       type: String,
       default: "",
       index: "text",
     },
-
-    // Giá và lịch sử giá
     price: {
       type: Number,
       required: true,
       min: 0,
     },
-
     price_history: [priceHistorySchema],
-
     averageRating: {
       type: Number,
       default: 0,
@@ -50,93 +44,58 @@ const productSchema = new Schema(
       max: 5,
       index: true,
     },
-
     reviewCount: {
       type: Number,
       default: 0,
       min: 0,
     },
-
-    // Hình ảnh (mảng URL)
-    images: [
-      {
-        type: String,
-      },
-    ],
-
-    // Tồn kho
+    images: [{ type: String }],
     stock: {
       type: Number,
       required: true,
       min: 0,
       default: 0,
     },
-    // Được thêm bởi Tuấn để giữ hàng
     reservedStock: {
       type: Number,
       default: 0,
       min: 0,
     },
-
-    // Danh mục và thương hiệu
     category: {
       type: Types.ObjectId,
       ref: "Category",
       required: true,
       index: true,
     },
-
     brand: {
       type: Types.ObjectId,
       ref: "Brand",
       required: true,
       index: true,
     },
-
-    // Thông số kỹ thuật
     specifications: {
-      form_factor: {
-        type: String,
-      }, // Mainboard ↔ Case
-
-      capacity: {
-        type: Number,
-      }, // Dung lượng (RAM, SSD...)
-
-      wattage: {
-        type: Number,
-      }, // Công suất PSU
-
-      // Thông số chi tiết khác (JSON linh hoạt)
-      detail_json: {
-        type: Schema.Types.Mixed,
-        default: {},
-      },
+      socket: { type: String, required: true, index: true }, 
+      ram_type: { type: String, required: true, index: true },
+      form_factor: { type: String, required: true },
+      chipset: { type: String },
+      pcie_slots: { type: Number },
+      m2_slots: { type: Number },
+      detail_json: { type: Schema.Types.Mixed, default: {} },
     },
-
-    // Trạng thái
     isActive: {
       type: Boolean,
       default: true,
       index: true,
     },
-    // tag marketing: new, sale, hot, featured, banner
     labels: {
       type: [String],
       enum: ["new", "sale", "hot", "banner"],
       default: [],
       index: true
     },
-
-    // Người tạo
-    createdBy: {
-      type: Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    createdBy: { type: Types.ObjectId, ref: "User", required: true },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-module.exports = mongoose.model("Product", productSchema);
+
+module.exports = mongoose.model("Mainboard", mainboardSchema);
