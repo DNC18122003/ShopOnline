@@ -8,6 +8,7 @@ import OrderDetailPage from '@/pages/order/OrderDetailPage';
 import RatingManagement from '@/pages/Sale/RatingManagement';
 import ReviewDetail from '@/pages/Sale/ReviewDetail';
 import SalesDashboard from '@/pages/SaleDashboard/page';
+import CommentPage from '@/pages/Comment/page';
 // Chỉ export mảng object, không tạo router tại đây
 export const saleRoutes = [
     {
@@ -48,7 +49,11 @@ export const saleRoutes = [
             },
             {
                 path: 'dashboard',
-                element: <SalesDashboard/>
+                element: <SalesDashboard />,
+            },
+            {
+                path: 'comment',
+                element: <CommentPage />,
             },
         ],
     },

@@ -7,7 +7,13 @@ const commentService = {
     },
     createComment: (data) => {
         return customizeAPI.post('/comments', data);
-    }
+    },
+    getAllComment: () => {
+        return customizeAPI.get('/comments');
+    },
+    toggleCommentStatus: (id, isActive) => {
+        return customizeAPI.put(`/comments/${id}`, { isActive });
+    },
 };
 
 export default commentService;
