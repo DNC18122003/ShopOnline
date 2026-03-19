@@ -124,19 +124,11 @@ const saleDashboardController = {
           {
             // Chọn các trường muốn trả về
             $project: {
-              // Các trường ở mức ngoài cùng (root level)
               paymentMethod: 1,
               paymentStatus: 1,
               orderStatus: 1,
               orderCode: 1,
-              createdAt: 1, // Khuyên dùng: thường Dashboard sẽ cần hiển thị ngày đặt hàng
-
-              // // Trường nằm trong object shippingAddress
-              // "shippingAddress.fullName": 1,
-
-              // // Trường nằm trong mảng items
-              // "items.nameSnapshot": 1,
-              // "items.imageSnapshot": 1,
+              createdAt: 1,
             },
           },
         ]),

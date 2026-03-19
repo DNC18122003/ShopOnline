@@ -1,12 +1,12 @@
 const Blog = require("../../models/Blogs/Blog");
-
 const generateSlug = (title) => {
   return title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Bỏ dấu tiếng Việt
-    .replace(/[^\w\s-]/g, "") // Bỏ ký tự đặc biệt
-    .replace(/\s+/g, "-"); // Thay khoảng trắng bằng dấu gạch ngang
+    .toLowerCase() // 1. Chuyển  sang chữ thường
+    .normalize("NFD") // 2. Bỏ dấu
+    .replace(/[\u0300-\u036f]/g, "") // 3. Xóa các ký tự
+    .replace(/[^\w\s-]/g, "") // 4. Xóa tất cả ký tự đặc biệt
+    .replace(/\s+/g, "-") // 5. Thay thế một hoặc nhiều khoảng trắng liên tiếp bằng duy nhất 1 dấu gạch ngang
+    .replace(/^-+|-+$/g, ""); // 6. Xóa dấu gạch ngang thừa ở đầu và cuối chuỗi
 };
 
 const blogController = {
@@ -35,7 +35,7 @@ const blogController = {
   createBlog: async (req, res) => {
     try {
       let { title, slug, content, author, thumbnail, status } = req.body;
-      // 1. Kiểm tra các trường không được rỗng
+      // 1.Validate các trường
       if (!title) {
         return res.status(400).json({
           success: false,
@@ -121,12 +121,12 @@ const blogController = {
       });
     }
   },
-  // 3. Lấy chi tiết bài viết (Theo ID)
+  // 3. Lấy chi tiết bài viết
   getBlogById: async (req, res) => {
     try {
       const { id } = req.params;
 
-      // Chỉ lấy thông tin bài viết, loại bỏ hàm update viewCount
+      // Chỉ lấy thông tin bài viết
       const blog = await Blog.findById(id);
 
       if (!blog) {
@@ -147,7 +147,7 @@ const blogController = {
     }
   },
 
-  // 4. Lấy chi tiết bài viết (Theo Slug - Dùng cho trang chi tiết phía Client)
+  // 4. Lấy chi tiết bài viết (Theo Slug)
   getBlogBySlug: async (req, res) => {
     try {
       const { slug } = req.params;
@@ -180,13 +180,13 @@ const blogController = {
   // 5. Cập nhật bài viết
   updateBlog: async (req, res) => {
     try {
-      // 1. Lấy ID từ tham số URL
+      // 1. Lấy ID từ tham số
       const { id } = req.params;
 
-      // 2. Lấy dữ liệu từ Request Body
+      // 2. Lấy dữ liệu từ Request
       let { title, slug, content, thumbnail } = req.body;
 
-      // 3. Thực hiện kiểm tra lỗi (Validate) TRƯỚC KHI lưu
+      // 3. Validate dữ liệu
       if (!title) {
         return res.status(400).json({
           success: false,
@@ -229,7 +229,7 @@ const blogController = {
         });
       }
 
-      // 4. SAU KHI DỮ LIỆU ĐÃ CHUẨN -> Tiến hành Update vào Database
+      // 4.  Tiến hành Update
       const updatedBlog = await Blog.findByIdAndUpdate(
         id,
         req.body, // Hoặc truyền { title, slug, content, author, thumbnail, status }

@@ -26,27 +26,25 @@ export default function CommentManagementPage() {
     const [replyingTo, setReplyingTo] = useState(null); // Lưu ID của comment đang được phản hồi
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
-    // GỌI API
+
+    // GỌI API LẤY DANH SÁCH TẤT CẢ BÌNH LUẬN
     useEffect(() => {
         const fetchComments = async () => {
             setIsLoading(true);
-
             try {
-                const response = await fetch('http://localhost:9999/api/Comments');
+                // Gọi qua service
+                const response = await commentService.getAllComment();
 
-                const result = await response.json();
-
-                if (result.success) {
-                    const rootComments = result.data.filter((item) => item.parentId === null);
-
+                if (response && response.success) {
+                    // Lọc lấy các bình luận gốc (không có parentId)
+                    const rootComments = response.data.filter((item) => item.parentId === null);
                     setComments(rootComments);
                 } else {
-                    toast.error(result.message || 'Lỗi khi lấy dữ liệu');
+                    toast.error(response?.message || 'Lỗi khi lấy dữ liệu');
                 }
             } catch (error) {
                 console.error('Fetch error:', error);
-
-                toast.error('Không thể kết nối đến server');
+                toast.error(error?.message || 'Không thể kết nối đến server');
             } finally {
                 setIsLoading(false);
             }
@@ -57,18 +55,13 @@ export default function CommentManagementPage() {
 
     useEffect(() => {
         const fetchProductComments = async () => {
-            // Kiểm tra xem có đang chọn comment nào không và có lấy được productId không
+            // Kiểm tra xem có lấy được productId không
 
             if (selectedComment && selectedComment.productId?._id) {
                 setIsLoadingProductComments(true);
 
                 try {
-                    // Dùng hàm getCommentsByProductId trong commentService bạn đã tạo
-
                     const response = await commentService.getCommentsByProductId(selectedComment.productId._id);
-
-                    // Tuỳ vào cách setup Axios, data có thể nằm ở response.data hoặc trực tiếp ở response
-
                     const data = response.data || response;
 
                     setProductComments(data);
@@ -78,59 +71,43 @@ export default function CommentManagementPage() {
                     setIsLoadingProductComments(false);
                 }
             } else {
-                setProductComments([]); // Xoá data cũ khi đóng modal
+                setProductComments([]);
             }
         };
 
         fetchProductComments();
     }, [selectedComment]);
 
-    // 2. THÊM HÀM XỬ LÝ ẨN/HIỆN API
-
+    // 2. Gọi API xử lý ẩn hiện comment
     const handleToggleStatus = async (commentId, currentStatus) => {
         try {
             const newStatus = !currentStatus;
 
-            // Gọi API cập nhật trạng thái (Sửa lại URL hoặc method PUT/PATCH cho khớp Backend của bạn)
-
-            const response = await fetch(`http://localhost:9999/api/Comments/${commentId}`, {
-                method: 'PUT',
-
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-
-                body: JSON.stringify({ isActive: newStatus }),
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
+            // Gọi hàm ẩn hiện comment
+            const response = await commentService.toggleCommentStatus(commentId, newStatus);
+            if (response && response.success) {
                 // Cập nhật lại state trực tiếp không cần load lại trang
-
                 setComments((prevComments) =>
                     prevComments.map((comment) =>
                         comment._id === commentId ? { ...comment, isActive: newStatus } : comment,
                     ),
                 );
-
                 toast.success(newStatus ? 'Đã hiển thị bình luận' : 'Đã ẩn bình luận');
             } else {
-                toast.error(result.message || 'Lỗi khi cập nhật trạng thái');
+                toast.error(response?.message || 'Lỗi khi cập nhật trạng thái');
             }
         } catch (error) {
             console.error('Update error:', error);
-
-            toast.error('Không thể kết nối đến server khi cập nhật');
+            toast.error(error?.message || 'Không thể kết nối đến server khi cập nhật');
         }
     };
     const { user } = useAuth();
+    // 2. Gọi API xử lý ẩn hiện comment
     const handleSendReply = async (parentComment) => {
         if (!replyContent.trim()) {
             toast.warn('Vui lòng nhập nội dung phản hồi');
             return;
         }
-
         setIsSubmittingReply(true);
         try {
             const replyData = {
@@ -140,24 +117,17 @@ export default function CommentManagementPage() {
                 parentId: parentComment._id,
             };
 
-            const response = await fetch('http://localhost:9999/api/comments', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(replyData),
-            });
+            // Gọi hàm tạo comment
+            const response = await commentService.createComment(replyData);
 
-            const result = await response.json();
-
-            if (result.success) {
+            if (response && response.success) {
                 toast.success('Phản hồi thành công!');
-
-                // --- CẬP NHẬT TẠI ĐÂY ---
-                setReplyContent(''); // Xóa nội dung trong ô nhập
-                setReplyingTo(null); // Đóng ô nhập phản hồi
-
-                // Cập nhật danh sách để hiển thị comment mới ngay lập tức
-                const newReply = result.data; // Đây là comment vừa tạo từ server
-
+                // Đặt lại state UI
+                setReplyContent('');
+                setReplyingTo(null);
+                // Lấy comment vừa tạo từ API trả về
+                const newReply = response.data;
+                // Cập nhật danh sách hiển thị
                 setProductComments((prevComments) =>
                     prevComments.map((comment) => {
                         if (comment._id === parentComment._id) {
@@ -168,7 +138,7 @@ export default function CommentManagementPage() {
                                     ...(comment.replies || []),
                                     {
                                         ...newReply,
-                                        userId: user, // Gán object user hiện tại để có tên/avatar hiển thị ngay
+                                        userId: user, // Gán object user hiện tại để hiển thị ngay tên/avatar
                                     },
                                 ],
                             };
@@ -177,22 +147,22 @@ export default function CommentManagementPage() {
                     }),
                 );
             } else {
-                toast.error(result.message || 'Lỗi khi gửi phản hồi');
+                toast.error(response?.message || 'Lỗi khi gửi phản hồi');
             }
         } catch (error) {
             console.error('Reply error:', error);
-            toast.error('Không thể kết nối server');
+            toast.error(error?.message || 'Không thể kết nối server');
         } finally {
             setIsSubmittingReply(false);
         }
     };
     // --- LOGIC TÌM KIẾM ---
-    // MỚI: Tự động đưa về trang 1 khi người dùng gõ tìm kiếm
+    // Tự động đưa về trang 1 khi người dùng gõ tìm kiếm
     useEffect(() => {
         setCurrentPage(1);
     }, [searchQuery]);
 
-    // MỚI: Lọc dữ liệu dựa trên từ khóa tìm kiếm (Tên sản phẩm, Tên user, Nội dung)
+    // Lọc dữ liệu dựa trên từ khóa tìm kiếm (Tên sản phẩm, Tên user, Nội dung)
     const filteredComments = comments.filter((comment) => {
         const searchLower = searchQuery.toLowerCase();
         return (

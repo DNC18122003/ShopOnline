@@ -1,6 +1,6 @@
 const Comment = require("../../models/Comments/Comment");
 const commentController = {
-  //1 lấy comment theo từng sản phẩms
+  //1 lấy comment theo từng sản phẩm
   getCommentsByProduct: async (req, res) => {
     try {
       const { productId } = req.params;
@@ -12,7 +12,7 @@ const commentController = {
         isActive: true,
       })
         .populate("userId", "userName role createdAt")
-        .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên đầu
+        .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên trước
         .lean();
 
       // 2. Lấy danh sách ID của các câu hỏi gốc
@@ -24,7 +24,7 @@ const commentController = {
         isActive: true,
       })
         .populate("userId", "userName role createdAt")
-        .sort({ createdAt: -1 }) // Câu trả lời mối hơn xếp trước
+        .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên trước
         .lean();
 
       // 4. Map các câu trả lời vào đúng câu hỏi gốc (Tạo mảng replies)
@@ -48,7 +48,7 @@ const commentController = {
   //2 đăng tải comment
   createComment: async (req, res) => {
     try {
-      // Chỉ lấy những trường mình cho phép
+      // Chỉ lấy những trường sau
       const { productId, userId, content, parentId } = req.body;
 
       // Kiểm tra dữ liệu bắt buộc
@@ -67,7 +67,7 @@ const commentController = {
           .status(400)
           .json({ success: false, message: "Thiếu thông tin người dùng" });
       }
-
+      // Khởi tạo data
       const newCommentData = {
         productId,
         userId,
@@ -95,13 +95,14 @@ const commentController = {
     try {
       // Tìm tất cả các comment đang active
       const comments = await Comment.find()
-        .populate("userId", "userName role createdAt") // Lấy thêm thông tin người dùng nếu cần
+        // Lấy thêm thông tin người dùng
+        .populate("userId", "userName role createdAt")
         .populate({
           path: "productId",
-          // Select chính xác các trường bạn đã khoanh đỏ trong MongoDB Compass
+          // Tìm các trường thông tin sản phẩm muốn hiển thị
           select: "name price stock images specifications.detail_json",
         })
-        .sort({ createdAt: -1 }) // Mới nhất lên đầu
+        .sort({ createdAt: -1 }) // Mới nhất lên trước
         .lean();
 
       res.status(200).json({
