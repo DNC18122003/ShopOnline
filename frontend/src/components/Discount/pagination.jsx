@@ -1,5 +1,3 @@
-'use client';
-
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 export function Pagination({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange }) {
