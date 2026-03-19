@@ -58,6 +58,70 @@ const getProductImages = (product) => {
 };
 
 // ============================================
+// COMPONENT - ProductCard
+// ============================================
+function ProductCard({ _id, name, price, averageRating, reviewCount, images, stock }) {
+    const navigate = useNavigate();
+
+    // Format số tiền sang VND
+    const formatVND = (amount) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+        }).format(amount);
+    };
+
+    const handleNavigate = () => {
+        navigate(`/product/${_id}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            {/* Phần ảnh và thông tin - Click để xem chi tiết */}
+            <div onClick={handleNavigate} className="cursor-pointer">
+                {/* Ảnh sản phẩm */}
+                <div className="relative bg-gray-50 p-4 flex items-center justify-center h-40">
+                    {images && (Array.isArray(images) ? images[0] : images) ? (
+                        <img 
+                            src={Array.isArray(images) ? images[0] : images} 
+                            alt={name} 
+                            className="max-h-full max-w-full object-contain" 
+                        />
+                    ) : (
+                        <div className="text-4xl">🖥️</div>
+                    )}
+                </div>
+
+                {/* Thông tin sản phẩm */}
+                <div className="p-4">
+                    <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 h-10 text-sm">{name}</h3>
+
+                    {/* Đánh giá sao */}
+                    <div className="flex items-center gap-1 mb-2">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <Star
+                                key={i}
+                                className={`w-3 h-3 ${
+                                    i < averageRating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                                }`}
+                            />
+                        ))}
+                        <span className="text-[10px] text-gray-500 ml-1">({reviewCount || 0})</span>
+                    </div>
+
+                    {/* Giá */}
+                    <div className="flex items-baseline gap-2 mb-3">
+                        <span className="text-lg font-bold text-blue-600">{formatVND(price || 0)}</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    );
+}
+
+// ============================================
 // MAIN COMPONENT - ProductDetailPage
 // ============================================
 
@@ -688,8 +752,9 @@ export default function ProductDetailPage() {
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t border-gray-200">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">SẢN PHẨM TƯƠNG TỰ</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {/* Render Similar Products List Here */}
-                        {/* Note: I truncated this part as it wasn't finished in your prompt, add your mapping here */}
+                        {similarProducts.map((item) => (
+                            <ProductCard key={item._id} {...item} />
+                        ))}
                     </div>
                 </section>
             )}
