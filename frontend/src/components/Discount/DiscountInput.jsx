@@ -1,6 +1,6 @@
 import React from 'react';
 import { toast } from 'react-toastify';
-import { X } from 'lucide-react';  
+import { X } from 'lucide-react';
 const DiscountInput = ({
     discountCode,
     setDiscountCode,
@@ -25,7 +25,6 @@ const DiscountInput = ({
     const handleSelectDiscount = (code) => {
         setDiscountCode(code);
         setIsDiscountListOpen(false);
-       
     };
 
     return (
