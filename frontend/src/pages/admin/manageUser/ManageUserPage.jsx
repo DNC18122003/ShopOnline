@@ -1,4 +1,4 @@
-import { Briefcase, Shield, ShoppingCart, Users } from 'lucide-react';
+import { Briefcase, Plus, Shield, ShoppingCart, Users } from 'lucide-react';
 import StatCard from '@/pages/admin/manageUser/component/StarCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
@@ -10,6 +10,9 @@ import ManageStaff from './component/ManageStaff';
 import { getNumberOfAccount } from '@/services/account/account.api';
 import { getTotalOrder } from '@/services/order/order.api';
 import { useSearchParams } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import DialogAddEmployee from './component/DialogAddEmployee';
 
 const ManageUserPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -20,6 +23,7 @@ const ManageUserPage = () => {
         totalSales: 0,
         totalStaffs: 0,
     });
+    const [isAddEmployeeOpen, setIsAddEmployeeOpen] = useState(false);
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -66,6 +70,12 @@ const ManageUserPage = () => {
                     icon={<Shield className="h-4 w-4" />}
                 />
             </div>
+            <div className="flex items-center justify-end">
+                <Button variant="outline" onClick={() => setIsAddEmployeeOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Thêm nhân viên
+                </Button>
+            </div>
             {/* Tabs Section */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-4 lg:w-fit">
@@ -91,6 +101,11 @@ const ManageUserPage = () => {
                     <ManageAdmin />
                 </TabsContent>
             </Tabs>
+            <Dialog open={isAddEmployeeOpen} onOpenChange={setIsAddEmployeeOpen}>
+                <DialogContent className="">
+                    <DialogAddEmployee />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

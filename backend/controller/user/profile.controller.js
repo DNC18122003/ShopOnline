@@ -46,7 +46,7 @@ const updateProfileController = async (req, res) => {
 };
 
 const updateAvatarController = async (req, res) => {
-    console.log("hi");
+    console.log("================hi===================");
     try {
         const userId = req.user._id;
         console.log("File nhận được:", req.file); // <== Thêm dòng này để kiểm tra
@@ -60,10 +60,10 @@ const updateAvatarController = async (req, res) => {
         // 2. Upload file lên Cloudinary bằng hàm bạn đã viết
         // Vì uploadToCloudinary nhận một mảng, ta truyền [req.file]
         const uploadResults = await uploadToCloudinary([req.file], "user_avatars/");
-        
+        console.log("Kết quả upload từ Cloudinary:", uploadResults);
         // Lấy URL từ kết quả trả về
-        const newAvatarUrl = uploadResults[0].Url;
-
+        const newAvatarUrl = uploadResults[0];
+        console.log("URL ảnh mới sau khi upload:", newAvatarUrl);
         // 3. Cập nhật vào cơ sở dữ liệu
         const user = await User.findById(userId);
         if (!user) {
@@ -74,8 +74,8 @@ const updateAvatarController = async (req, res) => {
         await user.save();
 
         // 4. Trả về kết quả cho Frontend
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: "Cập nhật ảnh đại diện thành công",
             avatar: newAvatarUrl // Gửi lại URL mới để FE cập nhật UI
         });
@@ -84,6 +84,6 @@ const updateAvatarController = async (req, res) => {
         console.error("Error updating avatar:", error);
         return res.status(500).json({ message: "Lỗi hệ thống khi cập nhật ảnh" });
     }
-}; 
+};
 
 module.exports = { getProfileController, updateProfileController, updateAvatarController };
