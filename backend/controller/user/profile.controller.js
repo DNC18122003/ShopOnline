@@ -12,7 +12,7 @@ const getProfileController = async (req, res) => {
         console.error("Error fetching user profile:", error);
         return res.status(500).json({ message: "Error fetching user profile" });
     }
-}
+};
 
 const updateProfileController = async (req, res) => {
     //console.log("Hello")
@@ -26,7 +26,7 @@ const updateProfileController = async (req, res) => {
             street: address.street.trim(),
             ward: address.ward.trim(),
             province: address.province.trim(),
-        }
+        };
         //console.log("data: ", fullNameParsed, phoneParsed, addressParsed);
         const user = await User.findById(userId);
         if (!user) {
@@ -38,7 +38,10 @@ const updateProfileController = async (req, res) => {
         console.log("Updated user data:", user);
         const resUp = await user.save();
         //console.log("Updated user:", resUp);
-        res.json({ success: true, message: "Cập nhật thông tin cá nhân thành công !!" });
+        res.json({
+            success: true,
+            message: "Cập nhật thông tin cá nhân thành công !!",
+        });
     } catch (error) {
         console.error("Error updating profile:", error);
         return res.status(500).json({ message: "Error updating profile" });
@@ -46,6 +49,7 @@ const updateProfileController = async (req, res) => {
 };
 
 const updateAvatarController = async (req, res) => {
+
     console.log("================hi===================");
     try {
         const userId = req.user._id;
@@ -86,4 +90,8 @@ const updateAvatarController = async (req, res) => {
     }
 };
 
-module.exports = { getProfileController, updateProfileController, updateAvatarController };
+module.exports = {
+    getProfileController,
+    updateProfileController,
+    updateAvatarController,
+};

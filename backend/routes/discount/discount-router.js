@@ -20,7 +20,4 @@ router.put("/:id", discountController.updateDiscount);
 // 5. DELETE: Xóa mã giảm giá theo ID
 router.delete("/:id", discountController.deleteDiscount);
 
-// 6. POST: Kiểm tra tính hợp lệ của mã (Dùng ở trang Checkout)
-router.post("/check", discountController.checkDiscountValidity);
-
 module.exports = router;

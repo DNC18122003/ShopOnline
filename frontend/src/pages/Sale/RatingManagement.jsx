@@ -1,27 +1,47 @@
 import { useEffect, useState } from 'react';
-import { Eye, Trash2, Star } from 'lucide-react';
+import { Eye, Trash2, Star ,RefreshCcw} from 'lucide-react';
 import { getAllReviews, toggleReviewStatus } from '../../services/order/review.api';
 import { useNavigate } from 'react-router-dom';
-
 
 const RatingManagement = () => {
     const [reviews, setReviews] = useState([]);
     const [search, setSearch] = useState('');
     const [ratingFilter, setRatingFilter] = useState('');
+
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+
     const [loading, setLoading] = useState(false);
+
+    const [page, setPage] = useState(1);
+    const [limit] = useState(5);
+    const [totalPages, setTotalPages] = useState(1);
+
     const navigate = useNavigate();
 
     const fetchReviews = async () => {
         try {
             setLoading(true);
 
+            // validate ngày
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+                alert('Ngày bắt đầu không được lớn hơn ngày kết thúc');
+                return;
+            }
+
             const res = await getAllReviews({
                 search,
                 rating: ratingFilter,
+                startDate,
+                endDate,
+                page,
+                limit,
             });
-           
+
+            console.log('API RES:', res);
 
             setReviews(res.reviews || []);
+            setTotalPages(res.pagination?.totalPages || 1);
         } catch (error) {
             console.error('Lỗi load review:', error);
         } finally {
@@ -29,9 +49,22 @@ const RatingManagement = () => {
         }
     };
 
+    const handleResetFilter = () => {
+        setSearch('');
+        setRatingFilter('');
+        setStartDate('');
+        setEndDate('');
+        setPage(1);
+    };
+
     useEffect(() => {
         fetchReviews();
-    }, [search, ratingFilter]);
+    }, [search, ratingFilter, startDate, endDate, page]);
+
+    // reset page khi filter
+    useEffect(() => {
+        setPage(1);
+    }, [search, ratingFilter, startDate, endDate]);
 
     const handleToggleStatus = async (id) => {
         if (!window.confirm('Bạn có chắc muốn thay đổi trạng thái review?')) return;
@@ -49,19 +82,25 @@ const RatingManagement = () => {
             <h1 className="text-2xl font-bold mb-6">Quản lý đánh giá sản phẩm</h1>
 
             {/* Filter */}
-            <div className="flex gap-4 mb-6">
+            <div className="flex gap-4 mb-6 flex-wrap">
                 <input
                     type="text"
-                    placeholder="Tìm theo sản phẩm hoặc user..."
-                    className="border rounded-lg px-4 py-2 w-80"
+                    placeholder="Search product..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => {
+                        setSearch(e.target.value);
+                        setPage(1);
+                    }}
+                    className="border px-3 py-2 rounded-md"
                 />
 
                 <select
-                    className="border rounded-lg px-4 py-2"
                     value={ratingFilter}
-                    onChange={(e) => setRatingFilter(e.target.value)}
+                    onChange={(e) => {
+                        setRatingFilter(e.target.value);
+                        setPage(1);
+                    }}
+                    className="border px-3 py-2 rounded-md"
                 >
                     <option value="">Tất cả sao</option>
                     <option value="5">5 sao</option>
@@ -70,6 +109,27 @@ const RatingManagement = () => {
                     <option value="2">2 sao</option>
                     <option value="1">1 sao</option>
                 </select>
+
+                <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="border rounded-lg px-4 py-2"
+                />
+
+                <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="border rounded-lg px-4 py-2"
+                />
+                <button
+                    onClick={handleResetFilter}
+                    className="flex items-center gap-2 bg-blue-400 hover:bg-blue-500 px-3 py-2 rounded-md"
+                >
+                    <RefreshCcw size={16} />
+                    Refresh
+                </button>
             </div>
 
             {/* Table */}
@@ -143,6 +203,35 @@ const RatingManagement = () => {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination */}
+            <div className="flex justify-center items-center gap-2 mt-6">
+                <button
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                    className="px-4 py-2 border rounded disabled:opacity-40"
+                >
+                    Prev
+                </button>
+
+                {[...Array(totalPages)].map((_, i) => (
+                    <button
+                        key={i}
+                        onClick={() => setPage(i + 1)}
+                        className={`px-3 py-1 border rounded ${page === i + 1 ? 'bg-blue-500 text-white' : ''}`}
+                    >
+                        {i + 1}
+                    </button>
+                ))}
+
+                <button
+                    disabled={page === totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="px-4 py-2 border rounded disabled:opacity-40"
+                >
+                    Next
+                </button>
             </div>
         </div>
     );

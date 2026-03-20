@@ -10,6 +10,7 @@ import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
 import BlogDetails from '@/components/Blog/blog-details';
+import BlogList from '@/pages/Blog/CustomerPage';
 import PaymentResultPage from '@/pages/order/PaymentResultPage';
 import OrderFailedPage from '@/pages/order/OrderFailedPage';
 import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
@@ -70,6 +71,14 @@ export const publicRoutes = [
                 path: '/order-failed',
                 element: <OrderFailedPage />,
             },
+            {
+                path: '/blogs/:id',
+                element: <BlogDetails />,
+            },
+            {
+                path: '/blogList',
+                element: <BlogList />,
+            },
         ],
     },
     {
@@ -101,9 +110,5 @@ export const publicRoutes = [
     {
         path: '/blog',
         element: <BlogPage />,
-    },
-    {
-        path: '/blogDetails',
-        element: <BlogDetails />,
     },
 ];
