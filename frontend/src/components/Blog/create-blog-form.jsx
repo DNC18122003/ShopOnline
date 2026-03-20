@@ -84,8 +84,8 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             return;
         }
 
-        if (formData.excerpt.length > 500) {
-            setErrorText('Lỗi: Nội dung bài viết không được vượt quá 500 ký tự.');
+        if (formData.excerpt.length > 10000) {
+            setErrorText('Lỗi: Nội dung bài viết không được vượt quá 10000 ký tự.');
             return;
         }
 
