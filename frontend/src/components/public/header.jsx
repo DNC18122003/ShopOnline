@@ -37,7 +37,7 @@ const Header = () => {
         { name: 'Cấu hình PC', url: '/pc-templates' },
         { name: 'Về chúng tôi', url: '/about' },
         { name: 'Liên hệ', url: '/contact' },
-        { name: 'Tin tức', url: ''},
+        { name: 'Tin tức', url: '/blogList' },
     ];
     const handleLogut = async () => {
         try {

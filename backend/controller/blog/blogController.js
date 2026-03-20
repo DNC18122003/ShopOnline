@@ -68,10 +68,10 @@ const blogController = {
         });
       }
       // 3. Kiểm tra độ dài nội dung
-      if (content.length > 500) {
+      if (content.length > 10000) {
         return res.status(400).json({
           success: false,
-          message: "Nội dung không được quá 500 ký tự",
+          message: "Nội dung không được quá 10000 ký tự",
         });
       }
 
@@ -208,10 +208,10 @@ const blogController = {
           .status(400)
           .json({ success: false, message: "Tiêu đề không được quá 50 ký tự" });
       }
-      if (content.length > 500) {
+      if (content.length > 10000) {
         return res.status(400).json({
           success: false,
-          message: "Nội dung không được quá 500 ký tự",
+          message: "Nội dung không được quá 10000 ký tự",
         });
       }
 
