@@ -20,6 +20,7 @@ import ForgotPasswordPage from '@/pages/password/forgotPasswordPage';
 import PcTemplatesPage from '@/pages/product/PcTemplatesPage';
 import PcTemplateDetailPage from '@/pages/product/PcTemplateDetailPage';
 import AuthLayout from '@/components/layouts/auth-layout';
+import  AboutUs  from '@/pages/AboutUs/AboutUs';
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -78,6 +79,10 @@ export const publicRoutes = [
             {
                 path: '/blogList',
                 element: <BlogList />,
+            },
+            {
+                path: '/about',
+                element: <AboutUs />,
             },
         ],
     },
