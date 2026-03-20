@@ -1,11 +1,12 @@
-const Order = require("../../models/order/Order");
-const Cart = require("../../models/order/Cart");
+const Order = require("../../models/Order/Order");
+const Cart = require("../../models/Order/Cart");
 const Product = require("../../models/Products/Product");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
 const User = require("../../models/User");
 const Review = require("../../models/order/Review");
+const { assignOrderToSale } = require("../../utils/assignment");
 
 const statusFlow = {
   pending: ["confirmed", "cancelled"],
@@ -39,17 +40,17 @@ const createOrder = async (req, res) => {
       note: shippingAddress?.note || user.address?.note,
     };
     // VALIDATION
-   if (
-     !finalShippingAddress.fullName ||
-     !finalShippingAddress.phone ||
-     !finalShippingAddress.province ||
-     !finalShippingAddress.ward ||
-     !finalShippingAddress.street
-   ) {
-     return res.status(400).json({
-       message: "Thiếu thông tin địa chỉ giao hàng bắt buộc",
-     });
-   }
+    if (
+      !finalShippingAddress.fullName ||
+      !finalShippingAddress.phone ||
+      !finalShippingAddress.province ||
+      !finalShippingAddress.ward ||
+      !finalShippingAddress.street
+    ) {
+      return res.status(400).json({
+        message: "Thiếu thông tin địa chỉ giao hàng bắt buộc",
+      });
+    }
 
     if (!["COD", "MOMOPAY"].includes(paymentMethod)) {
       return res
@@ -93,21 +94,21 @@ const createOrder = async (req, res) => {
         });
       }
 
-     const availableStock = product.stock - (product.reservedStock || 0);
+      const availableStock = product.stock - (product.reservedStock || 0);
 
-     if (paymentMethod === "MOMOPAY") {
-       if (availableStock < cartItem.quantity) {
-         return res.status(400).json({
-           message: `Sản phẩm "${product.name}" đang được giữ bởi đơn hàng khác`,
-         });
-       }
-     } else {
-       if (product.stock < cartItem.quantity) {
-         return res.status(400).json({
-           message: `Số lượng không đủ`,
-         });
-       }
-     }
+      if (paymentMethod === "MOMOPAY") {
+        if (availableStock < cartItem.quantity) {
+          return res.status(400).json({
+            message: `Sản phẩm "${product.name}" đang được giữ bởi đơn hàng khác`,
+          });
+        }
+      } else {
+        if (product.stock < cartItem.quantity) {
+          return res.status(400).json({
+            message: `Số lượng không đủ`,
+          });
+        }
+      }
 
       if (!cartItem.quantity || cartItem.quantity <= 0) {
         return res.status(400).json({
@@ -217,8 +218,12 @@ const createOrder = async (req, res) => {
         },
       ],
     });
-
+    
     await newOrder.save();
+    if (paymentMethod === "COD") {
+      await assignOrderToSale(newOrder._id);
+    }
+
     // Giu hang trong 5
     if (paymentMethod === "MOMOPAY") {
       for (const item of orderItems) {
@@ -227,8 +232,9 @@ const createOrder = async (req, res) => {
         });
       }
 
-      newOrder.reservationExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      newOrder.reservationExpiresAt = new Date(Date.now() + 1 * 60 * 1000);
       await newOrder.save();
+     
     }
     // 6. MOMO PAYMENT
     if (paymentMethod === "MOMOPAY") {
@@ -257,16 +263,16 @@ const createOrder = async (req, res) => {
       );
 
       if (!updated) {
-       await Order.findByIdAndUpdate(newOrder._id, {
-         orderStatus: "cancelled",
-         $push: {
-           statusLogs: {
-             status: "cancelled",
-             note: "Hết hàng lúc xác nhận",
-             updatedBy: userId,
-           },
-         },
-       });
+        await Order.findByIdAndUpdate(newOrder._id, {
+          orderStatus: "cancelled",
+          $push: {
+            statusLogs: {
+              status: "cancelled",
+              note: "Hết hàng lúc xác nhận",
+              updatedBy: userId,
+            },
+          },
+        });
 
         return res.status(400).json({
           message: `Hết hàng sản phẩm ${item.nameSnapshot}`,
@@ -584,4 +590,11 @@ const cancelMyOrder = async (req, res) => {
   }
 };
 
-module.exports = { createOrder, getOrderById, getAllOrder,getMyOrders,updateOrderStatus,cancelMyOrder}
+module.exports = {
+  createOrder,
+  getOrderById,
+  getAllOrder,
+  getMyOrders,
+  updateOrderStatus,
+  cancelMyOrder,
+};

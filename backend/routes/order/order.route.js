@@ -2,7 +2,7 @@ const express = require("express");
 const orderController = require("../../controller/order/order.controller");
 const { getAddress } = require("../../controller/order/address.controller");
 const { authenticateToken,checkRoleAndStatus} = require("../../middleware/authorization");
-const { confirmMomoPayment} = require("../../controller/order/momo.controller");
+const { confirmMomoPayment,cancelMomoPayment} = require("../../controller/order/momo.controller");
 const router = express.Router();
 router.get("/geocode/reverse", getAddress);
 
@@ -16,5 +16,6 @@ router.get("/",checkRoleAndStatus(["admin", "sale"]),orderController.getAllOrder
 router.patch("/:orderId/status",checkRoleAndStatus(["admin", "sale"]),orderController.updateOrderStatus);
 router.patch("/:orderId/cancel", orderController.cancelMyOrder);
 router.post("/momo/confirm", confirmMomoPayment);
+router.post("/momo/cancel", cancelMomoPayment);
 
 module.exports = router;

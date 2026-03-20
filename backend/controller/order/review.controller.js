@@ -1,6 +1,7 @@
 const Review = require("../../models/order/Review");
-const Order = require("../../models/order/Order");
+const Order = require("../../models/Order/Order");
 const { uploadMediaToCloudinary, uploadToCloudinary } = require("../../middleware/upload");
+const mongoose = require("mongoose");
 /**
  * Tạo đánh giá sản phẩm
  */
@@ -143,7 +144,7 @@ exports.getReviewsByProduct = async (req, res) => {
     const ratingStats = await Review.aggregate([
       {
         $match: {
-          productId: new require("mongoose").Types.ObjectId(productId),
+          productId: new mongoose.Types.ObjectId(productId),
           isActive: true,
         },
       },

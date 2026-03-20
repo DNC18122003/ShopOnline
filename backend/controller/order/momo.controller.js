@@ -1,10 +1,10 @@
 const crypto = require("crypto");
 const axios = require("axios");
-
-const Order = require("../../models/order/Order");
+const mongoose = require("mongoose");
+const Order = require("../../models/Order/Order");
 const Product = require("../../models/Products/Product");
-const Cart = require("../../models/order/Cart");
-
+const Cart = require("../../models/Order/Cart");
+const { assignOrderToSale } = require("../../utils/assignment");
 const momoConfig = {
   partnerCode: process.env.MOMO_PARTNER_CODE || "MOMO",
   accessKey: process.env.MOMO_ACCESS_KEY || "F8BBA842ECF85",
@@ -103,6 +103,7 @@ exports.confirmMomoPayment = async (req, res) => {
         },
       });
     }
+    await assignOrderToSale(order._id); // handle by sale
 
     //  Xóa khỏi cart
     await Cart.updateOne(
@@ -122,5 +123,54 @@ exports.confirmMomoPayment = async (req, res) => {
   } catch (error) {
     console.error("Confirm momo payment error:", error);
     return res.status(500).json({ message: "Confirm failed" });
+  }
+};
+
+exports.cancelMomoPayment = async (req, res) => {
+  try {
+    const { orderId } = req.body;
+
+    // update order trước (atomic)
+    const order = await Order.findOneAndUpdate(
+      {
+        _id: orderId,
+        paymentMethod: "MOMOPAY",
+        paymentStatus: "unpaid",
+        orderStatus: "pending",
+      },
+      {
+        $set: { orderStatus: "cancelled" },
+        $push: {
+          statusLogs: {
+            status: "cancelled",
+            note: "MoMo payment cancelled",
+          },
+        },
+      },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.json({
+        message: "Order không tồn tại hoặc đã xử lý",
+      });
+    }
+
+    // release reserved stock
+    for (const item of order.items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { reservedStock: -item.quantity },
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Đã huỷ giao dịch và trả lại hàng",
+    });
+  } catch (error) {
+    console.error("Cancel momo payment error:", error);
+    return res.status(500).json({
+      message: "Huỷ thanh toán thất bại",
+    });
   }
 };

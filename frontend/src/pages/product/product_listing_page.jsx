@@ -92,7 +92,7 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images ,sto
 
             {/* Nút thêm vào giỏ hàng */}
             <div className="px-4 pb-4">
-                {stock > 1 ? (
+                {stock > 0 ? (
                     <AddToCartButton productId={_id} name={name} price={price} image={images?.[0]?.url || images} />
                 ) : (
                     <div className="text-center text-sm text-red-500 font-medium">Hết hàng</div>

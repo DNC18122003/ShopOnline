@@ -95,7 +95,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
                 <div className="flex items-center justify-between sm:justify-start gap-6 mt-3">
                     <div className="font-semibold text-lg">
                         {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(
-                            item.priceSnapshot * item.quantity,
+                            item.priceSnapshot,
                         )}
                     </div>
 
@@ -118,7 +118,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
                             onChange={(e) => {
                                 let value = Number(e.target.value);
 
-                                if (isNaN(value)) return;
+                               if (!Number.isInteger(value)) return;
 
                                 if (value < 1) value = 1;
                                 if (value > item.stock) value = item.stock;

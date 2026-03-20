@@ -358,7 +358,7 @@ export default function ProductDetailPage() {
 
                         {/* Action Buttons */}
                         <div className="px-4 pb-4 space-y-3">
-                            {product.stock > 1 ? (
+                            {product.stock > 0 ? (
                                 <>
                                     <AddToCartButton
                                         productId={product._id}
@@ -627,21 +627,7 @@ export default function ProductDetailPage() {
                                             : 'Liên hệ'}
                                     </p>
                                     <div onClick={(e) => e.stopPropagation()}>
-                                        {product.stock > 1 ? (
-                                            <AddToCartButton
-                                                productId={product._id}
-                                                name={product.name}
-                                                price={product.price}
-                                                image={product.images?.[0]}
-                                            />
-                                        ) : (
-                                            <button
-                                                disabled
-                                                className="w-full py-2 rounded-lg bg-gray-300 text-gray-500 cursor-not-allowed"
-                                            >
-                                                Hết hàng
-                                            </button>
-                                        )}
+                                      
                                     </div>
                                 </div>
                             </div>

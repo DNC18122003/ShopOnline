@@ -101,3 +101,17 @@ export const getAllOrders = async () => {
 export const getTotalOrder = async () => {
     return customizeAPI.get('/admin/total-orders');
 };
+
+// 9. Hủy thanh toán MoMo (release reserved stock)
+export const cancelMomoPayment = async (orderId) => {
+    try {
+        const response = await customizeAPI.post('/order/momo/cancel', {
+            orderId,
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Lỗi cancel MoMo:', error);
+        throw error;
+    }
+};
