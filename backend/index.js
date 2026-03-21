@@ -33,8 +33,8 @@ app.use(
   })
 );
 app.use(cookieParser());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // === CẤU HÌNH PASSPORT TẠI ĐÂY ===
 app.use(passport.initialize());
 passportConfig(passport);
@@ -46,8 +46,8 @@ connectDB(); // connectDB
 cron.schedule("*/5 * * * *", async () => {
   await releaseReservedStock();
 });
-cron.schedule("*/1 * * * *", () => {
-  checkTimeoutAssignments();
+cron.schedule("*/1 * * * *", async () => {
+  await checkTimeoutAssignments();
 });
 app.get("/", (req, res) => {
   res.send("Server is running with MongoDB Atlas !!!");

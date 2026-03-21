@@ -27,11 +27,20 @@ const assignOrderToSale = async (orderId, excludedSales = []) => {
 
   if (!selectedSale) return null;
 
-  const assignment = await OrderAssignment.create({
-    orderId,
-    saleId: selectedSale._id,
-  });
-
+  const assignment = await OrderAssignment.findOneAndUpdate(
+    { orderId }, // Tìm theo đơn hàng
+    {
+      saleId: selectedSale._id,
+      status: "waiting",
+      assignedAt: new Date(),
+      $addToSet: { historySales: excludedSales }, // Đảm bảo không trùng lặp trong history
+    },
+    {
+      upsert: true, // Nếu chưa có thì tạo mới
+      new: true, // Trả về bản ghi sau khi cập nhật
+      setDefaultsOnInsert: true,
+    }
+  );
   return assignment;
 };
 

@@ -1,11 +1,12 @@
 const mongoose = require("mongoose");
+
 const orderAssignmentSchema = new mongoose.Schema(
   {
     orderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       required: true,
-      unique: true, // 1 đơn chỉ có 1 bản ghi phân bổ active tại 1 thời điểm
+      unique: true, 
     },
     saleId: {
       type: mongoose.Schema.Types.ObjectId,
