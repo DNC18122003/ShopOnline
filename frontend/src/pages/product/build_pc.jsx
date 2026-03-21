@@ -261,7 +261,7 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
             }`}>
               <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
                 Object.keys(selectedItems || {}).length < 2
-                  ? 'bg-gray-300'
+                  ? 'bg-gray-300' 
                   : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-500' : 'bg-red-500')
               }`}>
                 {Object.keys(selectedItems || {}).length < 2 ? (
@@ -755,24 +755,24 @@ export default function BuildPcPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {paginatedProducts.length > 0 ? (
                     paginatedProducts.map((product) => (
-                      <ProductCard
-                        key={product._id}
-                        product={product}
-                        onSelect={handleSelect}
-                        onRemove={() => handleRemove(activeCategory)}
-                        isSelected={selectedItems[activeCategory]?._id === product._id}
-                      />
-                    ))
-                  ) : (
-                    <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                      <div className="text-gray-300 mb-4 flex justify-center">{activeGroup?.icon}</div>
-                      <p className="text-gray-500 font-bold">Không tìm thấy sản phẩm {activeGroup?.label}</p>
-                    </div>
-                  )}
-                </div>
+                    <ProductCard
+                      key={product._id}
+                      product={product}
+                      onSelect={handleSelect}
+                      onRemove={() => handleRemove(activeCategory)}
+                      isSelected={selectedItems[activeCategory]?._id === product._id}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
+                    <div className="text-gray-300 mb-4 flex justify-center">{activeGroup?.icon}</div>
+                    <p className="text-gray-500 font-bold">Không tìm thấy sản phẩm {activeGroup?.label}</p>
+                  </div>
+                )}
+              </div>
 
                 {displayProducts.length > itemsPerPage && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
