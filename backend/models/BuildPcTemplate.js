@@ -32,10 +32,10 @@ const buildPcTemplateSchema = new Schema(
     },
     // Các linh kiện (lưu Product ID)
     components: {
-      cpu: { type: Types.ObjectId, ref: "Product" },
-      main: { type: Types.ObjectId, ref: "Product" },
-      ram: { type: Types.ObjectId, ref: "Product" },
-      gpu: { type: Types.ObjectId, ref: "Product" },
+      cpu: { type: Types.ObjectId, ref: "CPU" },
+      main: { type: Types.ObjectId, ref: "Mainboard" },
+      ram: { type: Types.ObjectId, ref: "RAM" },
+      gpu: { type: Types.ObjectId, ref: "GPU" },
       ssd: { type: Types.ObjectId, ref: "Product" },
       hdd: { type: Types.ObjectId, ref: "Product" },
       psu: { type: Types.ObjectId, ref: "Product" },
@@ -66,4 +66,3 @@ buildPcTemplateSchema.index({ name: "text", description: "text" });
 buildPcTemplateSchema.index({ createdBy: 1, createdAt: -1 });
 
 module.exports = mongoose.model("BuildPcTemplate", buildPcTemplateSchema);
-

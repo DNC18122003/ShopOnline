@@ -120,7 +120,7 @@ export default function BlogManagementPage() {
             setDeleteModalOpen(false);
             setBlogToDelete(null);
             toast.success('Đã xóa bài viết thành công!');
-        } catch (error) {
+        } catch {
             toast.error('Xóa thất bại!');
         }
     };

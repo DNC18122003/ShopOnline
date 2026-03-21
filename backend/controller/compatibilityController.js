@@ -1,4 +1,8 @@
 const Product = require("../models/Products/Product");
+const Mainboard = require("../models/Products/Mainboard");
+const CPU = require("../models/Products/CPU");
+const RAM = require("../models/Products/RAM");
+const GPU = require("../models/Products/GPU");
 const compatibilityService = require("../services/compatibilityService");
 
 /**
@@ -20,9 +24,20 @@ const checkCompatibility = async (req, res) => {
     const componentData = {};
     const keys = ["cpu", "mainboard", "ram", "gpu", "psu", "case"];
     
+    const getModelByKey = (key) => {
+      switch (key) {
+        case "cpu": return CPU;
+        case "mainboard": return Mainboard;
+        case "ram": return RAM;
+        case "gpu": return GPU;
+        default: return Product; // Cho psu, case, ssd, hdd, v.v.
+      }
+    };
+
     for (const key of keys) {
       if (components[key]) {
-        const product = await Product.findById(components[key]).lean();
+        const Model = getModelByKey(key);
+        const product = await Model.findById(components[key]).lean();
         if (product) {
           componentData[key] = product;
         }

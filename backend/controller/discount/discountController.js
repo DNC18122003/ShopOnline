@@ -150,7 +150,7 @@ const discountController = {
         });
       }
 
-      // 4. Validate trường giá trị giảm giá (value) (Bắt buộc)
+      // 4. Validate trường giá trị giảm giá  (Bắt buộc)
       if (value === undefined || value === null || value === "") {
         return res.status(400).json({
           success: false,
@@ -169,7 +169,7 @@ const discountController = {
         });
       }
 
-      // 5. Validate trường giá trị tối thiểu (Bắt buộc, cho phép số 0)
+      // 5. Validate trường giá trị tối thiểu (Bắt buộc)
       if (
         minOrderValue === undefined ||
         minOrderValue === null ||
@@ -187,7 +187,7 @@ const discountController = {
         });
       }
 
-      // 6. Validate trường giá trị tối đa được giảm (maxDiscountValue)
+      // 6. Validate trường giá trị tối đa được giảm (Bắt buộc)
       // Nếu là percent thì bắt buộc phải có maxDiscountValue
       if (discountType === "percent") {
         if (
@@ -202,7 +202,7 @@ const discountController = {
           });
         }
       }
-      // Dù là percent hay fixed, nếu có truyền lên thì không được âm
+      // Giá trị tối đa truyền lên thì không được âm
       if (
         maxDiscountValue !== undefined &&
         maxDiscountValue !== null &&
@@ -216,7 +216,7 @@ const discountController = {
         }
       }
 
-      // 7. Validate trường giới hạn sử dụng (usageLimit) (Bắt buộc)
+      // 7. Validate trường giới hạn sử dụng (Bắt buộc)
       if (
         usageLimit === undefined ||
         usageLimit === null ||
@@ -307,7 +307,7 @@ const discountController = {
         status,
       } = req.body;
 
-      // BƯỚC 1: Lấy thông tin mã cũ để đối chiếu
+      // Lấy thông tin mã cũ để đối chiếu
       const currentDiscount = await Discount.findById(id);
       if (!currentDiscount) {
         return res.status(404).json({
@@ -318,8 +318,8 @@ const discountController = {
 
       const updateData = { ...req.body };
 
-      // BƯỚC 2: VALIDATE DỮ LIỆU
-      // 1. Validate Code (Chỉ check nếu có truyền)
+      // VALIDATE DỮ LIỆU
+      // 1. Validate mã giảm giá (Chỉ check nếu có truyền)
       if (code !== undefined) {
         if (code === null || String(code).trim() === "") {
           return res.status(400).json({
@@ -339,7 +339,7 @@ const discountController = {
             message: "Mã giảm giá phải trên 3 ký tự",
           });
 
-        // Kiểm tra trùng code (Trừ chính nó ra)
+        // Kiểm tra trùng code
         const duplicateDiscount = await Discount.findOne({
           code: codeUpper,
           _id: { $ne: id },
@@ -353,7 +353,7 @@ const discountController = {
         updateData.code = codeUpper;
       }
 
-      // 2. Validate Description
+      // 2. Validate trường chi tiết
       if (description !== undefined) {
         if (description === null || String(description).trim() === "") {
           return res.status(400).json({
@@ -384,7 +384,7 @@ const discountController = {
         }
       }
 
-      // 4. Validate Các giá trị số: minOrder, maxDiscount, usageLimit, value
+      // 4. Validate Các giá trị tối thiểu
       if (minOrderValue !== undefined) {
         if (minOrderValue === "" || minOrderValue === null)
           return res.status(400).json({
@@ -397,7 +397,7 @@ const discountController = {
             message: "Giá trị tối thiểu không âm",
           });
       }
-
+      //4. Validate Các giá trị tối đa
       if (maxDiscountValue !== undefined) {
         if (maxDiscountValue === "" || maxDiscountValue === null)
           return res.status(400).json({
@@ -409,7 +409,7 @@ const discountController = {
             .status(400)
             .json({ success: false, message: "Giá trị giảm tối đa không âm" });
       }
-
+      //4. Validate Các giá trị giới hạn
       if (usageLimit !== undefined) {
         if (usageLimit === "" || usageLimit === null)
           return res.status(400).json({
@@ -421,7 +421,7 @@ const discountController = {
             .status(400)
             .json({ success: false, message: "Giới hạn sử dụng không âm" });
       }
-
+      //4. Validate Các giá trị giảm giá
       if (value !== undefined) {
         if (value === "" || value === null)
           return res.status(400).json({
@@ -435,7 +435,7 @@ const discountController = {
           });
       }
 
-      // 5. Validate Logic Loại giảm giá & Phần trăm phối hợp
+      // 5. Validate Logic Loại giảm giá & Phần trăm
       const typeToCheck =
         discountType !== undefined
           ? discountType
@@ -497,7 +497,7 @@ const discountController = {
         }
       }
 
-      // BƯỚC 3: THỰC HIỆN UPDATE
+      // Thực hiện update
       const updatedDiscount = await Discount.findByIdAndUpdate(id, updateData, {
         new: true,
         runValidators: true,
@@ -542,61 +542,7 @@ const discountController = {
     }
   },
 
-  // 6. Hàm kiểm tra mã giảm giá hợp lệ (Dành cho trang Checkout)
-  checkDiscountValidity: async (req, res) => {
-    try {
-      const { code, orderValue } = req.body;
-      const now = new Date();
-
-      const discount = await Discount.findOne({
-        code: code.toUpperCase(),
-        status: "active",
-      });
-
-      if (!discount) {
-        return res.status(404).json({
-          success: false,
-          message: "Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa",
-        });
-      }
-
-      // Kiểm tra thời hạn
-      if (now < discount.validFrom || now > discount.expiredAt) {
-        return res.status(400).json({
-          success: false,
-          message: "Mã giảm giá đã hết hạn hoặc chưa đến thời gian sử dụng",
-        });
-      }
-
-      // Kiểm tra giá trị đơn hàng tối thiểu
-      if (orderValue < discount.minOrderValue) {
-        return res.status(400).json({
-          success: false,
-          message: `Đơn hàng tối thiểu phải từ ${discount.minOrderValue} để áp dụng mã này`,
-        });
-      }
-
-      // Kiểm tra lượt sử dụng
-      if (discount.usageLimit <= 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Mã giảm giá đã hết lượt sử dụng",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Áp dụng mã thành công",
-        data: discount,
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: error.message,
-      });
-    }
-  },
-  // Lấy danh sách mã giảm giá có sẵn (đơn giản, không phân quyền user)
+  // 6.Lấy danh sách mã giảm giá có sẵn (đơn giản, không phân quyền user)
   getAvailableDiscounts: async (req, res) => {
     try {
       const { orderValue } = req.query;

@@ -9,6 +9,7 @@ import RatingManagement from '@/pages/Sale/RatingManagement';
 import ReviewDetail from '@/pages/Sale/ReviewDetail';
 import SalesDashboard from '@/pages/SaleDashboard/page';
 import OrderProcessing from '@/pages/Sale/OrderProcessing';
+import CommentPage from '@/pages/Comment/page';
 // Chỉ export mảng object, không tạo router tại đây
 export const saleRoutes = [
     {
@@ -50,6 +51,11 @@ export const saleRoutes = [
             },
             {
                 path: 'dashboard',
+                element: <SalesDashboard />,
+            },
+            {
+                path: 'comment',
+                element: <CommentPage />,
                 element: <SalesDashboard />,
             },
         ],

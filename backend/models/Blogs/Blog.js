@@ -31,7 +31,7 @@ const blogSchema = new Schema(
       type: String,
       enum: {
         values: ["draft", "published"],
-        message: "{VALUE} không hợp lệ (chỉ được draft hoặc published)",
+        message: "không hợp lệ (chỉ được draft hoặc published)",
       },
       default: "draft",
     },

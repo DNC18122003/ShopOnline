@@ -10,6 +10,7 @@ import CartPage from '@/pages/cart/CartPage';
 import ProductDetailPage from '@/pages/product/product_detail_page';
 import CheckoutPage from '@/pages/order/CheckoutPage';
 import BlogDetails from '@/components/Blog/blog-details';
+import BlogList from '@/pages/Blog/CustomerPage';
 import PaymentResultPage from '@/pages/order/PaymentResultPage';
 import OrderFailedPage from '@/pages/order/OrderFailedPage';
 import OrderSuccessPage from '@/pages/order/OrderSuccessPage';
@@ -19,6 +20,7 @@ import ForgotPasswordPage from '@/pages/password/forgotPasswordPage';
 import PcTemplatesPage from '@/pages/product/PcTemplatesPage';
 import PcTemplateDetailPage from '@/pages/product/PcTemplateDetailPage';
 import AuthLayout from '@/components/layouts/auth-layout';
+import  AboutUs  from '@/pages/AboutUs/AboutUs';
 // Chỉ export mảng object, không tạo router tại đây
 export const publicRoutes = [
     {
@@ -70,6 +72,18 @@ export const publicRoutes = [
                 path: '/order-failed',
                 element: <OrderFailedPage />,
             },
+            {
+                path: '/blogs/:id',
+                element: <BlogDetails />,
+            },
+            {
+                path: '/blogList',
+                element: <BlogList />,
+            },
+            {
+                path: '/about',
+                element: <AboutUs />,
+            },
         ],
     },
     {
@@ -101,9 +115,5 @@ export const publicRoutes = [
     {
         path: '/blog',
         element: <BlogPage />,
-    },
-    {
-        path: '/blogDetails',
-        element: <BlogDetails />,
     },
 ];
