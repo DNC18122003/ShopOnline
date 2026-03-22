@@ -16,3 +16,6 @@ export const getUserStaff = (params) => {
 export const getUserAdmin = (params) => {
     return customizeAPI.get('/admin/user-admin', { params });
 }
+export const createNewEmployee = (data) => {
+    return customizeAPI.post('/admin/create-employee', data);
+}
