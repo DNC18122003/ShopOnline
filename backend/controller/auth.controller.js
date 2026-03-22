@@ -29,7 +29,7 @@ const loginController = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
-    
+
     // Set token in cookie
     res.cookie("accessToken", token, {
       httpOnly: true,
@@ -63,7 +63,7 @@ const loginController = async (req, res) => {
 };
 // controller for register
 const registerController = async (req, res) => {
-  const {  email, phoneNumber, password } = req.body;
+  const { email, phoneNumber, password } = req.body;
   // vallidate data in backend
   const emailParsed = email.trim();
   const phoneNumberParsed = phoneNumber.trim();
@@ -88,10 +88,10 @@ const registerController = async (req, res) => {
       email: emailParsed,
       password: hash_Password,
       fullName: null,        // Tên đầy đủ không có
-      phone: phoneNumberParsed,        
+      phone: phoneNumberParsed,
       avatar: null,          // Avatar không có
       role: 'customer',      // Mặc định là customer
-      isActive: false,       // Mặc định là chưa active
+      isActive: 'inactive',       // Mặc định là chưa active
     });
     //create new user
     await newUser.save();
@@ -130,10 +130,10 @@ const logoutController = async (req, res) => {
 
 // controller for login with google
 const loginWithGoogleController = async (req, res) => {
-/*
-trước khi kết hợp với passport thì flow như sau :
-
-*/ 
+  /*
+  trước khi kết hợp với passport thì flow như sau :
+  
+  */
 
 
 
@@ -144,7 +144,7 @@ trước khi kết hợp với passport thì flow như sau :
 // check user
 const getMe = async (req, res) => {
   try {
-    const userId = req.user._id; 
+    const userId = req.user._id;
     const user = await User.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -192,7 +192,7 @@ const changeByForgotPassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
     return res.json({ success: true, message: "Đổi mật khẩu thành công" });
-      } catch (error) {
+  } catch (error) {
     console.error("Error finding user:", error);
     return res.status(500).json({ message: "Server error" });
   }

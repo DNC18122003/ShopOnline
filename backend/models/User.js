@@ -2,13 +2,13 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const hashPassword = require('../utils/hash-password');
 const addressSchema = new Schema(
-  {
-    street: String,
-    ward: String,
-    province: String,
-    note: String,
-  },
-  { _id: false }
+    {
+        street: String,
+        ward: String,
+        province: String,
+        note: String,
+    },
+    { _id: false }
 );
 const userSchema = new Schema({
     email: {
@@ -45,12 +45,13 @@ const userSchema = new Schema({
     avatar: String,
     role: {
         type: String,
-        enum: [ 'customer', 'staff', 'sale', 'admin'],
+        enum: ['customer', 'staff', 'sale', 'admin'],
         default: 'customer'
     },
     isActive: {
-        type: Boolean,
-        default: true
+        type: String,
+        enum: ['active', 'inactive', 'banned'],
+        default: 'inactive'
     },
     address: addressSchema,
 }, { timestamps: true });

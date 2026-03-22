@@ -23,8 +23,14 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         // Lưu lại vị trí trang hiện tại để sau khi login có thể quay lại
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
+    // Kiểm tra nếu user đã bị banned
+    console.log('user.isActive:', user.isActive);
+    if (user && user.isActive === 'banned') {
+        console.log('4');
+        return <Navigate to="/banned" replace />;
+    }
     // Kiểm tra user đã active chưa
-    if (user && !user.isActive) {
+    if (user && user.isActive === 'inactive') {
         //console.log('3');
         return <Navigate to="/verify_otp" replace />;
     }

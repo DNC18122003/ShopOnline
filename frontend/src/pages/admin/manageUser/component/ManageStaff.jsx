@@ -5,15 +5,16 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Badge, Box, Calendar, Eye, Layers, ListRestart, Loader, Mail, Plus, Tag } from 'lucide-react';
+import { Badge as BadgeIcon, Box, Calendar, Eye, Layers, ListRestart, Loader, Mail, Plus, Tag } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { toast } from 'react-toastify';
+import { Badge } from '@/components/ui/badge';
 
 import { Pagination } from '@/components/public/pagination';
 
-import { getUserStaff } from '@/services/account/account.api';
+import { getUserStaff, updateUserStatus } from '@/services/account/account.api';
 
 const staffInfo = {
     name: 'Lê Văn Staff',
@@ -52,7 +53,7 @@ const ManageStaff = () => {
 
     // LOADING STATE
     const [loading, setLoading] = useState(false);
-
+    const [loadingUpdateStatus, setLoadingUpdateStatus] = useState(false);
     // DERIVED STATE (Tính toán - XÓA state thừa)
 
     // ==================== USE EFFECT ====================
@@ -105,6 +106,28 @@ const ManageStaff = () => {
     const handleResetFilter = () => {
         setSearchParams({});
     };
+
+    const handleToggleStatus = async (id, status) => {
+        console.log('Toggle status for user with ID:', id, 'to new status:', status);
+        try {
+            setLoadingUpdateStatus(true);
+            const response = await updateUserStatus(id, status);
+            console.log('Response from updateUserStatus:', response);
+            if (response.success) {
+                toast.success('Cập nhật trạng thái người dùng thành công');
+                // Cập nhật trạng thái người dùng trong dataUser để UI phản ánh ngay lập tức
+                setDataUser((prevData) =>
+                    prevData.map((user) => (user._id === id ? { ...user, isActive: status } : user)),
+                );
+            }
+        } catch (error) {
+            console.log('error loi r', error.response?.data?.message);
+            toast.error(error.response?.data?.message || 'Đã có lỗi xảy ra khi cập nhật trạng thái người dùng');
+        } finally {
+            setLoadingUpdateStatus(false);
+        }
+    };
+
     const getInitials = (name) => {
         return name
             .split(' ')
@@ -140,9 +163,9 @@ const ManageStaff = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Trạng thái</SelectItem>
-                            <SelectItem value="true">Hoat động</SelectItem>
-                            <SelectItem value="false">Ngưng hoạt động</SelectItem>
-                            <SelectItem value="blocked">Bị cấm</SelectItem>
+                            <SelectItem value="active">Hoat động</SelectItem>
+                            <SelectItem value="inactive">Ngưng hoạt động</SelectItem>
+                            <SelectItem value="banned">Bị cấm</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -212,10 +235,26 @@ const ManageStaff = () => {
                                             <TableCell>{user.totalProducts}</TableCell>
 
                                             <TableCell>
-                                                <Switch
-                                                    checked={user.isActive}
-                                                    className="data-[state=checked]:bg-green-500"
-                                                />{' '}
+                                                <Select
+                                                    value={user.isActive}
+                                                    className="border-0"
+                                                    onValueChange={(value) => handleToggleStatus(user._id, value)}
+                                                >
+                                                    <SelectTrigger className="h-9 border-0">
+                                                        <SelectValue placeholder="Trạng thái" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="active">
+                                                            <Badge className="bg-green-500">Hoạt động</Badge>
+                                                        </SelectItem>
+                                                        <SelectItem value="inactive">
+                                                            <Badge className="bg-red-500">Ngưng hoạt động</Badge>
+                                                        </SelectItem>
+                                                        <SelectItem value="banned">
+                                                            <Badge className="bg-gray-500">Bị cấm</Badge>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </TableCell>
 
                                             <TableCell className="text-center">
@@ -252,9 +291,9 @@ const ManageStaff = () => {
                                     <AvatarImage src={staffInfo.avatar} />
                                     <AvatarFallback>ST</AvatarFallback>
                                 </Avatar>
-                                <Badge className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 hover:bg-green-600 border-2 border-white">
+                                <BadgeIcon className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 hover:bg-green-600 border-2 border-white">
                                     {staffInfo.status}
-                                </Badge>
+                                </BadgeIcon>
                             </div>
 
                             <div>
