@@ -1,11 +1,47 @@
 const mongoose = require("mongoose");
 const Product = require("../models/Products/Product");
+const Cpu = require("../models/Products/CPU");
+const Gpu = require("../models/Products/GPU");
+const Ram = require("../models/Products/RAM");
+const Mainboard = require("../models/Products/Mainboard");
 const Brand = require("../models/Brands/Brand");
 const Category = require("../models/Category/Category");
+
+// ========== HELPER: Chọn model theo productType ==========
+const ALL_MODELS = [
+  { key: "cpu", model: Cpu },
+  { key: "gpu", model: Gpu },
+  { key: "ram", model: Ram },
+  { key: "mainboard", model: Mainboard },
+  { key: "product", model: Product },
+];
+
+const getModelByType = (productType) => {
+  switch (productType) {
+    case "cpu": return Cpu;
+    case "gpu": return Gpu;
+    case "ram": return Ram;
+    case "mainboard": return Mainboard;
+    default: return Product;
+  }
+};
+
+/**
+ * Tìm sản phẩm theo ID trong tất cả collections
+ * Trả về { model, doc } hoặc null
+ */
+const findProductAcrossModels = async (id) => {
+  for (const { key, model } of ALL_MODELS) {
+    const doc = await model.findById(id).lean();
+    if (doc) return { key, model, doc };
+  }
+  return null;
+};
 
 /**
  * GET /api/products
  * Lấy danh sách sản phẩm + filter + sort + pagination
+ * Query từ tất cả collections
  */
 const getProducts = async (req, res) => {
   try {
@@ -18,9 +54,10 @@ const getProducts = async (req, res) => {
       maxPrice,
       sort,
       keyword,
-      labels
+      labels,
+      productType, // optional: filter chỉ 1 loại
     } = req.query;
-   // console.log("Query params:", req.query);
+
     // ===== 1. Build filter =====
     const filter = {};
 
@@ -28,10 +65,10 @@ const getProducts = async (req, res) => {
     if (req.query.showAll !== "true") {
       filter.isActive = true;
     }
-    // --- Filter theo Labels (Mới bổ sung) ---
+    // --- Filter theo Labels ---
     if (labels) {
-      const labelArray = labels.split(","); 
-      filter["labels"] = { $in: labelArray }; 
+      const labelArray = labels.split(",");
+      filter["labels"] = { $in: labelArray };
     }
 
     // Filter theo Specs (Socket, RAM Type, Form Factor)
@@ -113,7 +150,7 @@ const getProducts = async (req, res) => {
         sortOption = { createdAt: -1 };
         break;
     }
-    // test
+
     console.log("Filter:", filter);
 
     // ===== 3. Pagination =====
@@ -121,23 +158,49 @@ const getProducts = async (req, res) => {
     const pageSize = Number(limit);
     const skip = (currentPage - 1) * pageSize;
 
-    // ===== 4. Query DB =====
-    const [products, total] = await Promise.all([
-      Product.find(filter)
+    // ===== 4. Chọn models để query =====
+    let modelsToQuery;
+    if (productType) {
+      // Nếu có filter theo productType, chỉ query 1 model
+      const Model = getModelByType(productType);
+      modelsToQuery = [{ key: productType, model: Model }];
+    } else {
+      // Query tất cả models
+      modelsToQuery = ALL_MODELS;
+    }
+
+    // ===== 5. Query tất cả collections song song =====
+    const queryPromises = modelsToQuery.map(async ({ key, model }) => {
+      const docs = await model.find(filter)
         .populate("brand", "name logo")
         .populate("category", "name slug")
         .sort(sortOption)
-        .skip(skip)
-        .limit(pageSize)
-        .lean(),
+        .lean();
+      // Đánh dấu productType cho mỗi doc
+      return docs.map(doc => ({ ...doc, productType: key }));
+    });
 
-      Product.countDocuments(filter),
-    ]);
+    const allResults = await Promise.all(queryPromises);
+    let mergedProducts = allResults.flat();
 
-    // ===== 5. Response =====
+    // Sort lại kết quả merged
+    const sortKey = Object.keys(sortOption)[0];
+    const sortDir = sortOption[sortKey];
+    mergedProducts.sort((a, b) => {
+      if (a[sortKey] < b[sortKey]) return -1 * sortDir;
+      if (a[sortKey] > b[sortKey]) return 1 * sortDir;
+      return 0;
+    });
+
+    const total = mergedProducts.length;
+
+    // Pagination trên kết quả merged
+    const paginatedProducts = mergedProducts.slice(skip, skip + pageSize);
+
+    // ===== 6. Response =====
     res.status(200).json({
       success: true,
-      data: products,
+      data: paginatedProducts,
       pagination: {
         total,
         page: currentPage,
@@ -153,28 +216,32 @@ const getProducts = async (req, res) => {
     });
   }
 };
+
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const product = await Product.findOne({
-      _id: id,
-      isActive: true,
-    })
-      .populate("brand", "name slug logo")
-      .populate("category", "name slug")
-      .lean();
+    // Tìm trong tất cả collections
+    for (const { key, model } of ALL_MODELS) {
+      const product = await model.findOne({
+        _id: id,
+        isActive: true,
+      })
+        .populate("brand", "name slug logo")
+        .populate("category", "name slug")
+        .lean();
 
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm",
-      });
+      if (product) {
+        return res.status(200).json({
+          success: true,
+          data: { ...product, productType: key },
+        });
+      }
     }
 
-    res.status(200).json({
-      success: true,
-      data: product,
+    return res.status(404).json({
+      success: false,
+      message: "Không tìm thấy sản phẩm",
     });
   } catch (error) {
     console.error("Get product by id error:", error);
@@ -194,26 +261,42 @@ const getSimilarProducts = async (req, res) => {
     const { id } = req.params;
     const { limit = 4 } = req.query;
 
-    // Tìm sản phẩm hiện tại
-    const product = await Product.findById(id);
-    if (!product) {
+    // Tìm sản phẩm hiện tại trong tất cả collections
+    const found = await findProductAcrossModels(id);
+    if (!found) {
       return res.status(404).json({
         success: false,
         message: "Không tìm thấy sản phẩm",
       });
     }
 
-    // Tìm sản phẩm cùng category, loại trừ sản phẩm hiện tại
-    const similarProducts = await Product.find({
+    const { doc: product } = found;
+
+    // Tìm sản phẩm cùng category từ tất cả collections
+    const similarFilter = {
       category: product.category,
-      _id: { $ne: id }, // không lấy chính sản phẩm đó
+      _id: { $ne: id },
       isActive: true,
-    })
-      .populate("brand", "name logo")
-      .populate("category", "name slug")
-      .limit(Number(limit))
-      .sort({ averageRating: -1, createdAt: -1 }) // ưu tiên rating cao và mới nhất
-      .lean();
+    };
+
+    const queryPromises = ALL_MODELS.map(async ({ key, model }) => {
+      const docs = await model.find(similarFilter)
+        .populate("brand", "name logo")
+        .populate("category", "name slug")
+        .sort({ averageRating: -1, createdAt: -1 })
+        .lean();
+      return docs.map(doc => ({ ...doc, productType: key }));
+    });
+
+    const allResults = await Promise.all(queryPromises);
+    let similarProducts = allResults.flat();
+
+    // Sort by rating & newest, then limit
+    similarProducts.sort((a, b) => {
+      if (b.averageRating !== a.averageRating) return b.averageRating - a.averageRating;
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    similarProducts = similarProducts.slice(0, Number(limit));
 
     res.status(200).json({
       success: true,
@@ -230,23 +313,26 @@ const getSimilarProducts = async (req, res) => {
 
 /**
  * POST /api/product
- * Tạo sản phẩm mới
+ * Tạo sản phẩm mới — dispatch đến đúng model theo productType
  */
 const createProduct = async (req, res) => {
   try {
-    const productData = req.body;
-    
+    const { productType, ...productData } = req.body;
+
     // Đảm bảo các trường số là Number
     if (productData.price) productData.price = Number(productData.price);
     if (productData.stock) productData.stock = Number(productData.stock);
 
-    const newProduct = new Product(productData);
+    // Chọn model theo productType
+    const Model = getModelByType(productType);
+
+    const newProduct = new Model(productData);
     await newProduct.save();
 
     res.status(201).json({
       success: true,
       message: "Tạo sản phẩm thành công",
-      data: newProduct,
+      data: { ...newProduct.toObject(), productType: productType || "product" },
     });
   } catch (error) {
     console.error("Create product error:", error);
@@ -259,18 +345,34 @@ const createProduct = async (req, res) => {
 
 /**
  * PUT /api/product/:id
- * Cập nhật sản phẩm
+ * Cập nhật sản phẩm — tìm đúng collection rồi update
  */
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { productType, ...updateData } = req.body;
 
     // Đảm bảo các trường số là Number nếu có truyền lên
     if (updateData.price !== undefined) updateData.price = Number(updateData.price);
     if (updateData.stock !== undefined) updateData.stock = Number(updateData.stock);
 
-    const updatedProduct = await Product.findByIdAndUpdate(
+    // Nếu frontend gửi productType → dùng model đó
+    // Nếu không → tìm trong tất cả collections
+    let Model;
+    if (productType) {
+      Model = getModelByType(productType);
+    } else {
+      const found = await findProductAcrossModels(id);
+      if (!found) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy sản phẩm để cập nhật",
+        });
+      }
+      Model = found.model;
+    }
+
+    const updatedProduct = await Model.findByIdAndUpdate(
       id,
       { $set: updateData },
       { new: true, runValidators: true }
@@ -299,24 +401,26 @@ const updateProduct = async (req, res) => {
 
 /**
  * DELETE /api/product/:id
- * Xóa sản phẩm
+ * Xóa sản phẩm — tìm trong tất cả collections
  */
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedProduct = await Product.findByIdAndDelete(id);
-
-    if (!deletedProduct) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm để xóa",
-      });
+    // Tìm và xóa trong tất cả collections
+    for (const { model } of ALL_MODELS) {
+      const deletedProduct = await model.findByIdAndDelete(id);
+      if (deletedProduct) {
+        return res.status(200).json({
+          success: true,
+          message: "Xóa sản phẩm thành công",
+        });
+      }
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Xóa sản phẩm thành công",
+    return res.status(404).json({
+      success: false,
+      message: "Không tìm thấy sản phẩm để xóa",
     });
   } catch (error) {
     console.error("Delete product error:", error);
@@ -327,9 +431,9 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = { 
-  getProducts, 
-  getProductById, 
+module.exports = {
+  getProducts,
+  getProductById,
   getSimilarProducts,
   createProduct,
   updateProduct,
