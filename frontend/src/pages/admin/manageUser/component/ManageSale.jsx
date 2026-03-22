@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { Badge, DollarSign, Eye, FileText, Filter, ListRestart, Loader, ShoppingBag } from 'lucide-react';
+import { Badge as BadgeIcon, DollarSign, Eye, FileText, Filter, ListRestart, Loader, ShoppingBag } from 'lucide-react';
 
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'react-toastify';
 import { Pagination } from '@/components/public/pagination';
-import { getUserSale } from '@/services/account/account.api';
+import { getUserSale, updateUserStatus } from '@/services/account/account.api';
+import { Badge } from '@/components/ui/badge';
 
 const salesInfo = {
     name: 'Nguyễn Văn Sale',
@@ -68,6 +69,7 @@ const ManageSale = () => {
 
     // LOADING STATE
     const [loading, setLoading] = useState(false);
+    const [loadingUpdateStatus, setLoadingUpdateStatus] = useState(false);
 
     // DERIVED STATE
 
@@ -121,6 +123,27 @@ const ManageSale = () => {
             return newParams;
         });
     };
+    const handleToggleStatus = async (id, status) => {
+        console.log('Toggle status for user with ID:', id, 'to new status:', status);
+        try {
+            setLoadingUpdateStatus(true);
+            const response = await updateUserStatus(id, status);
+            console.log('Response from updateUserStatus:', response);
+            if (response.success) {
+                toast.success('Cập nhật trạng thái người dùng thành công');
+                // Cập nhật trạng thái người dùng trong dataUser để UI phản ánh ngay lập tức
+                setDataUser((prevData) =>
+                    prevData.map((user) => (user._id === id ? { ...user, isActive: status } : user)),
+                );
+            }
+        } catch (error) {
+            console.log('error loi r', error.response?.data?.message);
+            toast.error(error.response?.data?.message || 'Đã có lỗi xảy ra khi cập nhật trạng thái người dùng');
+        } finally {
+            setLoadingUpdateStatus(false);
+        }
+    };
+
     const getInitials = (name) => {
         return name
             .split(' ')
@@ -154,10 +177,10 @@ const ManageSale = () => {
                             <SelectValue placeholder="Trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                            <SelectItem value="true">Hoạt động</SelectItem>
-                            <SelectItem value="false">Tạm ngưng</SelectItem>
-                            <SelectItem value="blocked">Đã chặn</SelectItem>
+                            <SelectItem value="all">Trạng thái</SelectItem>
+                            <SelectItem value="active">Hoat động</SelectItem>
+                            <SelectItem value="inactive">Ngưng hoạt động</SelectItem>
+                            <SelectItem value="banned">Bị cấm</SelectItem>
                         </SelectContent>
                     </Select>
                     {/* --- Filter theo Số lượng đơn (Range) --- */}
@@ -313,10 +336,26 @@ const ManageSale = () => {
                                             <TableCell>${user.generatedAmount}</TableCell>
 
                                             <TableCell>
-                                                <Switch
-                                                    checked={user.isActive}
-                                                    className="data-[state=checked]:bg-green-500"
-                                                />
+                                                <Select
+                                                    value={user.isActive}
+                                                    className="border-0"
+                                                    onValueChange={(value) => handleToggleStatus(user._id, value)}
+                                                >
+                                                    <SelectTrigger className="h-9 border-0">
+                                                        <SelectValue placeholder="Trạng thái" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="active">
+                                                            <Badge className="bg-green-500">Hoạt động</Badge>
+                                                        </SelectItem>
+                                                        <SelectItem value="inactive">
+                                                            <Badge className="bg-red-500">Ngưng hoạt động</Badge>
+                                                        </SelectItem>
+                                                        <SelectItem value="banned">
+                                                            <Badge className="bg-gray-500">Bị cấm</Badge>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </TableCell>
 
                                             <TableCell className="text-center">
@@ -355,7 +394,7 @@ const ManageSale = () => {
                             <div>
                                 <h2 className="text-xl font-bold">{salesInfo.name}</h2>
                                 <p className="text-sm text-muted-foreground">{salesInfo.email}</p>
-                                <Badge className="mt-1">Ngày vào làm: {salesInfo.joinedDate}</Badge>
+                                <BadgeIcon className="mt-1">Ngày vào làm: {salesInfo.joinedDate}</BadgeIcon>
                             </div>
                         </div>
 
@@ -440,7 +479,7 @@ const ManageSale = () => {
                                             <p className="font-medium">{blog.title}</p>
                                             <p className="text-xs text-muted-foreground">Ngày đăng: {blog.date}</p>
                                         </div>
-                                        <Badge variant="secondary">{blog.views} lượt xem</Badge>
+                                        <BadgeIcon variant="secondary">{blog.views} lượt xem</BadgeIcon>
                                     </div>
                                 ))}
                             </TabsContent>

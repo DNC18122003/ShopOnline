@@ -1,6 +1,6 @@
 const express = require('express');
-const { getUsersCustomerController, getNumberOfUser, getUserSaleController, getUserStaffController, getUserAdminController } = require('../controller/user/user.controller');
-const { getTotalOrder, createNewEmployee } = require('../controller/admin.controller');
+const { getUsersCustomerController, getNumberOfUser, getUserSaleController, getUserStaffController, getUserAdminController, } = require('../controller/user/user.controller');
+const { getTotalOrder, createNewEmployee, updateUserStatus } = require('../controller/admin.controller');
 const { isAuth, checkRoleAndStatus } = require('../middleware/authorization');
 const router = express.Router();
 
@@ -12,4 +12,5 @@ router.get('/user-sale', isAuth, checkRoleAndStatus(['Admin']), getUserSaleContr
 router.get('/user-staff', isAuth, checkRoleAndStatus(['Admin']), getUserStaffController);
 router.get('/user-admin', isAuth, checkRoleAndStatus(['Admin']), getUserAdminController);
 router.post('/create-employee', isAuth, checkRoleAndStatus(['Admin']), createNewEmployee);
+router.put('/accounts/status', isAuth, checkRoleAndStatus(['Admin']), updateUserStatus);
 module.exports = router;

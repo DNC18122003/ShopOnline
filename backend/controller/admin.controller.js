@@ -63,7 +63,7 @@ const createNewEmployee = async (req, res) => {
             password: passwordParsed,
             role: roleParsed,
             userName,
-            isActive: true
+            isActive: "inactive"
         });
         const newEmployeeSaved = await newEmployee.save();
         res.status(200).json({
@@ -79,4 +79,36 @@ const createNewEmployee = async (req, res) => {
         });
     }
 }
-module.exports = { getTotalOrder, createNewEmployee };
+const updateUserStatus = async (req, res) => {
+    try {
+        const { id, status } = req.body;
+        if (!id || !status) {
+            return res.status(400).json({
+                success: false,
+                message: "Vui lòng cung cấp đày đủ thông tin"
+            });
+        }
+        const user = await User.findById(id);
+        if (!user) {
+            //console.log('User not found with ID:', id);
+            return res.status(400).json({
+                success: false,
+                message: "Người dùng không tồn tại"
+            });
+        }
+        user.isActive = status;
+        await user.save();
+        res.status(200).json({
+            success: true,
+            message: "Cập nhật trạng thái người dùng thành công",
+            data: user
+        });
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi khi cập nhật trạng thái người dùng"
+        });
+    }
+}
+module.exports = { getTotalOrder, createNewEmployee, updateUserStatus };

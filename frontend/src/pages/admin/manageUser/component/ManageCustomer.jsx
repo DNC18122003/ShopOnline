@@ -1,9 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useDebounce } from '@/hooks/useDebounce';
-import { Eye, Filter, ListRestart, Loader } from 'lucide-react';
 
-import { Switch } from '@/components/ui/switch';
+import { Eye, Filter, ListRestart, Loader } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -14,9 +12,10 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 import { toast } from 'react-toastify';
 
-import { getListAccount } from '@/services/account/account.api';
+import { getListAccount, updateUserStatus } from '@/services/account/account.api';
 import DialogViewCustomerDetail from './DialogViewCustomerDetail';
 import { Pagination } from '@/components/public/pagination';
+import { Badge } from '@/components/ui/badge';
 
 const ManageCustomer = () => {
     // ==================== STATE ====================
@@ -47,7 +46,7 @@ const ManageCustomer = () => {
 
     // LOADING STATE
     const [loading, setLoading] = useState(false);
-
+    const [loadingUpdateStatus, setLoadingUpdateStatus] = useState(false);
     // DERIVED STATE (Tính toán - XÓA state thừa)
 
     // ==================== USE EFFECT ====================
@@ -60,7 +59,7 @@ const ManageCustomer = () => {
                 //console.log('Fetching customers with filter:', filter);
                 const response = await getListAccount(filter);
                 setDataUser(response.data);
-                //console.log('Total pages from response:', response.pagination.totalItems);
+                console.log('Total pages from response:', response.data);
                 setTotalPages(Math.ceil(response.pagination.totalItems / 9));
                 setTotalItems(response.pagination.totalItems);
                 //console.log('Fetched customers:', response);
@@ -101,17 +100,27 @@ const ManageCustomer = () => {
         setSearchParams({});
     };
     // ---- USER ACTIONS ----
-    const handleViewDetail = () => {};
-    const handleToggleStatus = () => {};
 
-    // ---- FORM HANDLERS ----
-    const handleAddStaff = () => {};
-    const validateForm = () => {};
-    const handleSubmitStaff = () => {};
-
-    // ---- DIALOG HANDLERS ----
-    const handleOpenDetail = () => {};
-    const handleOpenAdd = () => {};
+    const handleToggleStatus = async (id, status) => {
+        console.log('Toggle status for user with ID:', id, 'to new status:', status);
+        try {
+            setLoadingUpdateStatus(true);
+            const response = await updateUserStatus(id, status);
+            console.log('Response from updateUserStatus:', response);
+            if (response.success) {
+                toast.success('Cập nhật trạng thái người dùng thành công');
+                // Cập nhật trạng thái người dùng trong dataUser để UI phản ánh ngay lập tức
+                setDataUser((prevData) =>
+                    prevData.map((user) => (user._id === id ? { ...user, isActive: status } : user)),
+                );
+            }
+        } catch (error) {
+            console.log('error loi r', error.response?.data?.message);
+            toast.error(error.response?.data?.message || 'Đã có lỗi xảy ra khi cập nhật trạng thái người dùng');
+        } finally {
+            setLoadingUpdateStatus(false);
+        }
+    };
 
     const getInitials = (name) => {
         return name
@@ -149,9 +158,9 @@ const ManageCustomer = () => {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Trạng thái</SelectItem>
-                            <SelectItem value="true">Hoat động</SelectItem>
-                            <SelectItem value="false">Ngưng hoạt động</SelectItem>
-                            <SelectItem value="blocked">Bị cấm</SelectItem>
+                            <SelectItem value="active">Hoat động</SelectItem>
+                            <SelectItem value="inactive">Ngưng hoạt động</SelectItem>
+                            <SelectItem value="banned">Bị cấm</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -288,7 +297,7 @@ const ManageCustomer = () => {
                             ) : (
                                 <TableBody>
                                     {dataUser.map((user) => (
-                                        <TableRow key={user.id} className="hover:bg-muted/50">
+                                        <TableRow key={user._id} className="hover:bg-muted/50">
                                             <TableCell>
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={user.avatar} />
@@ -305,10 +314,26 @@ const ManageCustomer = () => {
                                             <TableCell>${user.totalSpent}</TableCell>
 
                                             <TableCell>
-                                                <Switch
-                                                    checked={user.isActive}
-                                                    className="data-[state=checked]:bg-green-500"
-                                                />{' '}
+                                                <Select
+                                                    value={user.isActive}
+                                                    className="border-0"
+                                                    onValueChange={(value) => handleToggleStatus(user._id, value)}
+                                                >
+                                                    <SelectTrigger className="h-9 border-0">
+                                                        <SelectValue placeholder="Trạng thái" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="active">
+                                                            <Badge className="bg-green-500">Hoạt động</Badge>
+                                                        </SelectItem>
+                                                        <SelectItem value="inactive">
+                                                            <Badge className="bg-red-500">Ngưng hoạt động</Badge>
+                                                        </SelectItem>
+                                                        <SelectItem value="banned">
+                                                            <Badge className="bg-gray-500">Bị cấm</Badge>
+                                                        </SelectItem>
+                                                    </SelectContent>
+                                                </Select>
                                             </TableCell>
 
                                             <TableCell className="text-center">

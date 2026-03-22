@@ -19,3 +19,6 @@ export const getUserAdmin = (params) => {
 export const createNewEmployee = (data) => {
     return customizeAPI.post('/admin/create-employee', data);
 }
+export const updateUserStatus = (id, status) => {
+    return customizeAPI.put(`/admin/accounts/status`, { id, status })
+};

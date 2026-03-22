@@ -53,7 +53,7 @@ const getUsersCustomerController = async (req, res) => {
         let userMatch = { role: "customer" }
         //step 2: loc status (isActive) // sai can sua lai db
         if (status && status !== 'all') {
-            userMatch.isActive = status === 'true';
+            userMatch.isActive = status
         }
         // step 3: loc theo search
         if (search) {
