@@ -83,10 +83,10 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images, sto
                 {/* Ảnh sản phẩm */}
                 <div className="relative bg-gray-50 p-4 flex items-center justify-center h-40">
                     {images && (Array.isArray(images) ? images[0] : images) ? (
-                        <img 
-                            src={Array.isArray(images) ? images[0] : images} 
-                            alt={name} 
-                            className="max-h-full max-w-full object-contain" 
+                        <img
+                            src={Array.isArray(images) ? images[0] : images}
+                            alt={name}
+                            className="max-h-full max-w-full object-contain"
                         />
                     ) : (
                         <div className="text-4xl">🖥️</div>
@@ -116,7 +116,6 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images, sto
                     </div>
                 </div>
             </div>
-
         </div>
     );
 }
@@ -487,7 +486,7 @@ export default function ProductDetailPage() {
 
                         {/* Action Buttons */}
                         <div className="px-4 pb-4 space-y-3">
-                            {product.stock > 1 ? (
+                            {product.stock > 0 ? (
                                 <>
                                     <AddToCartButton
                                         productId={product._id}
