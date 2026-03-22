@@ -383,19 +383,54 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
             userMatch.userName = { $regex: search, $options: 'i' };
         }
         pipeline.push({ $match: userMatch });
-        // step 4: lookup de join voi bang products
+        // Step 4: Lookup để join với các bảng cpus, gpus, mainboards, rams
         pipeline.push({
             $lookup: {
-                from: "products",
+                from: "cpus",
                 localField: "_id",
                 foreignField: "createdBy",
-                as: "products"
+                as: "cpus"
             }
         });
-        // tinh toán tong so san pham
+
+        pipeline.push({
+            $lookup: {
+                from: "gpus",
+                localField: "_id",
+                foreignField: "createdBy",
+                as: "gpus"
+            }
+        });
+
+        pipeline.push({
+            $lookup: {
+                from: "mainboards",
+                localField: "_id",
+                foreignField: "createdBy",
+                as: "mainboards"
+            }
+        });
+
+        pipeline.push({
+            $lookup: {
+                from: "rams",
+                localField: "_id",
+                foreignField: "createdBy",
+                as: "rams"
+            }
+        });
+
+        // Tính toán tổng số sản phẩm
         pipeline.push({
             $addFields: {
-                totalProducts: { $size: "$products" }
+                totalProducts: {
+                    $sum: [
+                        { $size: "$cpus" },      // Số lượng cpus
+                        { $size: "$gpus" },      // Số lượng gpus
+                        { $size: "$mainboards" },// Số lượng mainboards
+                        { $size: "$rams" }       // Số lượng rams
+                    ]
+                }
             }
         });
         // step 5: sort newest, oldest, totalProducts-asc, totalProducts-desc
@@ -430,7 +465,7 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
         const total = totalStaffs.length > 0 ? totalStaffs[0].total : 0;
         const totalPages = Math.ceil(total / pageSize);
         // test hàm pipeline
-        //console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         res.status(200).json({
             success: true,
             data: staff,

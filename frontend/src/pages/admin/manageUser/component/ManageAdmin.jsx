@@ -12,35 +12,8 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getUserAdmin } from '@/services/account/account.api';
 import { Pagination } from '@/components/public/pagination';
+import DialogViewAdminDetail from './DialogViewAdminDetail';
 
-const data = [
-    {
-        id: 1,
-        name: 'Nguyen Van A',
-        account: 'vana@gmail.com',
-        createdAt: '2023-09-01',
-    },
-    {
-        id: 2,
-        name: 'Tran Thi B',
-        account: 'thib@gmail.com',
-        createdAt: '2023-09-05',
-    },
-    {
-        id: 3,
-        name: 'Le Van C',
-        account: 'vanc@gmail.com',
-        createdAt: '2023-09-10',
-    },
-];
-const adminInfo = {
-    name: 'Nguyen Hoang Dan',
-    email: 'dan.admin@techstore.com',
-    avatar: 'https://github.com/shadcn.png',
-    role: 'Quản trị viên hệ thống', // Hoặc "Super Admin"
-    joinedDate: '20/10/2025',
-    status: 'Active',
-};
 const ManageAdmin = () => {
     // ==================== STATE ====================
     // URL & ROUTING STATE
@@ -61,7 +34,7 @@ const ManageAdmin = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     // TEMPORARY STATE (Pending actions)
-
+    const [idDetail, setIdDetail] = useState('-1');
     // LOADING STATE
     const [loading, setLoading] = useState(false);
 
@@ -186,11 +159,7 @@ const ManageAdmin = () => {
                             ) : (
                                 <TableBody>
                                     {dataUser.map((user) => (
-                                        <TableRow
-                                            key={user.id}
-                                            className="hover:bg-muted/50"
-                                            onClick={() => setIsDialogOpen(true)}
-                                        >
+                                        <TableRow key={user.id} className="hover:bg-muted/50">
                                             <TableCell>
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={user.avatar} />
@@ -206,7 +175,13 @@ const ManageAdmin = () => {
                                                 {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                                             </TableCell>
 
-                                            <TableCell className="text-right">
+                                            <TableCell
+                                                className="text-right"
+                                                onClick={() => {
+                                                    setIdDetail(user._id);
+                                                    setIsDialogOpen(true);
+                                                }}
+                                            >
                                                 <span>Xem thông tin</span>
                                             </TableCell>
                                         </TableRow>
@@ -228,72 +203,8 @@ const ManageAdmin = () => {
                 </div>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[900px] lg:max-w-[1100px] w-[95vw] max-h-[90vh] overflow-y-auto p-0">
-                    <div className="p-8 bg-white space-y-8 max-w-2xl mx-auto">
-                        {/* Thông tin chính */}
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="relative">
-                                <Avatar className="h-28 w-28 border-4 border-red-50 shadow-md">
-                                    <AvatarImage src={adminInfo.avatar} />
-                                    <AvatarFallback>AD</AvatarFallback>
-                                </Avatar>
-                                <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-full border-2 border-white flex items-center gap-1">
-                                    <ShieldCheck className="h-3 w-3" />
-                                    ADMIN
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <h2 className="text-2xl font-bold text-slate-900">{adminInfo.name}</h2>
-                                <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                                    <Mail className="h-4 w-4" />
-                                    <span className="text-sm">{adminInfo.email}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* Thông tin chi tiết */}
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                                <Info className="h-4 w-4" /> Chi tiết tài khoản
-                            </h3>
-
-                            <div className="grid grid-cols-1 gap-3">
-                                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-sm text-slate-600 flex items-center gap-2">
-                                        <Calendar className="h-4 w-4" /> Ngày khởi tạo
-                                    </span>
-                                    <span className="font-medium">{adminInfo.joinedDate}</span>
-                                </div>
-
-                                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-sm text-slate-600 flex items-center gap-2">
-                                        <ShieldCheck className="h-4 w-4" /> Cấp độ truy cập
-                                    </span>
-                                    <Badge variant="outline" className="border-red-200 text-red-700 bg-red-50">
-                                        Toàn quyền hệ thống
-                                    </Badge>
-                                </div>
-
-                                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-100">
-                                    <span className="text-sm text-slate-600 flex items-center gap-2">
-                                        <Info className="h-4 w-4" /> Trạng thái hoạt động
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
-                                        <span className="font-medium text-green-700">{adminInfo.status}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="p-4 bg-amber-50 border border-amber-100 rounded-lg text-amber-800 text-xs leading-relaxed">
-                            <strong>Lưu ý:</strong> Tài khoản Admin có quyền truy cập vào tất cả các module bao gồm Quản
-                            lý sản phẩm, Đơn hàng và Cấu hình website. Vui lòng bảo mật thông tin đăng nhập.
-                        </div>
-                    </div>
+                <DialogContent>
+                    <DialogViewAdminDetail id={idDetail} />
                 </DialogContent>
             </Dialog>
         </div>
