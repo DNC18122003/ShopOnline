@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 
 import { Badge as BadgeIcon, DollarSign, Eye, FileText, Filter, ListRestart, Loader, ShoppingBag } from 'lucide-react';
 
-import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -11,36 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { toast } from 'react-toastify';
 import { Pagination } from '@/components/public/pagination';
 import { getUserSale, updateUserStatus } from '@/services/account/account.api';
 import { Badge } from '@/components/ui/badge';
+import DialogViewDetailSale from './DialogViewDetailSale';
 
-const salesInfo = {
-    name: 'Nguyễn Văn Sale',
-    email: 'sale.petech@gmail.com',
-    avatar: 'https://i.pravatar.cc/150?u=sale1',
-    role: 'Nhân viên bán hàng',
-    joinedDate: '15/01/2026',
-    // Chỉ tập trung vào số lượng tổng quát
-    stats: {
-        totalRevenue: '$12,450.00', // Tổng tiền tạo ra
-        ordersHandled: 45, // Tổng số đơn đã xử lý
-        totalBlogs: 8, // Tổng số bài viết đã viết
-    },
-};
-
-const managedOrders = [
-    { id: 'ORD-2026-001', customer: 'Trần Thi B', date: '14/03/2026', total: '$500', status: 'Completed' },
-    { id: 'ORD-2026-015', customer: 'Lê Văn C', date: '15/03/2026', total: '$1,200', status: 'Processing' },
-];
-
-const blogList = [
-    { id: 1, title: 'Đánh giá chi tiết RTX 5090 sắp ra mắt', date: '10/03/2026', views: '150' },
-    { id: 2, title: 'Cách chọn nguồn (PSU) cho dàn máy Gaming', date: '01/03/2026', views: '320' },
-];
 const ManageSale = () => {
     // ==================== STATE ====================
     // URL & ROUTING STATE
@@ -65,7 +41,8 @@ const ManageSale = () => {
     // UI STATE
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-    // TEMPORAY STATE (Pending actions)
+    // TEMPORARY STATE (Pending actions)
+    const [idDetail, setIdDetail] = useState('-1');
 
     // LOADING STATE
     const [loading, setLoading] = useState(false);
@@ -313,11 +290,7 @@ const ManageSale = () => {
                             ) : (
                                 <TableBody>
                                     {dataUser.map((user) => (
-                                        <TableRow
-                                            key={user.id}
-                                            className="hover:bg-muted/50"
-                                            onClick={() => setOpenDialogDetail(true)}
-                                        >
+                                        <TableRow key={user.id} className="hover:bg-muted/50">
                                             <TableCell>
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={user.avatar} />
@@ -359,7 +332,14 @@ const ManageSale = () => {
                                             </TableCell>
 
                                             <TableCell className="text-center">
-                                                <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIdDetail(user._id);
+                                                        setIsDialogOpen(true);
+                                                    }}
+                                                >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
@@ -383,108 +363,8 @@ const ManageSale = () => {
                 </div>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[900px] lg:max-w-[1100px] w-[95vw] max-h-[90vh] overflow-y-auto p-0">
-                    <div className="p-6 space-y-6 bg-slate-50">
-                        {/* Header Info */}
-                        <div className="flex items-center gap-4 bg-white p-6 rounded-xl border">
-                            <Avatar className="h-16 w-16">
-                                <AvatarImage src={salesInfo.avatar} />
-                                <AvatarFallback>SALE</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <h2 className="text-xl font-bold">{salesInfo.name}</h2>
-                                <p className="text-sm text-muted-foreground">{salesInfo.email}</p>
-                                <BadgeIcon className="mt-1">Ngày vào làm: {salesInfo.joinedDate}</BadgeIcon>
-                            </div>
-                        </div>
-
-                        {/* Stats Grid - 3 chỉ số môn học yêu cầu */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Card>
-                                <CardContent className="pt-6 flex items-center gap-4">
-                                    <div className="p-2 bg-green-100 rounded-lg">
-                                        <DollarSign className="text-green-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Tổng tiền tạo ra</p>
-                                        <p className="text-2xl font-bold">{salesInfo.stats.totalRevenue}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardContent className="pt-6 flex items-center gap-4">
-                                    <div className="p-2 bg-blue-100 rounded-lg">
-                                        <ShoppingBag className="text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Đơn đã xử lý</p>
-                                        <p className="text-2xl font-bold">{salesInfo.stats.ordersHandled}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardContent className="pt-6 flex items-center gap-4">
-                                    <div className="p-2 bg-purple-100 rounded-lg">
-                                        <FileText className="text-purple-600" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm text-muted-foreground">Bài viết đã đăng</p>
-                                        <p className="text-2xl font-bold">{salesInfo.stats.totalBlogs}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-
-                        {/* Tabs nội dung */}
-                        <Tabs defaultValue="orders">
-                            <TabsList>
-                                <TabsTrigger value="orders">Đơn hàng đảm nhiệm</TabsTrigger>
-                                <TabsTrigger value="blogs">Danh sách bài viết</TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="orders" className="bg-white border rounded-lg mt-2">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Mã đơn</TableHead>
-                                            <TableHead>Khách hàng</TableHead>
-                                            <TableHead>Ngày xử lý</TableHead>
-                                            <TableHead className="text-right">Tổng tiền</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {managedOrders.map((order) => (
-                                            <TableRow key={order.id}>
-                                                <TableCell className="font-medium">{order.id}</TableCell>
-                                                <TableCell>{order.customer}</TableCell>
-                                                <TableCell>{order.date}</TableCell>
-                                                <TableCell className="text-right font-semibold">
-                                                    {order.total}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TabsContent>
-
-                            <TabsContent value="blogs" className="space-y-2 mt-2">
-                                {blogList.map((blog) => (
-                                    <div
-                                        key={blog.id}
-                                        className="p-4 bg-white border rounded-lg flex justify-between items-center shadow-sm"
-                                    >
-                                        <div>
-                                            <p className="font-medium">{blog.title}</p>
-                                            <p className="text-xs text-muted-foreground">Ngày đăng: {blog.date}</p>
-                                        </div>
-                                        <BadgeIcon variant="secondary">{blog.views} lượt xem</BadgeIcon>
-                                    </div>
-                                ))}
-                            </TabsContent>
-                        </Tabs>
-                    </div>
+                <DialogContent className="sm:max-w-175 lg:max-w-200 w-[95vw] max-h-[90vh] overflow-y-auto p-0">
+                    <DialogViewDetailSale id={idDetail} />
                 </DialogContent>
             </Dialog>
         </div>

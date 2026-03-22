@@ -22,3 +22,15 @@ export const createNewEmployee = (data) => {
 export const updateUserStatus = (id, status) => {
     return customizeAPI.put(`/admin/accounts/status`, { id, status })
 };
+export const getDetailAdmin = (id) => {
+    return customizeAPI.get(`/admin/accounts/details-admin/${id}`);
+}
+export const getDetailStaff = (id) => {
+    return customizeAPI.get(`/admin/accounts/details-staff/${id}`);
+}
+export const getDetailSales = (id) => {
+    return customizeAPI.get(`/admin/accounts/details-sales/${id}`);
+}
+export const getDetailCustomer = (id) => {
+    return customizeAPI.get(`/admin/accounts/details-customer/${id}`);
+}

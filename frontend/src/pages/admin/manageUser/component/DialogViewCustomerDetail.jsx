@@ -1,4 +1,4 @@
-import React, { use, useEffect } from 'react';
+import React, { use, useEffect, useState } from 'react';
 
 import { Badge, CalendarDays, Package, ShieldCheck } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { getDetailAdmin, getDetailCustomer } from '@/services/account/account.api';
+import { toast } from 'react-toastify';
 
 const customer = {
     name: 'Nguyen Hoang Dan',
@@ -33,13 +35,38 @@ const orderHistory = [
     },
 ];
 const DialogViewCustomerDetail = ({ id }) => {
-    const [loading, setLoading] = React.useState(true);
+    console.log('Admin ID:', id);
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {}, [id]);
+    useEffect(() => {
+        const fetchData = async () => {
+            console.log('Fetching cus details for ID:', id);
+            try {
+                setLoading(true);
+                const response = await getDetailCustomer(id);
+                console.log('API Response:', response.data[0]);
+                setData(response.data[0]);
+            } catch (error) {
+                toast.error('Không thể tải thông tin khách hàng. Vui lòng thử lại sau.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchData();
+    }, []);
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-64">
-                <span>Đang lấy thông tin khách hàng ...</span>
+            <div className="flex items-center justify-center h-48">
+                <span>Loading...</span>
+            </div>
+        );
+    }
+    if (!data) {
+        return (
+            <div className="flex items-center justify-center h-48">
+                <span>Không có dữ liệu admin</span>
             </div>
         );
     }
@@ -49,18 +76,23 @@ const DialogViewCustomerDetail = ({ id }) => {
             <div className="flex flex-col md:flex-row gap-6 items-start justify-between bg-white p-6 rounded-xl shadow-sm border">
                 <div className="flex gap-4 items-center">
                     <Avatar className="h-20 w-20 border-2 border-primary/20">
-                        <AvatarImage src={customer.avatar} />
-                        <AvatarFallback>DAN</AvatarFallback>
+                        <AvatarImage src={data.avatar} />
+                        <AvatarFallback>CS</AvatarFallback>
                     </Avatar>
                     <div>
-                        <p className="text-muted-foreground">{customer.email}</p>
+                        <p className="text-muted-foreground">{data.email}</p>
                         <div className="flex gap-4 mt-2 text-sm">
                             <span className="flex items-center gap-1">
-                                <CalendarDays className="h-4 w-4" /> Tham gia: {customer.joinDate}
+                                <CalendarDays className="h-4 w-4" /> Tham gia:{' '}
+                                {new Date(data.createdAt).toLocaleDateString('vi-VN')}
                             </span>
-                            <span className="flex items-center gap-1 text-green-600 font-medium">
-                                <ShieldCheck className="h-4 w-4" /> Tài khoản: {customer.status}
-                            </span>
+                            {data.isActive === 'active' ? (
+                                <span className="font-medium text-green-700">Hoạt động</span>
+                            ) : data.isActive === 'inactive' ? (
+                                <span className="font-medium text-red-700">Không hoạt động</span>
+                            ) : (
+                                <span className="font-medium text-gray-700">Bị cấm</span>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -69,20 +101,22 @@ const DialogViewCustomerDetail = ({ id }) => {
                     <Card className="bg-blue-50 border-none">
                         <CardContent className="p-4 flex flex-col items-center justify-center">
                             <p className="text-xs text-blue-600 font-semibold uppercase">Tổng chi tiêu</p>
-                            <p className="text-xl font-bold text-blue-900">{customer.totalSpent}</p>
+                            <p className="text-xl font-bold text-blue-900">
+                                {data.generatedAmount?.toLocaleString('vi-VN')} ₫
+                            </p>
                         </CardContent>
                     </Card>
                     <Card className="bg-purple-50 border-none">
                         <CardContent className="p-4 flex flex-col items-center justify-center">
                             <p className="text-xs text-purple-600 font-semibold uppercase">Số đơn hàng</p>
-                            <p className="text-xl font-bold text-purple-900">{customer.totalOrders}</p>
+                            <p className="text-xl font-bold text-purple-900">{data.processedOrders}</p>
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
             <Tabs defaultValue="orders" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+                <TabsList className="grid w-full grid-cols-2 lg:w-100">
                     <TabsTrigger value="orders">Lịch sử đơn hàng</TabsTrigger>
                     <TabsTrigger value="profile">Thông tin cá nhân</TabsTrigger>
                 </TabsList>
@@ -106,22 +140,44 @@ const DialogViewCustomerDetail = ({ id }) => {
                                         <TableHead>Trạng thái</TableHead>
                                     </TableRow>
                                 </TableHeader>
+
                                 <TableBody>
-                                    {orderHistory.map((order) => (
-                                        <TableRow key={order.id}>
+                                    {data.orders?.map((order) => (
+                                        <TableRow key={order._id}>
+                                            {/* Mã đơn */}
                                             <TableCell className="font-medium text-blue-600 underline cursor-pointer">
-                                                {order.id}
+                                                {order.orderCode || order._id}
                                             </TableCell>
-                                            <TableCell>{order.date}</TableCell>
-                                            <TableCell className="max-w-[300px] truncate">{order.items}</TableCell>
-                                            <TableCell className="font-semibold">{order.total}</TableCell>
+
+                                            {/* Ngày đặt */}
                                             <TableCell>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="bg-green-50 text-green-700 border-green-200"
+                                                {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                                            </TableCell>
+
+                                            {/* Sản phẩm chính */}
+                                            <TableCell className="max-w-[300px] truncate">
+                                                {order.items?.[0]?.nameSnapshot || 'Không có sản phẩm'}
+                                            </TableCell>
+
+                                            {/* Tổng tiền */}
+                                            <TableCell className="font-semibold">
+                                                {new Intl.NumberFormat('vi-VN', {
+                                                    style: 'currency',
+                                                    currency: 'VND',
+                                                }).format(order.finalAmount)}
+                                            </TableCell>
+
+                                            {/* Trạng thái */}
+                                            <TableCell>
+                                                <span
+                                                    className={`
+                            ${order.orderStatus === 'hoàn thành' && 'bg-green-50 text-green-700 border-green-200'}
+                            ${order.orderStatus === 'pending' && 'bg-yellow-50 text-yellow-700 border-yellow-200'}
+                            ${order.orderStatus === 'shipping' && 'bg-blue-50 text-blue-700 border-blue-200'}
+                        `}
                                                 >
-                                                    {order.status}
-                                                </Badge>
+                                                    {order.orderStatus}
+                                                </span>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -141,11 +197,25 @@ const DialogViewCustomerDetail = ({ id }) => {
                         <CardContent className="space-y-4">
                             <div className="flex justify-between border-b pb-2">
                                 <span className="text-muted-foreground text-sm">Số điện thoại</span>
-                                <span className="font-medium">{customer.phone}</span>
+                                <span className="font-medium">{data.phone}</span>
+                            </div>
+                            <div className="flex justify-between border-b pb-2">
+                                <span className="text-muted-foreground text-sm">Tên đinh danh</span>
+                                <span className="font-medium text-right">{data.userName}</span>
+                            </div>
+                            <div className="flex justify-between border-b pb-2">
+                                <span className="text-muted-foreground text-sm">Họ và tên</span>
+                                <span className="font-medium text-right">
+                                    {data.fullName ? data.fullName : 'chưa cập nhật'}
+                                </span>
                             </div>
                             <div className="flex justify-between border-b pb-2">
                                 <span className="text-muted-foreground text-sm">Địa chỉ mặc định</span>
-                                <span className="font-medium text-right">{customer.address}</span>
+                                <span className="font-medium text-right">
+                                    {[data.address?.street, data.address?.ward, data.address?.province]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                </span>
                             </div>
                         </CardContent>
                     </Card>

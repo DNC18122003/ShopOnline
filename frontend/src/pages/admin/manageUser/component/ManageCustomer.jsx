@@ -43,10 +43,12 @@ const ManageCustomer = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     // TEMPORARY STATE (Pending actions)
+    const [idDetail, setIdDetail] = useState('-1');
 
     // LOADING STATE
     const [loading, setLoading] = useState(false);
     const [loadingUpdateStatus, setLoadingUpdateStatus] = useState(false);
+
     // DERIVED STATE (Tính toán - XÓA state thừa)
 
     // ==================== USE EFFECT ====================
@@ -337,7 +339,14 @@ const ManageCustomer = () => {
                                             </TableCell>
 
                                             <TableCell className="text-center">
-                                                <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIdDetail(user._id);
+                                                        setIsDialogOpen(true);
+                                                    }}
+                                                >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
@@ -362,7 +371,7 @@ const ManageCustomer = () => {
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="sm:max-w-225 llg:max-w-275 w-[95vw] max-h-[90vh] overflow-y-auto p-0">
-                    <DialogViewCustomerDetail id={1} />
+                    <DialogViewCustomerDetail id={idDetail} />
                 </DialogContent>
             </Dialog>
         </div>
