@@ -138,7 +138,7 @@ const getUsersCustomerController = async (req, res) => {
         });
 
         //final 
-        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        //console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         const customer = await User.aggregate([
             ...pipeline,
             { $skip: skip },
@@ -430,7 +430,7 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
         const total = totalStaffs.length > 0 ? totalStaffs[0].total : 0;
         const totalPages = Math.ceil(total / pageSize);
         // test hàm pipeline
-        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        //console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         res.status(200).json({
             success: true,
             data: staff,

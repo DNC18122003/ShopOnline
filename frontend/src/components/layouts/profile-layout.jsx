@@ -81,7 +81,10 @@ const ProfileLayout = () => {
             toast.loading('Đang tải ảnh lên...');
 
             const response = await updateAvatarService(formData);
-
+            console.log('update avatar response:', response);
+            if (response.success) {
+                console.log('hi');
+            }
             if (response.success) {
                 // Cập nhật lại localStorage để UI đồng bộ ngay lập tức
                 console.log('update avatar response:', response);
