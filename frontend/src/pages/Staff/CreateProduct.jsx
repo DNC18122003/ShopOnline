@@ -1,21 +1,82 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, X, ImagePlus, Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, ImagePlus, Save, Loader2, Plus, Trash2, Cpu, Monitor, Layers, CircuitBoard, Package } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { createProduct, uploadImages } from '../../services/product/product.api';
 import { getCategories } from '../../services/category/category.api';
 import { getBrands } from '../../services/brand/brand.api';
 
-// ========== CONSTANTS ==========
-const SPEC_FIELDS = [
-    { key: 'socket', label: 'Socket', placeholder: 'VD: LGA 1700, AM5', type: 'text' },
-    { key: 'ram_type', label: 'Loại RAM', placeholder: 'VD: DDR4, DDR5', type: 'text' },
-    { key: 'form_factor', label: 'Form Factor', placeholder: 'VD: ATX, mATX, ITX', type: 'text' },
-    { key: 'bus', label: 'Bus', placeholder: 'VD: 3200, 5600', type: 'text' },
-    { key: 'capacity', label: 'Dung lượng (GB)', placeholder: 'VD: 8, 16, 512, 1000', type: 'number' },
-    { key: 'vram', label: 'VRAM', placeholder: 'VD: 8GB GDDR6X', type: 'text' },
-    { key: 'wattage', label: 'Công suất (W)', placeholder: 'VD: 650, 750, 850', type: 'number' },
+// ========== PRODUCT TYPE OPTIONS ==========
+const PRODUCT_TYPES = [
+    { key: 'product', label: 'Sản phẩm chung', icon: Package, color: 'gray' },
+    { key: 'cpu', label: 'CPU', icon: Cpu, color: 'blue' },
+    { key: 'gpu', label: 'GPU (Card màn hình)', icon: Monitor, color: 'green' },
+    { key: 'ram', label: 'RAM', icon: Layers, color: 'purple' },
+    { key: 'mainboard', label: 'Mainboard', icon: CircuitBoard, color: 'orange' },
 ];
+
+// ========== SPEC FIELDS PER TYPE ==========
+const SPEC_FIELDS_BY_TYPE = {
+    product: [
+        { key: 'socket', label: 'Socket', placeholder: 'VD: LGA 1700, AM5', type: 'text' },
+        { key: 'ram_type', label: 'Loại RAM', placeholder: 'VD: DDR4, DDR5', type: 'text' },
+        { key: 'form_factor', label: 'Form Factor', placeholder: 'VD: ATX, mATX, ITX', type: 'text' },
+        { key: 'bus', label: 'Bus', placeholder: 'VD: 3200, 5600', type: 'text' },
+        { key: 'capacity', label: 'Dung lượng (GB)', placeholder: 'VD: 8, 16, 512, 1000', type: 'number' },
+        { key: 'vram', label: 'VRAM', placeholder: 'VD: 8GB GDDR6X', type: 'text' },
+        { key: 'wattage', label: 'Công suất (W)', placeholder: 'VD: 650, 750, 850', type: 'number' },
+    ],
+    cpu: [
+        { key: 'socket', label: 'Socket', placeholder: 'VD: LGA 1700, AM5', type: 'text', required: true },
+        { key: 'cores', label: 'Số nhân (Cores)', placeholder: 'VD: 8, 16, 24', type: 'number' },
+        { key: 'threads', label: 'Số luồng (Threads)', placeholder: 'VD: 16, 32', type: 'number' },
+        { key: 'base_clock', label: 'Xung cơ bản (GHz)', placeholder: 'VD: 3.4', type: 'number' },
+        { key: 'boost_clock', label: 'Xung boost (GHz)', placeholder: 'VD: 5.6', type: 'number' },
+        { key: 'tdp', label: 'TDP (W)', placeholder: 'VD: 125, 170', type: 'number' },
+        { key: 'cache', label: 'Cache', placeholder: 'VD: 36MB L3', type: 'text' },
+        { key: 'integrated_gpu', label: 'GPU tích hợp', placeholder: 'VD: Intel UHD 770', type: 'text' },
+        { key: 'architecture', label: 'Kiến trúc', placeholder: 'VD: Raptor Lake, Zen 4', type: 'text' },
+    ],
+    gpu: [
+        { key: 'vram', label: 'VRAM', placeholder: 'VD: 8GB, 12GB, 24GB', type: 'text', required: true },
+        { key: 'core_clock', label: 'Xung core (MHz)', placeholder: 'VD: 2235', type: 'number' },
+        { key: 'boost_clock', label: 'Xung boost (MHz)', placeholder: 'VD: 2610', type: 'number' },
+        { key: 'tdp', label: 'TDP (W)', placeholder: 'VD: 350, 450', type: 'number' },
+        { key: 'cuda_cores', label: 'CUDA Cores', placeholder: 'VD: 16384', type: 'number' },
+        { key: 'memory_type', label: 'Loại bộ nhớ', placeholder: 'VD: GDDR6X', type: 'text' },
+        { key: 'bus_width', label: 'Bus Width (bit)', placeholder: 'VD: 256, 384', type: 'number' },
+        { key: 'length', label: 'Chiều dài (mm)', placeholder: 'VD: 336', type: 'number' },
+    ],
+    ram: [
+        { key: 'ram_type', label: 'Loại RAM', placeholder: 'VD: DDR4, DDR5', type: 'text', required: true },
+        { key: 'capacity', label: 'Dung lượng (GB)', placeholder: 'VD: 8, 16, 32', type: 'number', required: true },
+        { key: 'bus', label: 'Bus (MHz)', placeholder: 'VD: 3200, 5600', type: 'number' },
+        { key: 'sticks', label: 'Số thanh', placeholder: 'VD: 1, 2', type: 'number' },
+        { key: 'latency', label: 'Latency', placeholder: 'VD: CL16, CL18', type: 'text' },
+        { key: 'voltage', label: 'Voltage (V)', placeholder: 'VD: 1.35', type: 'number' },
+        { key: 'rgb', label: 'RGB', placeholder: '', type: 'checkbox' },
+    ],
+    mainboard: [
+        { key: 'socket', label: 'Socket', placeholder: 'VD: LGA 1700, AM5', type: 'text', required: true },
+        { key: 'ram_type', label: 'Loại RAM hỗ trợ', placeholder: 'VD: DDR4, DDR5', type: 'text', required: true },
+        { key: 'max_ram_capacity', label: 'RAM tối đa (GB)', placeholder: 'VD: 128', type: 'number' },
+        { key: 'ram_slots', label: 'Số khe RAM', placeholder: 'VD: 2, 4', type: 'number' },
+        { key: 'form_factor', label: 'Form Factor', placeholder: 'VD: ATX, mATX, ITX', type: 'text' },
+        { key: 'chipset', label: 'Chipset', placeholder: 'VD: Z790, B650', type: 'text' },
+        { key: 'pcie_version', label: 'PCIe Version', placeholder: 'VD: 5.0, 4.0', type: 'text' },
+        { key: 'm2_slots', label: 'Số khe M.2', placeholder: 'VD: 2, 3, 4', type: 'number' },
+        { key: 'sata_ports', label: 'Số cổng SATA', placeholder: 'VD: 4, 6', type: 'number' },
+    ],
+};
+
+// ========== TYPE COLORS ==========
+const TYPE_COLORS = {
+    product: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-300', ring: 'ring-gray-400', activeBg: 'bg-gray-600' },
+    cpu: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-300', ring: 'ring-blue-400', activeBg: 'bg-blue-600' },
+    gpu: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-300', ring: 'ring-green-400', activeBg: 'bg-green-600' },
+    ram: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-300', ring: 'ring-purple-400', activeBg: 'bg-purple-600' },
+    mainboard: { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-300', ring: 'ring-orange-400', activeBg: 'bg-orange-600' },
+};
 
 export function CreateProduct() {
     const navigate = useNavigate();
@@ -25,6 +86,7 @@ export function CreateProduct() {
     const [uploading, setUploading] = useState(false);
     const [categories, setCategories] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [productType, setProductType] = useState('product');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -36,15 +98,17 @@ export function CreateProduct() {
         isActive: true,
     });
 
-    const [specifications, setSpecifications] = useState({
-        socket: '',
-        ram_type: '',
-        form_factor: '',
-        bus: '',
-        capacity: '',
-        vram: '',
-        wattage: '',
-    });
+    // Khởi tạo specs rỗng cho tất cả types
+    const getEmptySpecs = (type) => {
+        const fields = SPEC_FIELDS_BY_TYPE[type] || [];
+        const specs = {};
+        fields.forEach((f) => {
+            specs[f.key] = f.type === 'checkbox' ? false : '';
+        });
+        return specs;
+    };
+
+    const [specifications, setSpecifications] = useState(getEmptySpecs('product'));
 
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
@@ -71,6 +135,11 @@ export function CreateProduct() {
     }, []);
 
     // ========== HANDLERS ==========
+    const handleTypeChange = (type) => {
+        setProductType(type);
+        setSpecifications(getEmptySpecs(type));
+    };
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData((prev) => ({
@@ -80,10 +149,10 @@ export function CreateProduct() {
     };
 
     const handleSpecChange = (e) => {
-        const { name, value } = e.target;
+        const { name, value, type, checked } = e.target;
         setSpecifications((prev) => ({
             ...prev,
-            [name]: value,
+            [name]: type === 'checkbox' ? checked : value,
         }));
     };
 
@@ -155,7 +224,7 @@ export function CreateProduct() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validate
+        // Validate basic fields
         if (!formData.name.trim()) {
             toast.error('Vui lòng nhập tên sản phẩm');
             return;
@@ -175,6 +244,15 @@ export function CreateProduct() {
         if (!formData.brand) {
             toast.error('Vui lòng chọn thương hiệu');
             return;
+        }
+
+        // Validate required spec fields cho loại sản phẩm
+        const currentSpecFields = SPEC_FIELDS_BY_TYPE[productType] || [];
+        for (const field of currentSpecFields) {
+            if (field.required && !specifications[field.key] && specifications[field.key] !== 0) {
+                toast.error(`Vui lòng nhập ${field.label}`);
+                return;
+            }
         }
 
         try {
@@ -205,8 +283,12 @@ export function CreateProduct() {
             const specs = {};
             Object.entries(specifications).forEach(([key, value]) => {
                 if (value !== '' && value !== null && value !== undefined) {
-                    if (['capacity', 'wattage'].includes(key)) {
+                    // Auto-convert number fields
+                    const fieldDef = currentSpecFields.find(f => f.key === key);
+                    if (fieldDef && fieldDef.type === 'number') {
                         specs[key] = Number(value);
+                    } else if (fieldDef && fieldDef.type === 'checkbox') {
+                        specs[key] = Boolean(value);
                     } else {
                         specs[key] = value;
                     }
@@ -224,8 +306,9 @@ export function CreateProduct() {
                 specs.detail_json = detailJson;
             }
 
-            // Create product
+            // Create product — gửi productType cho backend
             const productData = {
+                productType, // ← field mới
                 name: formData.name.trim(),
                 description: formData.description.trim(),
                 price: Number(formData.price),
@@ -250,6 +333,10 @@ export function CreateProduct() {
         }
     };
 
+    // ========== CURRENT SPEC FIELDS ==========
+    const currentSpecFields = SPEC_FIELDS_BY_TYPE[productType] || [];
+    const typeColors = TYPE_COLORS[productType] || TYPE_COLORS.product;
+
     // ========== RENDER ==========
     return (
         <>
@@ -269,6 +356,46 @@ export function CreateProduct() {
             {/* Form Content */}
             <div className="p-8">
                 <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
+                    {/* ============ Section 0: Loại Sản Phẩm ============ */}
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h2 className="text-lg font-semibold text-gray-800 mb-5 flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold">
+                                ★
+                            </span>
+                            Loại Sản Phẩm
+                        </h2>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                            {PRODUCT_TYPES.map((pt) => {
+                                const Icon = pt.icon;
+                                const isSelected = productType === pt.key;
+                                const colors = TYPE_COLORS[pt.key];
+                                return (
+                                    <button
+                                        key={pt.key}
+                                        type="button"
+                                        onClick={() => handleTypeChange(pt.key)}
+                                        className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 ${
+                                            isSelected
+                                                ? `${colors.border} ${colors.bg} ring-2 ${colors.ring} shadow-md`
+                                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <Icon className={`w-6 h-6 ${isSelected ? colors.text : 'text-gray-400'}`} />
+                                        <span className={`text-sm font-medium ${isSelected ? colors.text : 'text-gray-500'}`}>
+                                            {pt.label}
+                                        </span>
+                                        {isSelected && (
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full text-white ${colors.activeBg}`}>
+                                                Đang chọn
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     {/* ============ Section 1: Thông tin cơ bản ============ */}
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <h2 className="text-lg font-semibold text-gray-800 mb-5 flex items-center gap-2">
@@ -463,31 +590,56 @@ export function CreateProduct() {
                         </div>
                     </div>
 
-                    {/* ============ Section 5: Thông Số Kỹ Thuật ============ */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    {/* ============ Section 5: Thông Số Kỹ Thuật (dynamic) ============ */}
+                    <div className={`bg-white rounded-xl shadow-sm border-2 ${typeColors.border} p-6 transition-colors duration-300`}>
                         <h2 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-lg bg-cyan-100 text-cyan-600 flex items-center justify-center text-sm font-bold">
+                            <span className={`w-8 h-8 rounded-lg ${typeColors.bg} ${typeColors.text} flex items-center justify-center text-sm font-bold`}>
                                 5
                             </span>
                             Thông Số Kỹ Thuật
+                            <span className={`text-xs font-normal ml-2 px-2 py-0.5 rounded-full ${typeColors.bg} ${typeColors.text}`}>
+                                {PRODUCT_TYPES.find(pt => pt.key === productType)?.label}
+                            </span>
                         </h2>
-                        <p className="text-xs text-gray-400 mb-5">Chỉ điền các thông số liên quan đến loại sản phẩm</p>
+                        <p className="text-xs text-gray-400 mb-5">
+                            {productType === 'product'
+                                ? 'Điền các thông số chung liên quan đến sản phẩm'
+                                : `Các thông số dành riêng cho ${PRODUCT_TYPES.find(pt => pt.key === productType)?.label}. Trường có dấu (*) là bắt buộc.`}
+                        </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {SPEC_FIELDS.map((field) => (
+                            {currentSpecFields.map((field) => (
                                 <div key={field.key}>
-                                    <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                                        {field.label}
-                                    </label>
-                                    <input
-                                        type={field.type}
-                                        name={field.key}
-                                        value={specifications[field.key]}
-                                        onChange={handleSpecChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                                        placeholder={field.placeholder}
-                                        min={field.type === 'number' ? '0' : undefined}
-                                    />
+                                    {field.type === 'checkbox' ? (
+                                        <label className="flex items-center gap-3 px-3 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                name={field.key}
+                                                checked={specifications[field.key] || false}
+                                                onChange={handleSpecChange}
+                                                className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                            <span className="text-sm font-medium text-gray-600">{field.label}</span>
+                                        </label>
+                                    ) : (
+                                        <>
+                                            <label className="block text-sm font-medium text-gray-600 mb-1.5">
+                                                {field.label}
+                                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                                            </label>
+                                            <input
+                                                type={field.type}
+                                                name={field.key}
+                                                value={specifications[field.key] || ''}
+                                                onChange={handleSpecChange}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                                placeholder={field.placeholder}
+                                                min={field.type === 'number' ? '0' : undefined}
+                                                step={field.type === 'number' ? 'any' : undefined}
+                                                required={field.required}
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             ))}
                         </div>
