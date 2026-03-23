@@ -15,20 +15,8 @@ import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/public/pagination';
 
 import { getUserStaff, updateUserStatus } from '@/services/account/account.api';
+import DialogViewStaffDetail from './DialogViewStaffDetail';
 
-const staffInfo = {
-    name: 'Lê Văn Staff',
-    email: 'staff.inventory@techstore.com',
-    avatar: 'https://i.pravatar.cc/150?u=staff3',
-    role: 'Quản lý sản phẩm',
-    joinedDate: '10/12/2025',
-    status: 'Active',
-    stats: {
-        productsCreated: 125,
-        categoriesCreated: 12,
-        brandsCreated: 8,
-    },
-};
 const ManageStaff = () => {
     // ==================== STATE ====================
     // URL & ROUTING STATE
@@ -50,7 +38,7 @@ const ManageStaff = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     // TEMPORARY STATE (Pending actions)
-
+    const [idDetail, setIdDetail] = useState('-1');
     // LOADING STATE
     const [loading, setLoading] = useState(false);
     const [loadingUpdateStatus, setLoadingUpdateStatus] = useState(false);
@@ -258,7 +246,14 @@ const ManageStaff = () => {
                                             </TableCell>
 
                                             <TableCell className="text-center">
-                                                <Button variant="ghost" size="sm" onClick={() => setIsDialogOpen(true)}>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        setIdDetail(user._id);
+                                                        setIsDialogOpen(true);
+                                                    }}
+                                                >
                                                     <Eye className="h-4 w-4" />
                                                 </Button>
                                             </TableCell>
@@ -282,85 +277,8 @@ const ManageStaff = () => {
                 </div>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[900px] lg:max-w-[1100px] w-[95vw] max-h-[90vh] overflow-y-auto p-0">
-                    <div className="p-6 bg-white rounded-lg space-y-8">
-                        {/* 1. Profile Header */}
-                        <div className="flex flex-col items-center text-center space-y-3">
-                            <div className="relative">
-                                <Avatar className="h-24 w-24 border-4 border-slate-100 shadow-sm">
-                                    <AvatarImage src={staffInfo.avatar} />
-                                    <AvatarFallback>ST</AvatarFallback>
-                                </Avatar>
-                                <BadgeIcon className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 hover:bg-green-600 border-2 border-white">
-                                    {staffInfo.status}
-                                </BadgeIcon>
-                            </div>
-
-                            <div>
-                                <h2 className="text-2xl font-bold text-slate-900">{staffInfo.name}</h2>
-                                <p className="text-blue-600 font-medium">{staffInfo.role}</p>
-                            </div>
-
-                            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground pt-2">
-                                <div className="flex items-center gap-1">
-                                    <Mail className="h-4 w-4" />
-                                    {staffInfo.email}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
-                                    Gia nhập: {staffInfo.joinedDate}
-                                </div>
-                            </div>
-                        </div>
-
-                        <hr className="border-slate-100" />
-
-                        {/* 2. Stats Grid - Trọng tâm là phần này */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Sản phẩm */}
-                            <div className="flex flex-col items-center p-4 rounded-xl bg-blue-50/50 border border-blue-100">
-                                <div className="p-3 bg-blue-500 rounded-full mb-3 shadow-sm">
-                                    <Box className="h-6 w-6 text-white" />
-                                </div>
-                                <span className="text-3xl font-black text-blue-700">
-                                    {staffInfo.stats.productsCreated}
-                                </span>
-                                <span className="text-sm font-medium text-blue-600/80 uppercase tracking-wider mt-1">
-                                    Sản phẩm
-                                </span>
-                            </div>
-
-                            {/* Thương hiệu */}
-                            <div className="flex flex-col items-center p-4 rounded-xl bg-purple-50/50 border border-purple-100">
-                                <div className="p-3 bg-purple-500 rounded-full mb-3 shadow-sm">
-                                    <Tag className="h-6 w-6 text-white" />
-                                </div>
-                                <span className="text-3xl font-black text-purple-700">
-                                    {staffInfo.stats.brandsCreated}
-                                </span>
-                                <span className="text-sm font-medium text-purple-600/80 uppercase tracking-wider mt-1">
-                                    Thương hiệu
-                                </span>
-                            </div>
-
-                            {/* Danh mục */}
-                            <div className="flex flex-col items-center p-4 rounded-xl bg-amber-50/50 border border-amber-100">
-                                <div className="p-3 bg-amber-500 rounded-full mb-3 shadow-sm">
-                                    <Layers className="h-6 w-6 text-white" />
-                                </div>
-                                <span className="text-3xl font-black text-amber-700">
-                                    {staffInfo.stats.categoriesCreated}
-                                </span>
-                                <span className="text-sm font-medium text-amber-600/80 uppercase tracking-wider mt-1">
-                                    Danh mục
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="pt-4 text-center">
-                            <p className="text-xs text-slate-400 italic">* Dữ liệu đóng góp tính đến ngày hôm nay</p>
-                        </div>
-                    </div>
+                <DialogContent>
+                    <DialogViewStaffDetail id={idDetail} />
                 </DialogContent>
             </Dialog>
         </div>

@@ -8,6 +8,9 @@ import { useAuth } from '../../context/authContext';
 export default function CommentManagementPage() {
     // --- STATE LỌC ---
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'published', 'draft'
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     // --- STATE DATA ---
     const [comments, setComments] = useState([]);
@@ -26,6 +29,18 @@ export default function CommentManagementPage() {
     const [replyingTo, setReplyingTo] = useState(null); // Lưu ID của comment đang được phản hồi
     const [replyContent, setReplyContent] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+
+    // Component hiển thị lỗi
+    const ErrorAlert = ({ message }) => {
+        if (!message) return null;
+        return (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4 text-sm flex items-center animate-in fade-in slide-in-from-top-2">
+                <span className="font-bold mr-2">Lỗi:</span>
+                <span>{message}</span>
+            </div>
+        );
+    };
 
     // GỌI API LẤY DANH SÁCH TẤT CẢ BÌNH LUẬN
     useEffect(() => {
@@ -52,7 +67,7 @@ export default function CommentManagementPage() {
 
         fetchComments();
     }, []);
-
+    // 2. Gọi API hiện comment theo product
     useEffect(() => {
         const fetchProductComments = async () => {
             // Kiểm tra xem có lấy được productId không
@@ -102,11 +117,15 @@ export default function CommentManagementPage() {
         }
     };
     const { user } = useAuth();
-    // 2. Gọi API xử lý ẩn hiện comment
+    // 2. Gọi API trả lời comment của sale
     const handleSendReply = async (parentComment) => {
+        setErrorMessage('');
+
         if (!replyContent.trim()) {
-            toast.warn('Vui lòng nhập nội dung phản hồi');
-            return;
+            return setErrorMessage('Trường nhập comment không được để trống');
+        }
+        if (replyContent.length < 10) {
+            return setErrorMessage('Trường nhập comment phải dài hơn 10 ký tự');
         }
         setIsSubmittingReply(true);
         try {
@@ -158,18 +177,35 @@ export default function CommentManagementPage() {
     };
     // --- LOGIC TÌM KIẾM ---
     // Tự động đưa về trang 1 khi người dùng gõ tìm kiếm
+    // Tự động đưa về trang 1 khi bất kỳ bộ lọc nào thay đổi
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery]);
+    }, [searchQuery, statusFilter, startDate, endDate]);
 
-    // Lọc dữ liệu dựa trên từ khóa tìm kiếm (Tên sản phẩm, Tên user, Nội dung)
     const filteredComments = comments.filter((comment) => {
+        // 1. Lọc theo Từ khóa (Search)
         const searchLower = searchQuery.toLowerCase();
-        return (
+        const matchesSearch =
             comment.content?.toLowerCase().includes(searchLower) ||
             comment.productId?.name?.toLowerCase().includes(searchLower) ||
-            comment.userId?.userName?.toLowerCase().includes(searchLower)
-        );
+            comment.userId?.userName?.toLowerCase().includes(searchLower);
+
+        // 2. Lọc theo Trạng thái (Status)
+        // isActive === false tương ứng 'draft' (Ẩn), ngược lại là 'published' (Hiển thị)
+        const isCommentActive = comment.isActive !== false;
+        const matchesStatus =
+            statusFilter === 'all' ||
+            (statusFilter === 'published' && isCommentActive) ||
+            (statusFilter === 'draft' && !isCommentActive);
+
+        // 3. Lọc theo Thời gian (Date)
+        const commentDate = new Date(comment.createdAt).setHours(0, 0, 0, 0);
+        const start = startDate ? new Date(startDate).setHours(0, 0, 0, 0) : null;
+        const end = endDate ? new Date(endDate).setHours(0, 0, 0, 0) : null;
+
+        const matchesDate = (!start || commentDate >= start) && (!end || commentDate <= end);
+
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     // --- LOGIC TÍNH TOÁN PHÂN TRANG (Dựa trên filteredComments thay vì comments gốc) ---
@@ -198,6 +234,45 @@ export default function CommentManagementPage() {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pl-10"
                             />
+                        </div>
+                        <div className="w-full md:w-auto min-w-[150px]">
+                            <select
+                                className="w-full h-10 px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                            >
+                                <option value="all">Tất cả trạng thái</option>
+                                <option value="published">Hiển Thị</option>
+                                <option value="draft">Ẩn</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <Input
+                                type="date"
+                                className="w-full md:w-[140px] text-sm"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                            <Input
+                                type="date"
+                                className="w-full md:w-[140px] text-sm"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                            {/* Nút reset nhanh nếu cần */}
+                            {(startDate || endDate || statusFilter !== 'all') && (
+                                <button
+                                    onClick={() => {
+                                        setStartDate('');
+                                        setEndDate('');
+                                        setStatusFilter('all');
+                                    }}
+                                    className="text-xs text-red-500 hover:underline px-2"
+                                >
+                                    Xóa lọc
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -419,6 +494,8 @@ export default function CommentManagementPage() {
                                 <h3 className="text-lg font-bold text-gray-800 mb-4 uppercase">
                                     Hỏi và đáp (Bình luận)
                                 </h3>
+                                {/* Hiển thị lỗi */}
+                                <ErrorAlert message={errorMessage} />
                                 <div className="border rounded-xl p-6 shadow-sm bg-white max-h-[400px] overflow-y-auto">
                                     {isLoadingProductComments ? (
                                         <div className="text-center text-gray-500 py-4">Đang tải bình luận...</div>
@@ -464,12 +541,14 @@ export default function CommentManagementPage() {
                                                                 </button>
 
                                                                 {replyingTo === comment._id && (
-                                                                    <div className="mt-2 space-y-2 animate-in fade-in slide-in-from-top-1">
+                                                                    <div className="w-full mt-2 space-y-2 animate-in fade-in slide-in-from-top-1">
                                                                         <textarea
                                                                             value={replyContent}
-                                                                            onChange={(e) =>
-                                                                                setReplyContent(e.target.value)
-                                                                            }
+                                                                            onChange={(e) => {
+                                                                                setReplyContent(e.target.value);
+                                                                                // Nếu đang có lỗi thì xóa lỗi đi
+                                                                                if (errorMessage) setErrorMessage('');
+                                                                            }}
                                                                             placeholder="Viết câu trả lời..."
                                                                             className="w-full p-2 text-sm border rounded-md focus:ring-1 focus:ring-blue-500 outline-none"
                                                                             rows={2}
