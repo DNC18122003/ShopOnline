@@ -190,7 +190,7 @@ export default function ProductDetailPage() {
             return toast.warning('Vui lòng nhập nội dung phản hồi hợp lệ!');
         }
 
-        if (!user || !user._id) {
+        if (!user || !user.id) {
             return toast.error('Vui lòng đăng nhập để gửi phản hồi!');
         }
 
@@ -200,7 +200,7 @@ export default function ProductDetailPage() {
             // 2. Gửi API
             const response = await commentService.createComment({
                 productId: productId,
-                userId: user._id,
+                userId: user.id,
                 content: content,
                 parentId: targetParentId, // ---> Gửi ID của comment gốc
             });
@@ -222,7 +222,7 @@ export default function ProductDetailPage() {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi phản hồi.');
         }
     };
-    // --- HÀM GỬI CÂU HỎI ĐÃ ĐƯỢC CẬP NHẬT ---
+    // --- HÀM GỬI CÂU HỎI  ---
     const submitQuestion = async () => {
         if (question.length < 10) {
             return toast.warning('Câu hỏi quá ngắn! Vui lòng nhập ít nhất 10 ký tự.');
@@ -230,7 +230,7 @@ export default function ProductDetailPage() {
         console.log('Dữ liệu user đang đăng nhập (từ Context):', user);
 
         //  SỬ DỤNG biến 'user'
-        if (!user || !user._id) {
+        if (!user || !user.id) {
             return toast.error('Vui lòng đăng nhập để gửi câu hỏi!');
         }
 
@@ -238,7 +238,7 @@ export default function ProductDetailPage() {
             const productId = product._id || product.id;
             const response = await commentService.createComment({
                 productId: productId,
-                userId: user._id, // ---> Dùng user._id chuẩn từ Context
+                userId: user.id, // ---> Dùng user._id chuẩn từ Context
                 content: question,
                 parentId: null,
             });
