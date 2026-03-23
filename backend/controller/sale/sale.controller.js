@@ -1,6 +1,6 @@
 const OrderAssignment = require("../../models/Order/OrderAssignment");
 const Order = require("../../models/Order/Order");
-
+const { assignOrderToSale } = require("../../utils/assignment");
 // 1. Lấy danh sách các đơn hàng ĐANG CHỜ (hệ thống mới gán, chưa bấm nhận)
 
 const getPendingAssignments = async (req, res) => {
@@ -75,18 +75,26 @@ const rejectOrder = async (req, res) => {
       status: "waiting",
     });
 
-    if (!assignment)
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy lượt phân công này" });
+    if (!assignment) {
+      return res.status(404).json({
+        message: "Không tìm thấy lượt phân công này",
+      });
+    }
 
     assignment.status = "rejected";
-    assignment.historySales.push(saleId); // Thêm vào lịch sử để không gán lại cho người này
+
+    if (!assignment.historySales.includes(saleId)) {
+      assignment.historySales.push(saleId);
+    }
+
     await assignment.save();
 
+    // gán cho sale khác
+    await assignOrderToSale(orderId, assignment.historySales);
 
-
-    res.json({ message: "Đã từ chối đơn hàng thành công" });
+    res.json({
+      message: "Đã từ chối đơn hàng, hệ thống đang gán cho sale khác",
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

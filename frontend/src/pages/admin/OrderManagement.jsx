@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Eye, Package, Clock, Truck, DollarSign, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
+import { Search, Eye, Package, Clock, Truck, DollarSign } from 'lucide-react';
 import { getAllOrders,updateOrderStatus } from '@/services/order/order.api';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import StatusDropdown from '../../components/ui/StatusDropdown';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import warningIcon from '../../assets/warning.png';
 const statusFlow = {
     pending: ['confirmed', 'cancelled'],
@@ -13,8 +11,7 @@ const statusFlow = {
     delivered: ['completed', 'returned'],
 };
 const OrderManagement = () => {
-    const [orders, setOrders] = useState([]);
-
+  
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [paymentMethodFilter, setPaymentMethodFilter] = useState('');
@@ -22,35 +19,36 @@ const OrderManagement = () => {
     const [fromDate, setFromDate] = useState('');
     const [toDate, setToDate] = useState('');
     const [datePreset, setDatePreset] = useState('');
-    const [updating, setUpdating] = useState(false);
-    const [confirmOpen, setConfirmOpen] = useState(false);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [totalOrders, setTotalOrders] = useState(0);
+    const [orders, setOrders] = useState([]);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const limit = 10;
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchOrders();
-    }, []);
+    }, [page]);
 
+    useEffect(() => {
+        setPage(1);
+    }, [search, statusFilter, paymentMethodFilter, paymentStatusFilter, fromDate, toDate]);
 
-    const fetchOrders = async () => {
-        try {
-            const res = await getAllOrders();
-            setOrders(res || []);
-        } catch (error) {
-            console.log(error);
-            setOrders([]);
-        }
-    };
+   const fetchOrders = async () => {
+       try {
+           const res = await getAllOrders(page, limit);
 
+           setOrders(res.orders); 
+           setTotalOrders(res.total || 0);
+           setTotalPages(res.totalPages);
+       } catch (error) {
+           console.error(error);
+       }
+   };
 
     const formatPrice = (price) => {
         return (price || 0).toLocaleString('vi-VN') + ' đ';
     };
-const confirmUpdateStatus = async () => {
-    await handleUpdateStatus(selectedOrder, selectedStatus);
-    setConfirmOpen(false);
-};
 
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('vi-VN', {
@@ -60,37 +58,69 @@ const confirmUpdateStatus = async () => {
         });
     };
 
+    const getStatusStyle = (status) => {
+        switch (status) {
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-700';
 
- const getStatusStyle = (status) => {
-     switch (status) {
-         case 'pending':
-             return 'bg-yellow-100 text-yellow-700';
+            case 'confirmed':
+                return 'bg-blue-100 text-blue-700';
 
-         case 'confirmed':
-             return 'bg-blue-100 text-blue-700';
+            case 'shipping':
+                return 'bg-purple-100 text-purple-700';
 
-         case 'shipping':
-             return 'bg-purple-100 text-purple-700';
+            case 'delivered':
+                return 'bg-green-100 text-green-700';
 
-         case 'delivered':
-             return 'bg-green-100 text-green-700';
+            case 'completed':
+                return 'bg-emerald-100 text-emerald-700';
 
-         case 'completed':
-             return 'bg-emerald-100 text-emerald-700';
+            case 'cancelled':
+                return 'bg-red-100 text-red-600';
 
-         case 'cancelled':
-             return 'bg-red-100 text-red-600';
+            case 'delivery_failed':
+                return 'bg-orange-100 text-orange-700';
 
-         case 'delivery_failed':
-             return 'bg-orange-100 text-orange-700';
+            case 'returned':
+                return 'bg-gray-200 text-gray-700';
 
-         case 'returned':
-             return 'bg-gray-200 text-gray-700';
+            default:
+                return 'bg-gray-100 text-gray-600';
+        }
+    };
+    const formatAssignStatus = (status) => {
+        switch (status) {
+            case 'waiting':
+                return {
+                    label: 'Đang chờ sale',
+                    className: 'bg-yellow-100 text-yellow-700',
+                };
 
-         default:
-             return 'bg-gray-100 text-gray-600';
-     }
- };
+            case 'accepted':
+                return {
+                    label: 'Sale đã nhận',
+                    className: 'bg-green-100 text-green-700',
+                };
+
+            case 'timeout':
+                return {
+                    label: 'Sale không phản hồi',
+                    className: 'bg-red-100 text-red-600',
+                };
+
+            case 'rejected':
+                return {
+                    label: 'Sale từ chối',
+                    className: 'bg-gray-200 text-gray-700',
+                };
+
+            default:
+                return {
+                    label: 'Chưa có',
+                    className: 'bg-gray-100 text-gray-500',
+                };
+        }
+    };
 
     const getPaymentStyle = (method) => {
         switch (method) {
@@ -115,23 +145,7 @@ const confirmUpdateStatus = async () => {
                 return 'bg-gray-100 text-gray-600';
         }
     };
-const handleUpdateStatus = async (orderId, newStatus) => {
-    if (updating) return;
 
-    try {
-        setUpdating(true);
-
-        await updateOrderStatus(orderId, newStatus);
-
-        toast.success('Cập nhật trạng thái thành công');
-
-        fetchOrders();
-    } catch (error) {
-        console.log(error);
-    } finally {
-        setUpdating(false);
-    }
-};
     const handleDatePreset = (value) => {
         setDatePreset(value);
 
@@ -161,11 +175,6 @@ const handleUpdateStatus = async (orderId, newStatus) => {
             setToDate('');
         }
     };
-    const handleOpenConfirm = (orderId, newStatus) => {
-        setSelectedOrder(orderId);
-        setSelectedStatus(newStatus);
-        setConfirmOpen(true);
-    };
 
     useEffect(() => {
         if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
@@ -173,7 +182,6 @@ const handleUpdateStatus = async (orderId, newStatus) => {
             setToDate('');
         }
     }, [fromDate, toDate]);
-
 
     const setToday = () => {
         const today = new Date().toISOString().split('T')[0];
@@ -208,27 +216,28 @@ const handleUpdateStatus = async (orderId, newStatus) => {
         setToDate('');
     };
 
+const filteredOrders = (orders || []).filter((order) => {
+    const orderDate = new Date(order?.createdAt);
 
+    const matchSearch =
+        order?.orderCode?.toLowerCase().includes(search.toLowerCase()) ||
+        order?.shippingAddress?.fullName?.toLowerCase().includes(search.toLowerCase());
 
-    const filteredOrders = orders.filter((order) => {
-        const orderDate = new Date(order?.createdAt);
+    const matchStatus = statusFilter ? order?.orderStatus === statusFilter : true;
 
-        const matchSearch =
-            order?.orderCode?.toLowerCase().includes(search.toLowerCase()) ||
-            order?.shippingAddress?.fullName?.toLowerCase().includes(search.toLowerCase());
+    const matchPaymentMethod = paymentMethodFilter ? order?.paymentMethod === paymentMethodFilter : true;
 
-        const matchStatus = statusFilter ? order?.orderStatus === statusFilter : true;
+    const matchPaymentStatus = paymentStatusFilter ? order?.paymentStatus === paymentStatusFilter : true;
 
-        const matchPaymentMethod = paymentMethodFilter ? order?.paymentMethod === paymentMethodFilter : true;
+    const matchFromDate = fromDate ? orderDate >= new Date(fromDate) : true;
 
-        const matchPaymentStatus = paymentStatusFilter ? order?.paymentStatus === paymentStatusFilter : true;
+    const matchToDate = toDate ? orderDate <= new Date(toDate) : true;
 
-        const matchFromDate = fromDate ? orderDate >= new Date(fromDate) : true;
+    return matchSearch && matchStatus && matchPaymentMethod && matchPaymentStatus && matchFromDate && matchToDate;
+});
+  
 
-        const matchToDate = toDate ? orderDate <= new Date(toDate) : true;
-
-        return matchSearch && matchStatus && matchPaymentMethod && matchPaymentStatus && matchFromDate && matchToDate;
-    });
+    const paginatedOrders = filteredOrders;
 
     return (
         <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
@@ -236,7 +245,7 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                 <div className="bg-blue-100 border-2 border-blue-200 p-5 rounded-xl flex justify-between">
                     <div>
                         <p className="text-sm text-gray-600">Tổng đơn hàng</p>
-                        <h2 className="text-2xl font-bold">{orders.length}</h2>
+                        <h2 className="text-2xl font-bold">{totalOrders}</h2>
                     </div>
                     <Package className="text-blue-600" size={32} />
                 </div>
@@ -353,7 +362,8 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                     <thead className="bg-gray-50 text-left text-sm text-gray-600">
                         <tr>
                             <th className="p-4">Mã đơn</th>
-                            <th>Khách hàng</th>
+                            <th>Sale tiếp nhận</th>
+                            <th>Trạng thái tiếp nhận</th>
                             <th>Ngày đặt</th>
                             <th>Phương thức</th>
                             <th>Thanh toán</th>
@@ -364,7 +374,7 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                     </thead>
 
                     <tbody>
-                        {filteredOrders.map((order) => (
+                        {paginatedOrders.map((order) => (
                             <tr
                                 key={order._id}
                                 className={`border-t hover:bg-gray-50 ${order.stockWarning ? 'bg-red-300' : ''}`}
@@ -391,10 +401,27 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                                 </td>
 
                                 <td>
-                                    <p className="font-medium">{order.shippingAddress?.fullName}</p>
-                                    <p className="text-sm text-gray-500">{order.shippingAddress?.phone}</p>
+                                    {order.assignedSale ? (
+                                        <div>
+                                            <p className="font-medium">
+                                                {order.assignedSale?.fullName} ({order.assignedSale?.userName})
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <span className="text-gray-400">Chưa gán</span>
+                                    )}
                                 </td>
+                                <td>
+                                    {(() => {
+                                        const status = formatAssignStatus(order?.assignmentStatus);
 
+                                        return (
+                                            <span className={`text-xs px-2 py-1 rounded ${status.className}`}>
+                                                {status.label}
+                                            </span>
+                                        );
+                                    })()}
+                                </td>
                                 <td>{formatDate(order.createdAt)}</td>
 
                                 <td>
@@ -426,32 +453,40 @@ const handleUpdateStatus = async (orderId, newStatus) => {
                                     <div className="flex justify-center items-center gap-2">
                                         <button
                                             className="p-2 hover:bg-gray-100 rounded"
-                                            onClick={() => navigate(`/sale/orders/${order._id}`)}
+                                            onClick={() => navigate(`/admin/order/${order._id}`)}
                                         >
-                                            <Eye size={18} />
+                                            <Eye className="text-blue-500 hover:text-blue-700" size={18} />
                                         </button>
-
-                                        <StatusDropdown
-                                            order={order}
-                                            statusFlow={statusFlow}
-                                            onChange={handleOpenConfirm}
-                                        />
                                     </div>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                <div className="flex justify-center items-center gap-3 py-4">
+                    <button
+                        disabled={page === 1}
+                        onClick={() => setPage(page - 1)}
+                        className="px-3 py-1 border rounded disabled:opacity-40"
+                    >
+                        Prev
+                    </button>
+
+                    <span className="text-sm">
+                        Trang {page} / {totalPages || 1}
+                    </span>
+
+                    <button
+                        disabled={page === totalPages}
+                        onClick={() => setPage(page + 1)}
+                        className="px-3 py-1 border rounded disabled:opacity-40"
+                    >
+                        Next
+                    </button>
+                </div>
 
                 {filteredOrders.length === 0 && <p className="text-center py-6 text-gray-500">Không có đơn hàng</p>}
             </div>
-            <ConfirmDialog
-                open={confirmOpen}
-                setOpen={setConfirmOpen}
-                title="Cập nhật trạng thái đơn"
-                message={`Bạn có chắc muốn đổi trạng thái sang "${selectedStatus}" ?`}
-                onConfirm={confirmUpdateStatus}
-            />
         </div>
     );
 };

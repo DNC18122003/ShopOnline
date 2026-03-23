@@ -2,13 +2,30 @@ const OrderAssignment = require("../models/Order/OrderAssignment");
 const User = require("../models/User");
 
 const assignOrderToSale = async (orderId, excludedSales = []) => {
-  const sales = await User.find({
+  let sales = await User.find({
     role: "sale",
-    isActive: true,
+    isActive: "active",
     _id: { $nin: excludedSales },
   });
 
-  if (!sales.length) return null;
+  // reset vòng nếu tất cả sale đã nhận
+  if (!sales.length) {
+    console.log("Tất cả sale đã nhận -> reset vòng assign");
+
+    excludedSales = [excludedSales[excludedSales.length - 1]];
+    // giữ lại sale cuối để tránh assign lại ngay
+
+    sales = await User.find({
+      role: "sale",
+      isActive: "active",
+      _id: { $nin: excludedSales },
+    });
+  }
+
+  if (!sales.length) {
+    console.log("Không có sale khả dụng");
+    return null;
+  }
 
   let selectedSale = null;
   let minOrders = Infinity;
@@ -28,19 +45,18 @@ const assignOrderToSale = async (orderId, excludedSales = []) => {
   if (!selectedSale) return null;
 
   const assignment = await OrderAssignment.findOneAndUpdate(
-    { orderId }, // Tìm theo đơn hàng
+    { orderId },
     {
       saleId: selectedSale._id,
       status: "waiting",
       assignedAt: new Date(),
-      $addToSet: { historySales: excludedSales }, // Đảm bảo không trùng lặp trong history
+      historySales: [...excludedSales, selectedSale._id],
     },
-    {
-      upsert: true, // Nếu chưa có thì tạo mới
-      new: true, // Trả về bản ghi sau khi cập nhật
-      setDefaultsOnInsert: true,
-    }
+    { upsert: true, new: true }
   );
+
+  console.log("Đã gán đơn", orderId, "cho sale", selectedSale.fullName);
+
   return assignment;
 };
 

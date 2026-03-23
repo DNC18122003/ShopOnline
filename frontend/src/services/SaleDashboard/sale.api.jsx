@@ -22,7 +22,6 @@ export const getPendingAssignments = async () => {
 export const acceptOrder = async (orderId) => {
     try {
         const response = await customizeAPI.post(`/order/sale/accept/${orderId}`);
-        toast.success('Đã tiếp nhận đơn hàng thành công');
         return response.data || response;
     } catch (error) {
         const message = error.response?.data?.message || 'Không thể nhận đơn hàng này';
@@ -38,10 +37,10 @@ export const acceptOrder = async (orderId) => {
 export const rejectOrder = async (orderId) => {
     try {
         const response = await customizeAPI.post(`/order/sale/reject/${orderId}`);
-        toast.warn('Đã từ chối đơn hàng');
+      
         return response.data || response;
     } catch (error) {
-        toast.error('Lỗi khi từ chối đơn hàng');
+       
         throw error;
     }
 };

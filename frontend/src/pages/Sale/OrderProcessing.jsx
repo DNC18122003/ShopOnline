@@ -24,7 +24,21 @@ const saleStatusFlow = {
     shipping: ['delivered', 'delivery_failed'],
     delivered: ['completed', 'returned'],
 };
-
+const orderStatusLabel = {
+    pending: 'Chờ xử lý',
+    confirmed: 'Đã xác nhận',
+    shipping: 'Đang giao',
+    delivered: 'Đã giao',
+    completed: 'Hoàn tất',
+    cancelled: 'Đã huỷ',
+    returned: 'Trả hàng',
+    delivery_failed: 'Giao thất bại',
+};
+const paymentStatusLabel = {
+    paid: 'Đã thanh toán',
+    unpaid: 'Chưa thanh toán',
+    refunded: 'Đã hoàn tiền',
+};
 const OrderProcessing = () => {
     const [activeTab, setActiveTab] = useState('pending'); // Mặc định mở đơn mới để Sale chú ý
     const [processingOrders, setProcessingOrders] = useState([]);
@@ -43,20 +57,23 @@ const OrderProcessing = () => {
         return () => clearInterval(timer);
     }, [activeTab]);
 
-    const fetchData = async () => {
-        try {
-            if (activeTab === 'pending') {
-                const res = await getPendingAssignments();
-                setPendingAssignments(res || []);
-            } else {
-                const res = await getMyProcessingOrders();
-                setProcessingOrders(res || []);
-            }
-        } catch (error) {
-            console.error('Lỗi tải dữ liệu:', error);
-        }
-    };
+   const fetchData = async () => {
+       try {
+           setLoading(true);
 
+           if (activeTab === 'pending') {
+               const res = await getPendingAssignments();
+               setPendingAssignments(res || []);
+           } else {
+               const res = await getMyProcessingOrders();
+               setProcessingOrders(res || []);
+           }
+       } catch (error) {
+           console.error('Lỗi tải dữ liệu:', error);
+       } finally {
+           setLoading(false);
+       }
+   };
     const handleAction = async (actionFn, orderId, successMsg) => {
         try {
             setLoading(true);
@@ -214,13 +231,13 @@ const OrderProcessing = () => {
                                                         : 'bg-red-100 text-red-700'
                                                 }`}
                                             >
-                                                {order.paymentStatus}
+                                                {paymentStatusLabel[order.paymentStatus] || order.paymentStatus}
                                             </span>
                                         </td>
                                         <td>
                                             <div className="flex items-center gap-2 text-sm text-slate-600 uppercase font-semibold italic">
                                                 <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                                                {order.orderStatus}
+                                                {orderStatusLabel[order.orderStatus] || order.orderStatus}
                                             </div>
                                         </td>
                                         <td className="text-center">
@@ -259,7 +276,7 @@ const OrderProcessing = () => {
                 open={confirmOpen}
                 setOpen={setConfirmOpen}
                 title="Cập nhật tiến độ đơn hàng"
-                message={`Xác nhận chuyển đơn sang trạng thái "${selectedStatus}"? Hành động này sẽ thông báo tới khách hàng.`}
+                message={`Xác nhận chuyển đơn sang trạng thái "${orderStatusLabel[selectedStatus]}"? Hành động này sẽ thông báo tới khách hàng.`}
                 onConfirm={confirmUpdateStatus}
             />
         </div>

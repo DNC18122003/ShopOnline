@@ -46,7 +46,7 @@ connectDB(); // connectDB
 cron.schedule("*/5 * * * *", async () => {
   await releaseReservedStock();
 });
-cron.schedule("*/1 * * * *", async () => {
+cron.schedule("* * * * *", async () => {
   await checkTimeoutAssignments();
 });
 app.get("/", (req, res) => {

@@ -23,9 +23,9 @@ const navLinkItems = [
         icon: <Users />,
     },
     {
-        href: '/admin/link_3',
-        title: 'Ten tab số 3',
-        icon: <FolderOpen />,
+        href: '/admin/order',
+        title: 'Quản lý đơn hàng ',
+        icon: <ShoppingCart/>,
     },
 ];
 const AdminLayout = () => {

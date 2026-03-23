@@ -3,7 +3,7 @@ import SaleLayout from '@/components/layouts/sale-layout';
 import ProtectedRoute from './protected-route';
 import DiscountPage from '@/pages/Discount/page';
 import BlogPage from '@/pages/Blog/page';
-import OrderManagement from '@/pages/Sale/OrderManagement';
+import OrderManagement from '@/pages/admin/OrderManagement';
 import OrderDetailPage from '@/pages/order/OrderDetailPage';
 import RatingManagement from '@/pages/Sale/RatingManagement';
 import ReviewDetail from '@/pages/Sale/ReviewDetail';
@@ -56,7 +56,7 @@ export const saleRoutes = [
             {
                 path: 'comment',
                 element: <CommentPage />,
-                element: <SalesDashboard />,
+              
             },
         ],
     },

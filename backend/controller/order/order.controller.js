@@ -7,6 +7,7 @@ const mongoose = require("mongoose");
 const User = require("../../models/User");
 const Review = require("../../models/order/Review");
 const { assignOrderToSale } = require("../../utils/assignment");
+const OrderAssignment = require("../../models/Order/OrderAssignment");
 
 const statusFlow = {
   pending: ["confirmed", "cancelled"],
@@ -419,15 +420,39 @@ const getOrderById = async (req, res) => {
 
 const getAllOrder = async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
+
     const orders = await Order.find()
-      .sort({ createdAt: -1 }) // mới -> cũ
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit))
       .lean();
+
+    const total = await Order.countDocuments();
+
+    // Lấy assignment
+    const assignments = await OrderAssignment.find()
+      .populate("saleId", "fullName userName")
+      .lean();
+
+    const assignmentMap = {};
+    assignments.forEach((a) => {
+      assignmentMap[a.orderId.toString()] = {
+        saleInfo: a.saleId,
+        status: a.status,
+      };
+    });
 
     const productStockMap = {};
     const productCache = {};
     const oversellDetected = {};
 
     for (const order of orders) {
+      const assignment = assignmentMap[order._id.toString()];
+      order.assignedSale = assignment ? assignment.saleInfo : null;
+      order.assignmentStatus = assignment ? assignment.status : "unassigned";
+
       order.stockWarning = false;
 
       if (
@@ -447,12 +472,9 @@ const getAllOrder = async (req, res) => {
           }
 
           const product = productCache[productId];
-
-          // bắt đầu từ stock hiện tại
           productStockMap[productId] = product.stock || 0;
         }
 
-        // nếu stock đã âm trước đó -> đơn này gây oversell
         if (
           order.paymentMethod === "COD" &&
           order.orderStatus === "pending" &&
@@ -463,12 +485,16 @@ const getAllOrder = async (req, res) => {
           oversellDetected[productId] = true;
         }
 
-        // hoàn lại stock để tính order trước đó
         productStockMap[productId] += item.quantity;
       }
     }
 
-    res.json(orders);
+    res.json({
+      orders,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+    });
   } catch (error) {
     res.status(500).json({ message: "Get all order fail" });
   }
