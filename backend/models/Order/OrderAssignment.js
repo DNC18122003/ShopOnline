@@ -17,8 +17,8 @@ const OrderAssignmentSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["waiting", "accepted", "timeout", "rejected"],
-      default: "waiting",
+      enum: ["assigned", "processing", "completed"],
+      default: "assigned",
     },
 
     assignedAt: {

@@ -1,106 +1,50 @@
 const OrderAssignment = require("../../models/Order/OrderAssignment");
 const Order = require("../../models/Order/Order");
 const { assignOrderToSale } = require("../../utils/assignment");
-// 1. Lấy danh sách các đơn hàng ĐANG CHỜ (hệ thống mới gán, chưa bấm nhận)
+//  Lấy danh sách các đơn hàng ĐANG CHỜ 
 
-const getPendingAssignments = async (req, res) => {
+const getMySaleOrders = async (req, res) => {
   try {
     const saleId = req.user._id;
 
-    const pending = await OrderAssignment.find({
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const skip = (page - 1) * limit;
+
+    const assignments = await OrderAssignment.find({
       saleId,
-      status: "waiting",
+    }).select("orderId");
+
+    const orderIds = assignments.map((a) => a.orderId);
+
+    const total = await Order.countDocuments({
+      _id: { $in: orderIds },
+    });
+
+    const orders = await Order.find({
+      _id: { $in: orderIds },
     })
-      .populate({
-        path: "orderId",
-        select: "orderCode shippingAddress finalAmount paymentMethod createdAt",
-      })
-      .sort({ assignedAt: -1 });
-
-    res.json(pending);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
-
-
-// 2. Chấp nhận đơn hàng (Hàm của bạn đã tối ưu hơn)
-
-const acceptOrder = async (req, res) => {
-  try {
-    const saleId = req.user._id;
-    const { orderId } = req.params;
-
-    const assignment = await OrderAssignment.findOne({
-      orderId,
-      saleId,
-      status: "waiting",
-    });
-
-    if (!assignment) {
-      return res
-        .status(404)
-        .json({
-          message:
-            "Đơn hàng không còn ở trạng thái chờ hoặc không thuộc về bạn",
-        });
-    }
-
-    assignment.status = "accepted";
-    assignment.acceptedAt = new Date();
-    await assignment.save();
-
-    // Cập nhật trạng thái đơn hàng sang 'confirmed' ngay khi sale nhận đơn
-    await Order.findByIdAndUpdate(orderId, { orderStatus: "confirmed" });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.json({
-      message: "Đã nhận và xác nhận đơn hàng thành công",
-      assignment,
+      data: orders,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
     });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-// 3. Từ chối đơn hàng (Để hệ thống gán cho người khác)
- 
-const rejectOrder = async (req, res) => {
-  try {
-    const saleId = req.user._id;
-    const { orderId } = req.params;
 
-    const assignment = await OrderAssignment.findOne({
-      orderId,
-      saleId,
-      status: "waiting",
-    });
-
-    if (!assignment) {
-      return res.status(404).json({
-        message: "Không tìm thấy lượt phân công này",
-      });
-    }
-
-    assignment.status = "rejected";
-
-    if (!assignment.historySales.includes(saleId)) {
-      assignment.historySales.push(saleId);
-    }
-
-    await assignment.save();
-
-    // gán cho sale khác
-    await assignOrderToSale(orderId, assignment.historySales);
-
-    res.json({
-      message: "Đã từ chối đơn hàng, hệ thống đang gán cho sale khác",
-    });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-};
-
-// 4. Lấy danh sách đơn hàng Sale ĐANG XỬ LÝ (đã nhận và chưa hoàn thành)
+//  Lấy danh sách đơn hàng Sale ĐANG XỬ LÝ (đã nhận và chưa hoàn thành)
  
 const getMyProcessingOrders = async (req, res) => {
   try {
@@ -109,7 +53,7 @@ const getMyProcessingOrders = async (req, res) => {
     // Tìm các assignment đã accept
     const assignments = await OrderAssignment.find({
       saleId,
-      status: "accepted",
+      status: "processing",
     }).select("orderId");
 
     const orderIds = assignments.map((a) => a.orderId);
@@ -127,8 +71,6 @@ const getMyProcessingOrders = async (req, res) => {
 };
 
 module.exports = {
-  getPendingAssignments,
-  acceptOrder,
-  rejectOrder,
+  getMySaleOrders,
   getMyProcessingOrders,
 };

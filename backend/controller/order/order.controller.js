@@ -531,6 +531,7 @@ const updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Update order status
     order.orderStatus = status;
 
     order.statusLogs.push({
@@ -540,6 +541,25 @@ const updateOrderStatus = async (req, res) => {
     });
 
     await order.save();
+
+  
+    const assignment = await OrderAssignment.findOne({ orderId });
+
+    if (assignment) {
+      if (status === "confirmed" || status === "shipping") {
+        assignment.status = "processing";
+      }
+
+      if (
+        status === "completed" ||
+        status === "cancelled" ||
+        status === "returned"
+      ) {
+        assignment.status = "completed";
+      }
+
+      await assignment.save();
+    }
 
     res.json({
       message: "Update order status successful",

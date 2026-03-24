@@ -11,7 +11,7 @@ const { passportConfig } = require("./configs/passport");
 const session = require("express-session");
 const cron = require("node-cron");
 const releaseReservedStock = require("./services/releaseReservedStock");
-const checkTimeoutAssignments = require("./services/assignmentTimeout");
+
 app.use(
   cors({
     credentials: true,
@@ -46,9 +46,7 @@ connectDB(); // connectDB
 cron.schedule("*/5 * * * *", async () => {
   await releaseReservedStock();
 });
-cron.schedule("* * * * *", async () => {
-  await checkTimeoutAssignments();
-});
+
 app.get("/", (req, res) => {
   res.send("Server is running with MongoDB Atlas !!!");
 });

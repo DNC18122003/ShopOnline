@@ -88,39 +88,33 @@ const OrderManagement = () => {
                 return 'bg-gray-100 text-gray-600';
         }
     };
-    const formatAssignStatus = (status) => {
-        switch (status) {
-            case 'waiting':
-                return {
-                    label: 'Đang chờ sale',
-                    className: 'bg-yellow-100 text-yellow-700',
-                };
+  const formatAssignStatus = (status) => {
+      switch (status) {
+          case 'assigned':
+              return {
+                  label: 'Chờ Sale nhận',
+                  className: 'bg-yellow-100 text-yellow-700',
+              };
 
-            case 'accepted':
-                return {
-                    label: 'Sale đã nhận',
-                    className: 'bg-green-100 text-green-700',
-                };
+          case 'processing':
+              return {
+                  label: 'Sale đang xử lý',
+                  className: 'bg-blue-100 text-blue-700',
+              };
 
-            case 'timeout':
-                return {
-                    label: 'Sale không phản hồi',
-                    className: 'bg-red-100 text-red-600',
-                };
+          case 'completed':
+              return {
+                  label: 'Đã hoàn thành',
+                  className: 'bg-green-100 text-green-700',
+              };
 
-            case 'rejected':
-                return {
-                    label: 'Sale từ chối',
-                    className: 'bg-gray-200 text-gray-700',
-                };
-
-            default:
-                return {
-                    label: 'Chưa có',
-                    className: 'bg-gray-100 text-gray-500',
-                };
-        }
-    };
+          default:
+              return {
+                  label: 'Không xác định',
+                  className: 'bg-gray-100 text-gray-500',
+              };
+      }
+  };
 
     const getPaymentStyle = (method) => {
         switch (method) {

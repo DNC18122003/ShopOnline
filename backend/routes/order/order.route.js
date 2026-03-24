@@ -21,9 +21,7 @@ router.post("/momo/confirm", confirmMomoPayment);
 router.post("/momo/cancel", cancelMomoPayment);
 
 // Nhóm các route chuyên biệt cho Sale để dễ quản lý
-router.get("/sale/pending-assignments", checkRoleAndStatus(["sale"]), saleController.getPendingAssignments);
-router.post("/sale/accept/:orderId", checkRoleAndStatus(["sale"]), saleController.acceptOrder);
-router.post("/sale/reject/:orderId", checkRoleAndStatus(["sale"]), saleController.rejectOrder);
+router.get("/sale/orders", checkRoleAndStatus(["sale"]), saleController.getMySaleOrders);
 router.get("/sale/my-processing", checkRoleAndStatus(["sale"]), saleController.getMyProcessingOrders);
 
 module.exports = router;
