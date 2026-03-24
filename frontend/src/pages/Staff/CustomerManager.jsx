@@ -1,24 +1,25 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-import { Switch } from '@/components/ui/switch';
+import { Eye, Filter, ListRestart, Loader } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { SelectContent, SelectItem, SelectTrigger, SelectValue, Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Badge as BadgeIcon, Box, Calendar, Eye, Layers, ListRestart, Loader, Mail, Plus, Tag } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
+
 import { toast } from 'react-toastify';
-import { Badge } from '@/components/ui/badge';
 
+import { getListAccount, updateUserStatus } from '@/services/account/account.api';
+import DialogViewCustomerDetail from './component/DialogViewCustomerDetail';
 import { Pagination } from '@/components/public/pagination';
-
-import { getUserStaff, updateUserStatus } from '@/services/account/account.api';
-import DialogViewStaffDetail from './DialogViewStaffDetail';
-
-const ManageStaff = () => {
-    // ==================== STATE ====================
+import { Badge } from '@/components/ui/badge';
+import { AuthContext } from '@/context/authContext';
+const CustomerManager = () => {
+    //HOOK
+    const { user } = useContext(AuthContext);
     // URL & ROUTING STATE
     const [searchParams, setSearchParams] = useSearchParams();
     const filter = useMemo(
@@ -27,9 +28,15 @@ const ManageStaff = () => {
             status: searchParams.get('status') || 'all',
             sort: searchParams.get('sort') || 'newest',
             page: Number(searchParams.get('page')) || 1,
+            fromPrice: searchParams.get('from-price') || '',
+            toPrice: searchParams.get('to-price') || '',
+            fromOrders: searchParams.get('from-orders') || '',
+            toOrders: searchParams.get('to-orders') || '',
+            regionManaged: user?.regionManaged || '',
         }),
         [searchParams],
     );
+
     // DATA STATE
     const [dataUser, setDataUser] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -39,9 +46,11 @@ const ManageStaff = () => {
 
     // TEMPORARY STATE (Pending actions)
     const [idDetail, setIdDetail] = useState('-1');
+
     // LOADING STATE
     const [loading, setLoading] = useState(false);
     const [loadingUpdateStatus, setLoadingUpdateStatus] = useState(false);
+
     // DERIVED STATE (Tính toán - XÓA state thừa)
 
     // ==================== USE EFFECT ====================
@@ -52,11 +61,11 @@ const ManageStaff = () => {
             try {
                 setLoading(true);
                 //console.log('Fetching customers with filter:', filter);
-                const response = await getUserStaff(filter);
+                const response = await getListAccount(filter);
                 setDataUser(response.data);
-                //console.log('Total pages from response:', response.pagination.totalItems);
-                setTotalPages(Math.ceil(response.pagination.totalPages));
-                setTotalItems(response.pagination.total);
+                console.log('Total pages from response:', response.data);
+                setTotalPages(Math.ceil(response.pagination.totalItems / 9));
+                setTotalItems(response.pagination.totalItems);
                 //console.log('Fetched customers:', response);
             } catch (error) {
                 toast.error('Đã có lỗi xảy ra khi lấy dữ liệu khách hàng');
@@ -94,13 +103,14 @@ const ManageStaff = () => {
     const handleResetFilter = () => {
         setSearchParams({});
     };
+    // ---- USER ACTIONS ----
 
     const handleToggleStatus = async (id, status) => {
         console.log('Toggle status for user with ID:', id, 'to new status:', status);
         try {
             setLoadingUpdateStatus(true);
             const response = await updateUserStatus(id, status);
-            console.log('Response from updateUserStatus:', response);
+            //console.log('Response from updateUserStatus:', response);
             if (response.success) {
                 toast.success('Cập nhật trạng thái người dùng thành công');
                 // Cập nhật trạng thái người dùng trong dataUser để UI phản ánh ngay lập tức
@@ -123,6 +133,7 @@ const ManageStaff = () => {
             .join('')
             .toUpperCase();
     };
+    //console.log('Render CustomerManager with filter:', user.regionManaged);
     const renderVietNameseRegion = (region) => {
         switch (region) {
             case 'north':
@@ -135,26 +146,22 @@ const ManageStaff = () => {
                 return 'Chưa cập nhật';
         }
     };
-    const getRegionStyle = (region) => {
-        switch (region) {
-            case 'north':
-                return 'bg-blue-50 text-blue-700 border-blue-200';
-            case 'central':
-                return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-            case 'south':
-                return 'bg-green-50 text-green-700 border-green-200';
-            default:
-                return 'bg-gray-50 text-gray-500 border-gray-200';
-        }
-    };
+
     return (
         <div>
-            <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 md:gap-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-3">
+            <div className="flex flex-col p-4 md:gap-4">
+                <div className="self-start w-fit px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2">
+                    <span className="text-gray-500 text-sm">Khu vực:</span>
+                    <span className="text-blue-700 font-medium">
+                        {renderVietNameseRegion(user?.regionManaged) || 'Chưa cập nhật'}
+                    </span>
+                </div>
+                {/* <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3"> */}
+                <div className="flex gap-4 flex-wrap items-center justify-between bg-white border p-4 rounded-lg">
                     {/* Search Input */}
                     <div>
                         <Input
-                            placeholder="Tìm kiếm theo tên..."
+                            placeholder="Tìm kiếm theo tên ..."
                             className="h-9"
                             name="search"
                             value={filter.search}
@@ -171,7 +178,7 @@ const ManageStaff = () => {
                         }}
                     >
                         <SelectTrigger className="h-9">
-                            <SelectValue placeholder="All Status" />
+                            <SelectValue placeholder="Trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Trạng thái</SelectItem>
@@ -180,6 +187,79 @@ const ManageStaff = () => {
                             <SelectItem value="banned">Bị cấm</SelectItem>
                         </SelectContent>
                     </Select>
+
+                    {/* --- Filter theo Số lượng đơn (Range) --- */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-2 border-dashed">
+                                <Filter className="h-4 w-4" />
+                                <span>Số đơn hàng</span>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-4" align="start">
+                            <div className="space-y-4">
+                                <h4 className="font-medium leading-none">Số lượng đơn</h4>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        placeholder="Từ"
+                                        className="h-8"
+                                        name="from-orders"
+                                        value={filter.fromOrders}
+                                        onChange={handleChangeInput}
+                                    />
+                                    <span className="text-muted-foreground">-</span>
+                                    <Input
+                                        type="number"
+                                        placeholder="Đến"
+                                        className="h-8"
+                                        name="to-orders"
+                                        value={filter.toOrders}
+                                        onChange={handleChangeInput}
+                                    />
+                                </div>
+                                {/* <Button size="sm" className="w-full">
+                                    Áp dụng
+                                </Button> */}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    {/* Filter theo Tổng tiền */}
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="h-9 gap-2 border-dashed">
+                                <Filter className="h-4 w-4" />
+                                <span>Tổng chi tiêu</span>
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-4" align="start">
+                            <div className="space-y-4">
+                                <h4 className="font-medium leading-none">Khoảng giá ($)</h4>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="number"
+                                        placeholder="Min"
+                                        className="h-8"
+                                        name="from-price"
+                                        value={filter.fromPrice}
+                                        onChange={handleChangeInput}
+                                    />
+                                    <span className="text-muted-foreground">-</span>
+                                    <Input
+                                        type="number"
+                                        placeholder="Max"
+                                        className="h-8"
+                                        name="to-price"
+                                        value={filter.toPrice}
+                                        onChange={handleChangeInput}
+                                    />
+                                </div>
+                                {/* <Button size="sm" className="w-full">
+                                    Áp dụng
+                                </Button> */}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
 
                     {/* Sort Dropdown */}
                     <Select
@@ -195,6 +275,16 @@ const ManageStaff = () => {
                             {/* Nhóm Thời gian */}
                             <SelectItem value="newest">Mới nhất (Đăng ký)</SelectItem>
                             <SelectItem value="oldest">Cũ nhất</SelectItem>
+
+                            {/* Nhóm Kinh doanh - QUAN TRỌNG NHẤT */}
+                            <SelectItem value="spent-desc">Chi tiêu: Cao → Thấp</SelectItem>
+                            <SelectItem value="spent-asc">Chi tiêu: Thấp → Cao</SelectItem>
+                            <SelectItem value="orders-desc">Đơn hàng: Nhiều nhất</SelectItem>
+                            <SelectItem value="orders-asc">Đơn hàng: Ít nhất</SelectItem>
+
+                            {/* Nhóm Định danh */}
+                            <SelectItem value="name-asc">Tên: A → Z</SelectItem>
+                            <SelectItem value="name-desc">Tên: Z → A</SelectItem>
                         </SelectContent>
                     </Select>
 
@@ -209,15 +299,17 @@ const ManageStaff = () => {
                         <Table>
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
-                                    <TableHead className="w-[60px]">Avatar</TableHead>
-                                    <TableHead className="w-[180px]">Tên nhân viên</TableHead>
-                                    <TableHead className="min-w-[220px]">Email</TableHead>
-                                    <TableHead className="w-[140px]">Số SP</TableHead>
-                                    <TableHead className="w-[160px]">Trạng thái</TableHead>
-                                    <TableHead className="w-[160px]">Khu vực</TableHead>
-                                    <TableHead className="w-[80px] text-center">Hành động</TableHead>
+                                    <TableHead className="font-semibold">Avatar</TableHead>
+                                    <TableHead className="font-semibold">Email</TableHead>
+                                    <TableHead className="font-semibold">Tên người dùng</TableHead>
+                                    <TableHead className="font-semibold">Số điện thoại</TableHead>
+                                    <TableHead className="font-semibold">Tổng đơn</TableHead>
+                                    <TableHead className="font-semibold">Tổng chi tiêu</TableHead>
+                                    <TableHead className="font-semibold">Trạng thái</TableHead>
+                                    <TableHead className="font-semibold text-right">Hành động</TableHead>
                                 </TableRow>
                             </TableHeader>
+                            {/*  */}
                             {loading ? (
                                 <TableBody>
                                     <TableRow>
@@ -229,23 +321,21 @@ const ManageStaff = () => {
                             ) : (
                                 <TableBody>
                                     {dataUser.map((user) => (
-                                        <TableRow
-                                            key={user.id}
-                                            className="hover:bg-muted/50"
-                                            onClick={() => setOpenDialogDetail(true)}
-                                        >
+                                        <TableRow key={user._id} className="hover:bg-muted/50">
                                             <TableCell>
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={user.avatar} />
                                                     <AvatarFallback>{getInitials(user.userName)}</AvatarFallback>
                                                 </Avatar>
                                             </TableCell>
-
+                                            <TableCell>{user.email}</TableCell>
                                             <TableCell className="font-medium">{user.userName}</TableCell>
 
-                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell>{user.phone || 'Chưa cung cấp'}</TableCell>
 
-                                            <TableCell>{user.totalProducts}</TableCell>
+                                            <TableCell>{user.sumOrders}</TableCell>
+
+                                            <TableCell>${user.totalSpent}</TableCell>
 
                                             <TableCell>
                                                 <Select
@@ -270,16 +360,6 @@ const ManageStaff = () => {
                                                 </Select>
                                             </TableCell>
 
-                                            <TableCell>
-                                                <span
-                                                    className={`px-2 py-1 text-xs font-medium rounded-md border ${getRegionStyle(
-                                                        user.regionManaged,
-                                                    )}`}
-                                                >
-                                                    {renderVietNameseRegion(user.regionManaged)}
-                                                </span>
-                                            </TableCell>
-
                                             <TableCell className="text-center">
                                                 <Button
                                                     variant="ghost"
@@ -301,7 +381,7 @@ const ManageStaff = () => {
                     {/* Pagination */}
                     {loading ? null : (
                         <div className="flex items-center justify-between">
-                            <span className="text-sm text-muted-foreground">Tổng {totalItems} quản trị viên</span>
+                            <span className="text-sm text-muted-foreground">Tổng {totalItems} khách hàng</span>
                             <Pagination
                                 currentPage={filter.page}
                                 totalPages={totalPages}
@@ -312,12 +392,12 @@ const ManageStaff = () => {
                 </div>
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                    <DialogViewStaffDetail id={idDetail} />
+                <DialogContent className="sm:max-w-225 llg:max-w-275 w-[95vw] max-h-[90vh] overflow-y-auto p-0">
+                    <DialogViewCustomerDetail id={idDetail} />
                 </DialogContent>
             </Dialog>
         </div>
     );
 };
 
-export default ManageStaff;
+export default CustomerManager;

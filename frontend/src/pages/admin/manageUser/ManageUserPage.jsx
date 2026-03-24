@@ -16,7 +16,7 @@ import DialogAddEmployee from './component/DialogAddEmployee';
 
 const ManageUserPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const [activeTab, setActiveTab] = useState('customers');
+    const [activeTab, setActiveTab] = useState('sales');
     const [totalOrders, setTotalOrders] = useState(0);
     const [numberOfAccount, setNumberOfAccount] = useState({
         totalCustomers: 0,
@@ -78,16 +78,16 @@ const ManageUserPage = () => {
             </div>
             {/* Tabs Section */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 lg:w-fit">
-                    <TabsTrigger value="customers">Customers</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 lg:w-fit">
+                    {/* <TabsTrigger value="customers">Customers</TabsTrigger> */}
                     <TabsTrigger value="sales">Sales</TabsTrigger>
                     <TabsTrigger value="staff">Staff</TabsTrigger>
                     <TabsTrigger value="admins">Admins</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="customers" className="space-y-4">
+                {/* <TabsContent value="customers" className="space-y-4">
                     <ManageCustomer />
-                </TabsContent>
+                </TabsContent> */}
 
                 <TabsContent value="sales" className="space-y-4">
                     <ManageSale />
