@@ -3,25 +3,27 @@ const jwt = require("jsonwebtoken");
 
 // 1. Middleware xác thực jwt
 const isAuth = (req, res, next) => {
+  //console.log("=====isAuth middleware called=========");
   passport.authenticate("jwt", { session: false }, (err, user, info) => {
     if (err) {
       console.error("JWT error:", err);
       return res.status(500).json({ message: "Authentication error" });
     }
-
+    //console.log("=====User found in isAuth middleware:", user);
     if (!user) {
       return res.status(401).json({
         message: info?.message || "Unauthorized",
       });
     }
 
-    req.user = user; 
+    req.user = user;
     next();
   })(req, res, next);
 };
 
 // 2. Middleware phân quyền (Currying function)
 const checkRoleAndStatus = (roles) => {
+  //console.log("=====checkRoleAndStatus middleware called with roles:", roles);
   return (req, res, next) => {
     try {
       if (!req.user) {

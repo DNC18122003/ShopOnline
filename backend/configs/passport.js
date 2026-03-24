@@ -1,6 +1,7 @@
 // config/passport.js
 const { Strategy: JwtStrategy, ExtractJwt } = require("passport-jwt");
 const User = require("../models/User"); // Import model User của bạn
+const Employee = require("../models/Employee");
 require("dotenv").config();
 
 // trích xuất cookie từ request
@@ -31,7 +32,20 @@ const passportConfig = (passport) => {
       try {
         // jwt_payload chứa dữ liệu bạn đã mã hóa (thường là { id: ..., email: ... })
         //console.log("jwt_payload", jwt_payload);
-        const user = await User.findById(jwt_payload._id);
+        let user = await User.findById(jwt_payload._id);
+        // Nếu không tìm thấy user trong bảng User, thử tìm trong Employee
+        if (!user) {
+          user = await Employee.findById(jwt_payload._id).populate("role");
+          // vì role hiện tại là object nên cần spread
+          if (user) {
+            // Chỉ cần lấy giá trị của role.code, thay vì cả object
+            user = user.toObject(); // convert sang plain JS object
+            user.role = user.role.code;
+            //console.log("User found in Employee collection with role:", user);
+          }
+        }
+
+        //console.log("user", user);
 
         if (user) {
           // Tìm thấy user -> Cho qua và gán vào req.user

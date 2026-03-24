@@ -24,9 +24,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
     // Kiểm tra nếu user đã bị banned
-    console.log('user.isActive:', user.isActive);
+    //console.log('user.isActive:', user.isActive);
     if (user && user.isActive === 'banned') {
-        console.log('4');
+        //console.log('4');
         return <Navigate to="/banned" replace />;
     }
     // Kiểm tra user đã active chưa
