@@ -96,6 +96,9 @@ export function CreateDiscountForm({ onSubmit, onCancel }) {
             setIsLoading(false);
             return setErrorMessage('Mô tả không được quá 100 ký tự.');
         }
+        if (!description.trim()) {
+            return setErrorMessage('Mô tả không được rỗng.');
+        }
 
         // 1.3. Validate Giá trị đơn hàng tối thiểu (Min Order)
         if (minPurchaseValue === '' || minPurchaseValue === undefined) {
