@@ -143,7 +143,9 @@ const StaffLayout = () => {
                                     <p className="font-semibold text-gray-800 md:text-sm text-[0.65rem]">
                                         {data_ui.userName}
                                     </p>
-                                    <p className="text-xs text-gray-500 md:block hidden">{data_ui.email}</p>
+                                    <p className="text-xs text-gray-500 md:block hidden">
+                                        {data_ui.email ? data_ui.email.slice(0, 18) + '...' : ''}
+                                    </p>
                                 </div>
                                 <button className="text-gray-400 hover:text-gray-600" onClick={handleLogut}>
                                     <LogOut className="w-5 h-5" />

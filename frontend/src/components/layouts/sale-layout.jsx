@@ -136,7 +136,9 @@ const SaleLayout = () => {
                                         {data_ui.userName}
                                     </p>
 
-                                    <p className="text-xs text-gray-500 hidden md:block">{data_ui.email}</p>
+                                    <p className="text-xs text-gray-500 hidden md:block">
+                                        {data_ui.email ? data_ui.email.slice(0, 18) + '...' : ''}
+                                    </p>
                                 </div>
 
                                 <button onClick={handleLogout} className="text-gray-400 hover:text-red-500 transition">
@@ -147,7 +149,6 @@ const SaleLayout = () => {
                     )}
                 </aside>
 
-              
                 <main className="flex-1 overflow-auto bg-gray-50">
                     <Outlet />
                 </main>
