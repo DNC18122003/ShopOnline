@@ -45,7 +45,6 @@ const userSchema = new Schema({
     avatar: String,
     role: {
         type: String,
-        enum: ['customer', 'staff', 'sale', 'admin'],
         default: 'customer'
     },
     isActive: {
@@ -54,6 +53,11 @@ const userSchema = new Schema({
         default: 'inactive'
     },
     address: addressSchema,
+    region: {
+        type: String,
+        enum: ['north', 'central', 'south'],
+        default: 'north'
+    }
 }, { timestamps: true });
 
 //module.exports = mongoose.model('User', userSchema);
