@@ -250,10 +250,19 @@ const getUserSaleController = async (req, res) => {
         // 1. Khoi tạo pipleline
         let pipeline = [];
         // step 1: match theo role
-        let userMatch = { role: "sale" }
+        let userMatch = {}
         // step 2: loc theo search va status
-        if (status && status !== 'all') {
-            userMatch.isActive = status === 'active' ? true : false;
+        pipeline.push({
+            $lookup: {
+                from: "departments",
+                localField: "role",
+                foreignField: "_id",
+                as: "roleInfo"
+            }
+        });
+        pipeline.push({ $match: { "roleInfo.code": "sale" } });
+        if (status && status !== 'all') { // inactive, active, banned
+            userMatch.isActive = status
         }
         // step 3: loc theo search
         if (search) {
@@ -263,7 +272,7 @@ const getUserSaleController = async (req, res) => {
         // step 4: lookup de join voi bang orders
         pipeline.push({
             $lookup: {
-                from: "orders",
+                from: "orderassignments",
                 localField: "_id",
                 foreignField: "saleId",
                 as: "orders"
@@ -276,17 +285,26 @@ const getUserSaleController = async (req, res) => {
                     $filter: {
                         input: "$orders",
                         as: "order",
-                        cond: { $eq: ["$$order.orderStatus", "completed"] }
+                        cond: { $eq: ["$$order.status", "completed"] }
                     }
                 }
             }
         });
         // step 6: tinh toan so don da xu ly va so tien da tao ra
+        // join voi bang order de lay finalAmount
+        pipeline.push({
+            $lookup: {
+                from: "orders",
+                localField: "orders.orderId",
+                foreignField: "_id",
+                as: "orderDetails"
+            }
+        });
         pipeline.push({
             $addFields: {
                 processedOrders: { $size: "$orders" },
                 generatedAmount: {
-                    $sum: "$orders.finalAmount"
+                    $sum: "$orderDetails.finalAmount"
                 }
             }
         });
@@ -331,18 +349,19 @@ const getUserSaleController = async (req, res) => {
             }
         });
         // step 9: pagniation
-        const sales = await User.aggregate([
+        const sales = await Employee.aggregate([
             ...pipeline,
             { $skip: skip },
             { $limit: pageSize }
         ]);
         // tinh tong so luong de tinh totalPages
-        const totalSales = await User.aggregate([
+        const totalSales = await Employee.aggregate([
             ...pipeline,
             { $count: "total" }
         ]);
         const total = totalSales.length > 0 ? totalSales[0].total : 0;
         const totalPages = Math.ceil(total / pageSize);
+        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         // return response
         res.status(200).json({
             success: true,
@@ -397,7 +416,9 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
             }
         });
         pipeline.push({ $match: { "roleInfo.code": "staff" } });
-
+        if (status && status !== 'all') { // inactive, active, banned
+            userMatch.isActive = status
+        }
 
         // step 3: loc theo search
         if (search) {
@@ -469,7 +490,8 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
                 avatar: 1,
                 totalProducts: 1,
                 isActive: 1,
-                regionManaged: 1
+                regionManaged: 1,
+                createdAt: 1,
             }
         });
         // step 7: pagniation
@@ -479,7 +501,7 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
             { $limit: pageSize }
         ]);
         // tinh tong so luong de tinh totalPages
-        const totalStaffs = await User.aggregate([
+        const totalStaffs = await Employee.aggregate([
             ...pipeline,
             { $count: "total" }
         ]);
@@ -508,6 +530,7 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
     }
 }
 const getUserAdminController = async (req, res) => {
+    console.log("getUserAdminController called with query:", req.query);
     try {
         const {
             search,
@@ -518,13 +541,42 @@ const getUserAdminController = async (req, res) => {
         const currentPage = Number(page);
         const pageSize = Number(limit);
         const skip = (currentPage - 1) * pageSize;
-        const admin = await User.find({ role: "admin", userName: { $regex: search || '', $options: 'i' } })
-            .select("-password")
-            .sort(sort === "newest" ? { createdAt: -1 } : { createdAt: 1 })
-            .skip(skip)
-            .limit(pageSize);
-        const total = await User.countDocuments({ role: "admin", userName: { $regex: search || '', $options: 'i' } });
+        // const admin = await Employee.find({ role: "admin", userName: { $regex: search || '', $options: 'i' } })
+        //     .select("-password")
+        //     .sort(sort === "newest" ? { createdAt: -1 } : { createdAt: 1 })
+        //     .skip(skip)
+        //     .limit(pageSize);
+
+        const admin = await Employee.aggregate([
+            {
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "department"
+                },
+            }, {
+                $match: {
+                    "department.code": "admin",
+                    userName: { $regex: search || '', $options: 'i' }
+                }
+            },
+            {
+                $sort: sort === "newest" ? { createdAt: -1 } : { createdAt: 1 }
+            },
+            { $skip: skip },
+            { $limit: pageSize },
+            {
+                $project: {
+                    password: 0,
+                    department: 0,
+                }
+            }
+        ]);
+        const total = admin.length; // Tính tổng số admin sau khi lọc
         const totalPages = Math.ceil(total / pageSize);
+
+        //const totalPages = Math.ceil(total / pageSize);
         res.status(200).json({
             success: true,
             data: admin,
@@ -533,6 +585,7 @@ const getUserAdminController = async (req, res) => {
                 limit: pageSize,
                 total,
                 totalPages
+
             }
         });
     } catch (error) {

@@ -30,7 +30,7 @@ const baseProductFields = {
     default: [],
     index: true,
   },
-  createdBy: { type: Types.ObjectId, ref: "User", required: true },
+  createdBy: { type: Types.ObjectId, ref: "Employee", required: true },
 };
 
 module.exports = { baseProductFields, priceHistorySchema };

@@ -1,6 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const Order = require("../models/Order/Order");
 const User = require("../models/User");
+const Employee = require("../models/Employee");
 const getTotalOrder = async (req, res) => {
     // trả về số lượng đơn hàng đã hoàn thành
     try {
@@ -121,7 +122,7 @@ const getDetailAdmin = async (req, res) => {
                 message: "Vui lòng cung cấp ID người dùng"
             });
         }
-        const user = await User.findById(id).select("-password");
+        const user = await Employee.findById(id).select("-password");
         if (!user) {
             return res.status(400).json({
                 success: false,
@@ -201,6 +202,15 @@ const getDetailStaff = async (req, res) => {
                 as: "rams"
             }
         });
+        pipeline.push({
+            $lookup: {
+                from: "departments",
+                localField: "role",
+                foreignField: "_id",
+                as: "departments"
+
+            }
+        });
 
         // Tính toán tổng số sản phẩm
         pipeline.push({
@@ -212,9 +222,12 @@ const getDetailStaff = async (req, res) => {
                         { $size: "$mainboards" },// Số lượng mainboards
                         { $size: "$rams" }       // Số lượng rams
                     ]
-                }
+                },
+
+                role: { $arrayElemAt: ["$departments.name", 0] }
             }
-        });
+        })
+
         pipeline.push({
             $project: {
                 email: 1,
@@ -228,7 +241,7 @@ const getDetailStaff = async (req, res) => {
                 totalProducts: 1
             }
         });
-        const user = await User.aggregate(pipeline);
+        const user = await Employee.aggregate(pipeline);
         if (!user) {
             return res.status(400).json({
                 success: false,

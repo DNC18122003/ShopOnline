@@ -66,7 +66,6 @@ const DialogViewStaffDetail = ({ id }) => {
             </div>
         );
     }
-    // Hàm hỗ trợ render UI trạng thái linh hoạt
 
     const currentStatus = getStatusDisplay(data.isActive);
 
@@ -83,7 +82,7 @@ const DialogViewStaffDetail = ({ id }) => {
                 <div>
                     {/* Sử dụng fullName thay vì name cho trang trọng */}
                     <h2 className="text-2xl font-bold text-slate-900">{data.fullName}</h2>
-                    <p className="text-blue-600 font-medium">{data.role}</p>
+                    <p className="text-blue-600 font-medium">Quản trị viên</p>
                 </div>
 
                 {/* Trạng thái hoạt động */}

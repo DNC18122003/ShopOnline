@@ -49,9 +49,9 @@ const ManageAdmin = () => {
                 setLoading(true);
                 //console.log('Fetching customers with filter:', filter);
                 const response = await getUserAdmin(filter);
-                console.log('Response from API:', response);
+                //console.log('Response from API:', response);
                 setDataUser(response.data);
-                //console.log('Total pages from response:', response.pagination.totalItems);
+                //console.log('List items:', response.data);
                 setTotalPages(Math.ceil(response.pagination.totalPages));
                 setTotalItems(response.pagination.total);
                 //console.log('Fetched customers:', response);
