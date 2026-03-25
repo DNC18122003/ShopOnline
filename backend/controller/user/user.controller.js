@@ -501,7 +501,7 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
             { $limit: pageSize }
         ]);
         // tinh tong so luong de tinh totalPages
-        const totalStaffs = await User.aggregate([
+        const totalStaffs = await Employee.aggregate([
             ...pipeline,
             { $count: "total" }
         ]);
