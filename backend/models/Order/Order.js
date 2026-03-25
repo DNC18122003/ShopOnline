@@ -33,10 +33,13 @@ const statusLogSchema = new Schema(
       type: String,
       default: "",
     },
-
+    /*
+    Đan câp nhật : ref => user => emplyee
+    
+    */
     updatedBy: {
       type: Types.ObjectId,
-      ref: "User",
+      ref: "Employee",
     },
 
     updatedAt: {
