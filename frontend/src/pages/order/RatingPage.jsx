@@ -23,17 +23,19 @@ export default function RatingPage() {
     const fetchReviews = async () => {
         try {
             setLoading(true);
+            const res = await getReviewsByProduct(product.productId);
 
-            const data = await getReviewsByProduct(product.productId);
-
-            setRatings(data);
+            const reviews = Array.isArray(res) ? res : res.data || [];
+           
+            setRatings(reviews);
 
             // kiểm tra user đã review chưa
-            const myReview = data.find((r) => r.orderId?._id === orderId || r.orderId === orderId);
+            const myReview = reviews.find((r) => r.orderId?._id === orderId || r.orderId === orderId);
 
             if (myReview) {
                 setHasReviewed(true);
             }
+            
         } catch (error) {
             console.error('Lỗi load review:', error);
         } finally {

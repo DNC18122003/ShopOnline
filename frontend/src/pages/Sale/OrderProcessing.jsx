@@ -120,10 +120,7 @@ const OrderProcessing = () => {
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-slate-800">Xử lý đơn hàng</h1>
 
-                <div className="text-sm text-slate-500 flex items-center gap-2">
-                    <Clock size={16} />
-                    Tự động cập nhật
-                </div>
+              
             </div>
 
             {/* FILTER */}
