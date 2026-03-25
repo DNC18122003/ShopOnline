@@ -9,6 +9,6 @@ const router = express.Router();
 // middleware => router.post('/profile', isAuth, checkRoleAndStatus(['User']),  loginController);
 router.get('/profile', isAuth, getProfileController);
 router.put('/profile', isAuth, updateProfileController);
-router.put('/profile/avatar', isAuth, upload.single("avatar"),  updateAvatarController);
+router.put('/profile/avatar', isAuth, upload.single("avatar"), updateAvatarController);
 
 module.exports = router;

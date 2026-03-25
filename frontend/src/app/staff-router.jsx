@@ -8,6 +8,7 @@ import { CreateProduct } from '@/pages/Staff/CreateProduct';
 import { ProductManagement } from '@/pages/Staff/ProductManagement';
 
 import Dashboard from '@/pages/Staff/Dashboard';
+import CustomerManager from '@/pages/Staff/CustomerManager';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
@@ -46,6 +47,10 @@ export const staffRoutes = [
             {
                 path: 'build-pc-templates',
                 element: <BuildPcTemplateManagement />,
+            },
+            {
+                path: 'manage-customers',
+                element: <CustomerManager />,
             },
         ],
     },

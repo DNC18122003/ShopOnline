@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, User, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,7 +52,6 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             setThumbnailPreview('');
             handleInputChange('thumbnail', '');
             e.target.value = '';
-            // 👇 Đẩy lệnh báo lỗi xuống dưới cùng
             setErrorText('Lỗi: Kích thước ảnh không được vượt quá 5MB.');
             return;
         }

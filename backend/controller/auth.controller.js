@@ -1,5 +1,7 @@
 // import
 const User = require("../models/User");
+const Employee = require("../models/Employee");
+const Department = require("../models/Department");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const hashPassword = require("../utils/hash-password");
@@ -10,26 +12,42 @@ const loginController = async (req, res) => {
   const emailParsed = email.trim();
   const passwordParsed = password.trim();
   try {
-    // Find user by email
+    // Find user by email in User + Em
     const user = await User.findOne({ email: emailParsed });
-    if (!user) {
+    const employee = await Employee.findOne({ email: emailParsed }).populate("role");
+
+    // console.log("Employee found in Employee collection:", employee ? employee._id
+    //   + " -" + employee.role.code : null);
+    if (!user && !employee) {
       return res.status(404).json({ message: "Không tìm thấy tài khoản" });
     }
     // Check password using bcrypt.compare
-    const isPasswordValid = await bcrypt.compare(passwordParsed, user.password);
+    const isPasswordValid = await bcrypt.compare(passwordParsed, user ? user.password : employee.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Mật khẩu không đúng" });
     }
     // Create jwt token
     const token = jwt.sign(
       {
-        _id: user._id,
-        role: user.role,
+        _id: user ? user._id : employee._id,
+        role: user ? user.role : employee.role.code,
       },
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
-
+    console.log("Generated JWT token:", token);
+    console.log("User data for token payload:", {
+      _id: user ? user._id : employee._id,
+      role: user ? user.role : employee.role.code,
+    });
+    // Giải mã và hiển thị nội dung token để kiểm tra payload
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        console.error("Error decoding JWT token:", err);
+      } else {
+        console.log("Decoded JWT token:", decoded); // Log thông tin nội dung của token (payload)
+      }
+    });
     // Set token in cookie
     res.cookie("accessToken", token, {
       httpOnly: true,
@@ -39,17 +57,34 @@ const loginController = async (req, res) => {
       path: "/",
     });
     // set data use to response
-    const userResponse = {
-      id: user._id,
-      email: user.email,
-      userName: user.userName,
-      role: user.role,
-      fullName: user.fullName,
-      phone: user.phone,
-      avatar: user.avatar,
-      isActive: user.isActive,
-      address: user.address,
-    };
+    let userResponse = null;
+    if (user) {
+      userResponse = {
+        id: user._id,
+        email: user.email,
+        userName: user.userName,
+        role: user.role,
+        fullName: user.fullName,
+        phone: user.phone,
+        avatar: user.avatar,
+        isActive: user.isActive,
+        address: user.address,
+      };
+    } else if (employee) {
+      userResponse = {
+        id: employee._id,
+        email: employee.email,
+        userName: employee.userName,
+        role: employee.role.code,
+        fullName: employee.fullName,
+        phone: employee.phone,
+        avatar: employee.avatar,
+        isActive: employee.isActive,
+        address: employee.address,
+        regionManaged: employee.regionManaged,
+      };
+    }
+    console.log("User response data:", userResponse);
 
     return res.status(200).json({
       message: "Login successful",
@@ -143,16 +178,25 @@ const loginWithGoogleController = async (req, res) => {
 
 // check user
 const getMe = async (req, res) => {
+  console.log("Get me controller called");
   try {
     const userId = req.user._id;
     const user = await User.findById(userId).select("-password");
-    if (!user) {
+    const employee = await Employee.findById(userId).populate("role").select("-password");
+
+    console.log("User found:", user);
+    console.log("Employee found:", employee);
+
+    if (!user && !employee) {
       return res.status(404).json({ message: "User not found" });
     }
-
+    const employeeObj = employee?.toObject();
     return res.json({
       success: true,
-      user,
+      user: user || {
+        ...employeeObj,
+        role: employeeObj.role.code,
+      },
     });
   } catch (error) {
     console.error("GET ME ERROR:", error);

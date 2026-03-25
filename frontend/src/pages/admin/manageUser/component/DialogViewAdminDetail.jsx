@@ -36,7 +36,6 @@ const DialogViewAdminDetail = ({ id }) => {
         };
         fetchData();
     }, []);
-
     if (loading) {
         return (
             <div className="flex items-center justify-center h-48">
@@ -44,6 +43,7 @@ const DialogViewAdminDetail = ({ id }) => {
             </div>
         );
     }
+
     if (!data) {
         return (
             <div className="flex items-center justify-center h-48">
@@ -124,3 +124,6 @@ const DialogViewAdminDetail = ({ id }) => {
 };
 
 export default DialogViewAdminDetail;
+
+/*
+Pah n trang */

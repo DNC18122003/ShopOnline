@@ -4,7 +4,19 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, Tag, PlusCircle ,Clipboard} from 'lucide-react';
+import {
+    Menu,
+    Home,
+    Package,
+    FolderOpen,
+    LogOut,
+    Users,
+    ShoppingCart,
+    Cpu,
+    Tag,
+    PlusCircle,
+    Clipboard,
+} from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -16,7 +28,7 @@ const navLinkItems = [
         title: 'Trang chủ',
         icon: <Home />,
     },
-   
+
     {
         href: '/staff/categories',
         title: 'Danh mục',
@@ -42,6 +54,11 @@ const navLinkItems = [
         href: '/staff/build-pc-templates',
         title: 'Tạo cấu hình mẫu',
         icon: <Cpu />,
+    },
+    {
+        href: '/staff/manage-customers',
+        title: 'Quản lý khách hàng',
+        icon: <Users />,
     },
 ];
 const StaffLayout = () => {
@@ -126,7 +143,9 @@ const StaffLayout = () => {
                                     <p className="font-semibold text-gray-800 md:text-sm text-[0.65rem]">
                                         {data_ui.userName}
                                     </p>
-                                    <p className="text-xs text-gray-500 md:block hidden">{data_ui.email}</p>
+                                    <p className="text-xs text-gray-500 md:block hidden">
+                                        {data_ui.email ? data_ui.email.slice(0, 18) + '...' : ''}
+                                    </p>
                                 </div>
                                 <button className="text-gray-400 hover:text-gray-600" onClick={handleLogut}>
                                     <LogOut className="w-5 h-5" />

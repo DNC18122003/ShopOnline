@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const User = require("../../models/User");
-
+const Employee = require("../../models/Employee");
 const getUsersCustomerController = async (req, res) => {
     try {
         const {
@@ -12,7 +12,8 @@ const getUsersCustomerController = async (req, res) => {
             fromPrice,
             toPrice,
             fromOrders,
-            toOrders
+            toOrders,
+            regionManaged
         } = req.query;
         /*
     
@@ -43,6 +44,7 @@ const getUsersCustomerController = async (req, res) => {
         // console.log("To Price:", toPrice);
         // console.log("From Orders:", fromOrders);
         // console.log("To Orders:", toOrders);
+        console.log("Region Managed:", regionManaged);
         // validate data
         const currentPage = Number(page);
         const pageSize = Number(limit);
@@ -54,6 +56,14 @@ const getUsersCustomerController = async (req, res) => {
         //step 2: loc status (isActive) // sai can sua lai db
         if (status && status !== 'all') {
             userMatch.isActive = status
+        }
+        // step 2.5: loc theo regionManaged
+        // neu regionManaged = south thì hiển thị tất cả khách hàng là south và chưa cập nhật, tương tự với north và central
+        if (regionManaged && regionManaged == 'south') {
+            userMatch.region = { $in: ['south', null] };
+        }
+        if (regionManaged) {
+            userMatch.region = regionManaged;
         }
         // step 3: loc theo search
         if (search) {
@@ -138,7 +148,7 @@ const getUsersCustomerController = async (req, res) => {
         });
 
         //final 
-        //console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         const customer = await User.aggregate([
             ...pipeline,
             { $skip: skip },
@@ -372,12 +382,23 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
         const pageSize = Number(limit);
         const skip = (currentPage - 1) * pageSize;
         let pipeline = [];
-        // step 1: match theo role
-        let userMatch = { role: "staff" }
-        // step 2: loc theo search va status
-        if (status && status !== 'all') {
-            userMatch.isActive = status === 'active' ? true : false;
-        }
+        // // step 1: match theo role
+        let userMatch = {}
+        // // step 2: loc theo search va status
+        // if (status && status !== 'all') {
+        //     userMatch.isActive = status === 'active' ? true : false;
+        // }
+        pipeline.push({
+            $lookup: {
+                from: "departments",
+                localField: "role",
+                foreignField: "_id",
+                as: "roleInfo"
+            }
+        });
+        pipeline.push({ $match: { "roleInfo.code": "staff" } });
+
+
         // step 3: loc theo search
         if (search) {
             userMatch.userName = { $regex: search, $options: 'i' };
@@ -448,10 +469,11 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
                 avatar: 1,
                 totalProducts: 1,
                 isActive: 1,
+                regionManaged: 1
             }
         });
         // step 7: pagniation
-        const staff = await User.aggregate([
+        const staff = await Employee.aggregate([
             ...pipeline,
             { $skip: skip },
             { $limit: pageSize }
@@ -465,7 +487,7 @@ _id avatar email userName phone isActive  "tong so san pham da them vao he thong
         const total = totalStaffs.length > 0 ? totalStaffs[0].total : 0;
         const totalPages = Math.ceil(total / pageSize);
         // test hàm pipeline
-        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        // console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         res.status(200).json({
             success: true,
             data: staff,
