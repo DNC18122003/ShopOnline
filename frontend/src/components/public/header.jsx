@@ -58,11 +58,43 @@ const Header = () => {
         <header className="w-full border-b bg-white">
             <div className="flex h-16 justify-between items-center px-4">
                 {/* Logo */}
-                <div className="flex items-center gap-2" onClick={() => navigate('/')}>
-                    <div className="h-8 w-8 flex items-center justify-center">
-                        <Cpu className="text-blue-700" />
+                <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+                    <div className="h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                        <Cpu className="text-blue-700 w-6 h-6" />
                     </div>
-                    <span className="font-bold text-blue-700 ">TechStore</span>
+                    <span className="font-extrabold text-2xl tracking-tighter text-blue-700 ">TechStore</span>
+                </div>
+
+                {/* 🔍 Search Bar */}
+                <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
+                    <div className="relative w-full group">
+                        <input
+                            type="text"
+                            placeholder="Bạn đang tìm sản phẩm nào?..."
+                            className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                    navigate(`/product?keyword=${e.target.value.trim()}`);
+                                }
+                            }}
+                        />
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4.5 w-4.5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 {/* Navigation Menu: Home, Products, About us, Support */}
                 <div className="hidden md:block">
@@ -89,16 +121,51 @@ const Header = () => {
                         <SquareMenu />
                     </SheetTrigger>
                     <SheetContent side="right" className="flex flex-col w-75 sm:w-87 p-4">
+                        {/* Search in Mobile */}
+                        <div className="mb-4">
+                            <div className="relative group">
+                                <input
+                                    type="text"
+                                    placeholder="Tìm kiếm..."
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && e.target.value.trim()) {
+                                            navigate(`/product?keyword=${e.target.value.trim()}`);
+                                        }
+                                    }}
+                                />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Cart */}
                         <SheetClose asChild>
                             <Link to="/cart" className="relative cursor-pointer">
-                                <div className="relative cursor-pointer">
-                                    <ShoppingCart className="h-8 w-8 text-gray-700" />
-                                    {cart?.totalQuantity > 0 && (
-                                        <Badge className="absolute -right-2 -top-2 h-5 min-w-5 rounded-full px-1 text-xs bg-red-500 text-white">
-                                            {cart.totalQuantity}
-                                        </Badge>
-                                    )}
+                                <div className="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:bg-gray-100 transition-all">
+                                    <div className="relative">
+                                        <ShoppingCart className="h-6 w-6 text-gray-700" />
+                                        {cart?.totalQuantity > 0 && (
+                                            <Badge className="absolute -right-2 -top-2 h-4 min-w-4 rounded-full px-1 text-[10px] bg-red-500 text-white flex items-center justify-center">
+                                                {cart.totalQuantity}
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <span className="font-medium text-gray-700">Giỏ hàng của bạn</span>
                                 </div>
                             </Link>
                         </SheetClose>
