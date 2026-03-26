@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
@@ -139,6 +139,7 @@ export default function ProductDetailPage() {
     const [replyContent, setReplyContent] = useState({});
     const [replyOpenId, setReplyOpenId] = useState(null);
     const { user } = useAuth();
+    console.log('User from AuthContext in ProductDetailPage:', user);
     // Fetch product data
     useEffect(() => {
         const fetchProduct = async () => {
@@ -243,8 +244,6 @@ export default function ProductDetailPage() {
         setReplyContent((prev) => ({ ...prev, [commentId]: value }));
     };
 
-    // Tham số parentId chính là comment._id hoặc reply._id được truyền từ giao diện FE của bạn
-    // Thêm 2 tham số: boxId (để xử lý giao diện) và targetParentId (để gửi API)
     const submitReply = async (boxId, targetParentId) => {
         // 1. Lấy nội dung từ ô input đang gõ (dựa vào ID của ô đó)
         const content = replyContent[boxId];
@@ -264,6 +263,7 @@ export default function ProductDetailPage() {
             const response = await commentService.createComment({
                 productId: productId,
                 userId: user.id,
+                userModel: user.role == 'customer' ? 'User' : 'Employee',
                 content: content,
                 parentId: targetParentId, // ---> Gửi ID của comment gốc
             });
@@ -301,7 +301,8 @@ export default function ProductDetailPage() {
             const productId = product._id || product.id;
             const response = await commentService.createComment({
                 productId: productId,
-                userId: user.id, // ---> Dùng user._id chuẩn từ Context
+                userId: user.id,
+                userModel: user.role == 'customer' ? 'User' : 'Employee',
                 content: question,
                 parentId: null,
             });
@@ -630,6 +631,7 @@ export default function ProductDetailPage() {
                                                     {comment.userId?.userName}
                                                 </span>
                                                 <span className="text-[11px] text-gray-400 italic">
+                                                    {new Date(comment.createdAt).toLocaleTimeString('vi-VN')} -{' '}
                                                     {new Date(comment.createdAt).toLocaleDateString('vi-VN')}
                                                 </span>
                                             </div>
@@ -692,14 +694,13 @@ export default function ProductDetailPage() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <p className="text-sm text-gray-600 leading-relaxed">
-                                                            {reply.content}
-                                                        </p>
                                                         <div className="mt-2 text-[11px] text-gray-400">
-                                                            Trả lời lúc:{' '}
                                                             {new Date(reply.createdAt).toLocaleTimeString('vi-VN')} -{' '}
                                                             {new Date(reply.createdAt).toLocaleDateString('vi-VN')}
                                                         </div>
+                                                        <p className="text-sm text-gray-600 leading-relaxed">
+                                                            {reply.content}
+                                                        </p>
                                                     </div>
                                                 </div>
 
