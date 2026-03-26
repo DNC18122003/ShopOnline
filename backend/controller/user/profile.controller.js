@@ -1,4 +1,5 @@
 const User = require("../../models/User");
+const Employee = require("../../models/Employee");
 const { uploadToCloudinary } = require("../../middleware/upload");
 const getProfileController = async (req, res) => {
     try {
@@ -11,6 +12,37 @@ const getProfileController = async (req, res) => {
     } catch (error) {
         console.error("Error fetching user profile:", error);
         return res.status(500).json({ message: "Error fetching user profile" });
+    }
+};
+const getProfileEmployeeController = async (req, res) => {
+    try {
+        const userId = req.user._id; // Lấy userId từ req.user do passport đã gán
+        const employee = await Employee.aggregate([
+            { $match: { userId: userId } },
+            {
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "roleInfo",
+                },
+
+            },
+            {
+                $addFields: {
+                    role: { $arrayElemAt: ["$roleInfo", 0] },
+                },
+            },
+            {
+                $project: {
+                    roleInfo: 0
+                }
+            },
+        ]);
+        res.json({ success: true, myProfile: employee[0] });
+    } catch (error) {
+        console.error("Error fetching employee profile:", error);
+        return res.status(500).json({ message: "Lỗi lấy thông tin nhân viên hệ thống !" });
     }
 };
 
@@ -29,14 +61,31 @@ const updateProfileController = async (req, res) => {
         };
         //console.log("data: ", fullNameParsed, phoneParsed, addressParsed);
         const user = await User.findById(userId);
-        if (!user) {
+        const employee = await Employee.findById(userId);
+        // console.log("Current user data:", user);
+        // console.log("Current employee data:", employee);
+        if (!user && !employee) {
             return res.status(404).json({ message: "Không tìm thấy người dùng !" });
         }
-        user.fullName = fullNameParsed;
-        user.address = addressParsed;
-        user.phone = phoneParsed;
-        console.log("Updated user data:", user);
-        const resUp = await user.save();
+
+
+        if (user) {
+
+            user.fullName = fullNameParsed;
+            user.address = addressParsed;
+            user.phone = phoneParsed;
+            console.log("Updated user data:", user);
+            const resUp = await user.save();
+        }
+
+        if (employee) {
+            employee.fullName = fullNameParsed;
+            employee.address = addressParsed;
+            employee.phone = phoneParsed;
+            console.log("Updated employee data:", employee);
+            const resUp = await employee.save();
+            console.log("Updated employee data:", resUp);
+        }
         //console.log("Updated user:", resUp);
         res.json({
             success: true,
@@ -70,12 +119,20 @@ const updateAvatarController = async (req, res) => {
         console.log("URL ảnh mới sau khi upload:", newAvatarUrl);
         // 3. Cập nhật vào cơ sở dữ liệu
         const user = await User.findById(userId);
-        if (!user) {
+        const employee = await Employee.findById(userId);
+        if (!user && !employee) {
             return res.status(404).json({ message: "Không tìm thấy người dùng" });
         }
 
-        user.avatar = newAvatarUrl;
-        await user.save();
+        if (user) {
+            user.avatar = newAvatarUrl;
+            await user.save();
+        }
+
+        if (employee) {
+            employee.avatar = newAvatarUrl;
+            await employee.save();
+        }
 
         // 4. Trả về kết quả cho Frontend
         res.json({
@@ -94,4 +151,5 @@ module.exports = {
     getProfileController,
     updateProfileController,
     updateAvatarController,
+    getProfileEmployeeController
 };

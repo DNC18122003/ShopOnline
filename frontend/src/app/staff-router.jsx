@@ -9,6 +9,7 @@ import { ProductManagement } from '@/pages/Staff/ProductManagement';
 
 import Dashboard from '@/pages/Staff/Dashboard';
 import CustomerManager from '@/pages/Staff/CustomerManager';
+import Profile from '@/pages/Staff/Profile';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
@@ -26,7 +27,7 @@ export const staffRoutes = [
             },
             {
                 path: 'profile',
-                element: <UserProfile />,
+                element: <Profile />,
             },
             {
                 path: 'categories',

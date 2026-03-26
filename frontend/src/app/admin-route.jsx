@@ -7,6 +7,8 @@ import AdminDashBoard from '@/pages/admin/AdminDashBoard';
 import OrderManagement from '@/pages/admin/OrderManagement';
 import OrderDetailPage from '@/pages/order/OrderDetailPage';
 import ManageDepartment from '@/pages/admin/manageDepartment/ManageDepartment';
+import path from 'node:path';
+import Profile from '@/pages/admin/Profile';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const adminRoutes = [
@@ -37,6 +39,10 @@ export const adminRoutes = [
             {
                 path: 'manage-department',
                 element: <ManageDepartment />,
+            },
+            {
+                path: 'profile',
+                element: <Profile />,
             },
         ],
     },

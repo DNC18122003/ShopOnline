@@ -7,14 +7,6 @@ import { set } from 'date-fns';
 import { getDetailAdmin } from '@/services/account/account.api';
 import { toast } from 'react-toastify';
 
-const adminInfo = {
-    name: 'Nguyen Hoang Dan',
-    email: 'dan.admin@techstore.com',
-    avatar: 'https://github.com/shadcn.png',
-    role: 'Quản trị viên hệ thống', // Hoặc "Super Admin"
-    joinedDate: '20/10/2025',
-    status: 'Active',
-};
 const DialogViewAdminDetail = ({ id }) => {
     console.log('Admin ID:', id);
     const [data, setData] = useState(null);

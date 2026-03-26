@@ -16,8 +16,8 @@ router.get('/user-admin', isAuth, checkRoleAndStatus(['Admin']), getUserAdminCon
 router.post('/create-employee', isAuth, checkRoleAndStatus(['Admin']), createNewEmployee);
 router.put('/accounts/status', isAuth, checkRoleAndStatus(['Admin']), updateUserStatus);
 router.get('/accounts/details-admin/:id', isAuth, checkRoleAndStatus(['Admin']), getDetailAdmin);
-router.get('/accounts/details-staff/:id', isAuth, checkRoleAndStatus(['Admin']), getDetailStaff);
-router.get('/accounts/details-sales/:id', isAuth, checkRoleAndStatus(['Admin']), getDetailSales);
+router.get('/accounts/details-staff/:id', isAuth, checkRoleAndStatus(['Admin', "Staff"]), getDetailStaff);
+router.get('/accounts/details-sales/:id', isAuth, checkRoleAndStatus(['Admin', "Sale"]), getDetailSales);
 router.get('/accounts/details-customer/:id', isAuth, checkRoleAndStatus(['Admin', "Staff"]), getDetailCustomer);
 router.get('/departments', isAuth, checkRoleAndStatus(['Admin']), getListDepartments);
 module.exports = router;

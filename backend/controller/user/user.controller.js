@@ -148,7 +148,7 @@ const getUsersCustomerController = async (req, res) => {
         });
 
         //final 
-        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        //console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         const customer = await User.aggregate([
             ...pipeline,
             { $skip: skip },
@@ -191,15 +191,38 @@ const getNumberOfUser = async (req, res) => {
     */
     try {
         const totalCustomers = await User.countDocuments({ role: "customer" });
-        const totalStaffs = await User.countDocuments({ role: "staff" });
-        const totalSales = await User.countDocuments({ role: "sale" });
+        const totalStaffs = await Employee.aggregate([
+            {
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "roleInfo"
+                }
+            },
+            { $match: { "roleInfo.code": "staff" } },
+            { $count: "total" }
+        ]);
+
+        const totalSales = await Employee.aggregate([
+            {
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "roleInfo"
+                }
+            },
+            { $match: { "roleInfo.code": "sale" } },
+            { $count: "total" }
+        ]);
 
         res.status(200).json({
             success: true,
             data: {
                 totalCustomers,
-                totalStaffs,
-                totalSales
+                totalStaffs: totalStaffs.length > 0 ? totalStaffs[0].total : 0,
+                totalSales: totalSales.length > 0 ? totalSales[0].total : 0,
             }
         });
 
@@ -361,7 +384,7 @@ const getUserSaleController = async (req, res) => {
         ]);
         const total = totalSales.length > 0 ? totalSales[0].total : 0;
         const totalPages = Math.ceil(total / pageSize);
-        console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
+        //console.log("Pipeline after match:", JSON.stringify(pipeline, null, 2));
         // return response
         res.status(200).json({
             success: true,

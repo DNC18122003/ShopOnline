@@ -14,12 +14,14 @@ const DialogAddEmployee = () => {
         email: '',
         role: '',
         password: '',
+        regionManaged: '',
     });
     const [errorMessage, setErrorMessage] = useState({
         fullName: '',
         email: '',
         role: '',
         password: '',
+        regionManaged: '',
     });
     const [loading, setLoading] = useState(false);
     const handleInputChange = (e) => {
@@ -56,6 +58,9 @@ const DialogAddEmployee = () => {
         if (!form.password.trim()) {
             errors.password = 'Mật khẩu không được để trống';
         }
+        if (!form.role.trim() == 'staff' && !form.regionManaged.trim()) {
+            errors.regionManaged = 'Khu vực quản lý không được để trống';
+        }
         return errors;
     };
     const handleSubmit = async (e) => {
@@ -67,7 +72,7 @@ const DialogAddEmployee = () => {
             return;
         }
         try {
-            console.log('Submitting form data:', formData);
+            //console.log('Submitting form data:', formData);
             setLoading(true);
             // validate data
             const formDataParsed = {
@@ -75,6 +80,7 @@ const DialogAddEmployee = () => {
                 email: formData.email.trim().toLowerCase(),
                 password: formData.password.trim(),
                 role: formData.role.trim().toLowerCase(),
+                regionManaged: formData.regionManaged ? formData.regionManaged.trim().toLowerCase() : null,
             };
             const response = await createNewEmployee(formDataParsed);
             if (response.success) {
@@ -85,12 +91,14 @@ const DialogAddEmployee = () => {
                     email: '',
                     role: '',
                     password: '',
+                    regionManaged: '',
                 });
                 setErrorMessage({
                     fullName: '',
                     email: '',
                     role: '',
                     password: '',
+                    regionManaged: '',
                 });
             }
         } catch (error) {
@@ -160,7 +168,36 @@ const DialogAddEmployee = () => {
                     </div>
                 </div>
                 {errorMessage.role && <p className="text-sm text-red-500 ">{errorMessage.role}</p>}
-
+                {formData.role === 'staff' && (
+                    <>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="regionManaged" className="text-right">
+                                Khu vực quản lý
+                            </Label>
+                            <div className="col-span-3">
+                                <Select
+                                    name="regionManaged"
+                                    value={formData.regionManaged || ''}
+                                    onValueChange={(value) =>
+                                        setFormData((prevData) => ({ ...prevData, regionManaged: value }))
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Chọn khu vực quản lý" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="nouth">Phía Nam</SelectItem>
+                                        <SelectItem value="south">Phía Bắc</SelectItem>
+                                        <SelectItem value="central">Miền Trung</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        {errorMessage.regionManaged && (
+                            <p className="text-sm text-red-500 ">{errorMessage.regionManaged}</p>
+                        )}
+                    </>
+                )}
                 {/* Password (Chỉ render khi bấm nút) */}
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="password" className="text-right">

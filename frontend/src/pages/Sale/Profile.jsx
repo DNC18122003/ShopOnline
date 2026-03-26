@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
@@ -6,53 +6,41 @@ import { Pencil } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-import { getProfile, updateProfileService } from '@/services/order/profile.api';
-import { getAddress } from '@/services/order/order.api';
+import { updateAvatarService, updateProfileService } from '@/services/order/profile.api';
 import { toast } from 'react-toastify';
 
-const UserProfile = () => {
-    // State lưu trữ thông tin người dùng
-    const [data, setData] = useState({
-        userName: '',
-        fullName: '',
-        email: '',
-        phone: '',
-        address: {
-            street: '',
-            ward: '',
-            province: '',
-        },
-    });
+import { AuthContext } from '@/context/authContext';
+import { getDetailSales } from '@/services/account/account.api';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getAddress } from '@/services/order/order.api';
+
+const Profile = () => {
+    const { user, setUser } = useContext(AuthContext);
+    //console.log('Current user from context:', user);
+    const [data, setData] = useState(null);
+    const fileInputRef = useRef(null);
 
     const [isEditing, setIsEditing] = useState(false);
-
-    const [loading, setLoading] = useState(false);
     const [loadingUpdate, setLoadingUpdate] = useState(false);
     const [loadingLocation, setLoadingLocation] = useState(false);
-    // getData
+    const [loading, setLoading] = useState(false);
+
     useEffect(() => {
         const fetchData = async () => {
+            // console.log('Fetching admin details for ID:', user._id);
             try {
-                const response = await getProfile();
-                console.log('Profile data fetched:', response.myProfile?.phone); // log đươc data phone 1234456
-                setData({
-                    ...data,
-                    userName: response.myProfile?.userName || '',
-                    fullName: response.myProfile?.fullName || '',
-                    email: response.myProfile?.email || '',
-                    phone: response.myProfile?.phone || '',
-                    address: response.myProfile?.address || '',
-                });
+                setLoading(true);
+                const response = await getDetailSales(user._id);
+                console.log('API Response:', response);
+                setData(response.data[0]);
             } catch (error) {
-                console.error('Error fetching profile data:', error);
+                toast.error('Không thể tải thông tin nhân viên. Vui lòng thử lại sau.');
             } finally {
                 setLoading(false);
             }
         };
         fetchData();
-        // For now, using static data
     }, []);
-
     const handleChange = (e) => {
         setData({
             ...data,
@@ -98,7 +86,49 @@ const UserProfile = () => {
             setLoadingUpdate(false);
         }
     };
-    // handle get current location
+    // handle update avatar
+    const handleEditClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleInputAvatar = async (e) => {
+        /// console.log('hi');
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Kiểm tra định dạng file nhanh ở client
+        if (!file.type.startsWith('image/')) {
+            toast.error('Vui lòng chọn file hình ảnh!');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('avatar', file); // Key "avatar" phải khớp với upload.single("avatar") ở backend
+        // console.log('lew lew');
+        try {
+            toast.loading('Đang tải ảnh lên...');
+
+            const response = await updateAvatarService(formData);
+            console.log('update avatar response:', response);
+
+            if (response.success) {
+                // Cập nhật lại localStorage để UI đồng bộ ngay lập tức
+                console.log('update avatar response:', response);
+                const updatedUser = { ...data, avatar: response.avatar };
+                localStorage.setItem('data_ui', JSON.stringify(updatedUser));
+
+                // Cập nhật state trong context
+                setUser((prev) => ({ ...prev, avatar: response.avatar }));
+                // Câp nhật state local
+                setData((prev) => ({ ...prev, avatar: response.avatar }));
+                toast.dismiss();
+                toast.success('Cập nhật ảnh thành công!');
+            }
+        } catch (error) {
+            toast.dismiss();
+            toast.error(error.response?.data?.message || 'Lỗi khi upload ảnh');
+        }
+    };
     const getCurrentLocation = () => {
         if (!navigator.geolocation) {
             toast.error('Trình duyệt không hỗ trợ lấy vị trí');
@@ -154,11 +184,45 @@ const UserProfile = () => {
     };
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="flex items-center justify-center h-48">
+                <span>Loading...</span>
+            </div>
+        );
     }
-    //console.log('Rendering UserProfile with data:', data.isActive)
+
+    if (!data) {
+        return (
+            <div className="flex items-center justify-center h-48">
+                <span>Không có dữ liệu sale</span>
+            </div>
+        );
+    }
     return (
         <div className="p-8">
+            {/* Avatar */}
+            <div className="flex flex-col items-center text-center mb-8">
+                <div className="relative">
+                    <Avatar className="w-12 h-12 md:w-20 md:h-20 mb-3 border-2 border-blue-50">
+                        <AvatarImage src={data.avatar} alt="User" />
+                        <AvatarFallback>{data.userName.slice(0, 1).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    {/* Input file ẩn */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleInputAvatar}
+                        className="hidden"
+                        accept="image/*"
+                    />
+                    <Pencil
+                        size={20}
+                        className="absolute bottom-4 right-0 cursor-pointer border border-gray-300 rounded-sm text-white bg-blue-500 hover:bg-blue-600 p-1"
+                        onClick={handleEditClick}
+                    />
+                </div>
+            </div>
+
             {/* Header */}
             <div className="mb-8 flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-gray-900">Thông tin cá nhân</h1>
@@ -236,7 +300,7 @@ const UserProfile = () => {
                                 className="mt-2 text-base text-gray-900 p-2 border border-gray-300 rounded"
                                 name="province"
                                 onChange={handleChangeAddress}
-                                value={data.address.province}
+                                value={data.address ? data.address.province : ''}
                                 readOnly={!isEditing}
                             />
                         </div>
@@ -271,7 +335,7 @@ const UserProfile = () => {
                                 className="mt-2 text-base text-gray-900 p-2 border border-gray-300 rounded"
                                 name="ward"
                                 onChange={handleChangeAddress}
-                                value={data.address.ward}
+                                value={data.address ? data.address.ward : ''}
                                 readOnly={!isEditing}
                             />
                         </div>
@@ -285,7 +349,7 @@ const UserProfile = () => {
                         className="mt-2 text-base text-gray-900 p-2 border border-gray-300 rounded"
                         name="address"
                         onChange={handleChange}
-                        value={data.address.street}
+                        value={data.address ? data.address.street : ''}
                         readOnly={!isEditing}
                     />
                 </div>
@@ -294,4 +358,4 @@ const UserProfile = () => {
     );
 };
 
-export default UserProfile;
+export default Profile;

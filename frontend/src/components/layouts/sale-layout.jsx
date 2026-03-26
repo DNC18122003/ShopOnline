@@ -123,7 +123,10 @@ const SaleLayout = () => {
                     {data_ui && (
                         <div className="p-3 border-t">
                             <div className="flex flex-col md:flex-row items-center gap-2">
-                                <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
+                                <Avatar
+                                    className="h-8 w-8 md:h-10 md:w-10 cursor-pointer"
+                                    onClick={() => navigate('/sale/profile')}
+                                >
                                     <AvatarImage src={data_ui.avatar} />
 
                                     <AvatarFallback>

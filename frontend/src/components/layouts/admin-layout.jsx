@@ -104,7 +104,10 @@ const AdminLayout = () => {
                     {/* Profile */}
                     {data_ui && (
                         <div className="p-3">
-                            <div className="flex flex-col md:flex-row items-center justify-center gap-2">
+                            <div
+                                className="flex flex-col md:flex-row items-center justify-center gap-2"
+                                onClick={() => navigate('/admin/profile')}
+                            >
                                 <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
                                     <AvatarImage src={data_ui.avatar} />
                                     <AvatarFallback>
