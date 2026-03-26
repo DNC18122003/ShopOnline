@@ -19,7 +19,7 @@ const dashboardRouter = require("./dashboard.route");
 
 const adminRouter1 = require("./admin.route");
 const adminRouter = require('./admin/admin.route');
-
+const employeeRouter = require('./employee.route')
 module.exports = (app) => {
   const api = "/api";
   app.use(api + "/upload", uploadRouter); //Test upload
@@ -40,4 +40,5 @@ module.exports = (app) => {
   app.use(api + "/dashboard", dashboardRouter);
   app.use(api + "/admin", adminRouter);
   app.use(api + "/admin", adminRouter1);
+  app.use(api + "/employee", employeeRouter);
 };

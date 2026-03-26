@@ -1,5 +1,5 @@
 import React, { useContext, useMemo } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
@@ -65,6 +65,7 @@ const StaffLayout = () => {
     //hook
     const { setUser } = useContext(AuthContext);
     const location = useLocation();
+    const navigate = useNavigate();
     // state
     const data_ui = JSON.parse(localStorage.getItem('data_ui'));
     //console.log('data_ui', data_ui);
@@ -132,7 +133,13 @@ const StaffLayout = () => {
                     {data_ui && (
                         <div className="p-3">
                             <div className="flex flex-col md:flex-row items-center justify-center gap-2">
-                                <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
+                                <Avatar
+                                    className="h-8 w-8 md:h-10 md:w-10 cursor-pointer"
+                                    onClick={() => {
+                                        console.log('click');
+                                        navigate('/staff/profile');
+                                    }}
+                                >
                                     <AvatarImage src={data_ui.avatar} />
                                     <AvatarFallback>
                                         {' '}

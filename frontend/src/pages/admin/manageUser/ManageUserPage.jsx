@@ -44,18 +44,12 @@ const ManageUserPage = () => {
     return (
         <div className="flex flex-1 flex-col gap-6">
             {/* Card */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-3">
                 <StatCard
                     title="Tổng số khách hàng"
                     value={numberOfAccount.totalCustomers}
                     description="Tổng số khách hàng"
                     icon={<Users className="h-4 w-4" />}
-                />
-                <StatCard
-                    title="Tổng số đơn hàng"
-                    value={totalOrders}
-                    description="Tổng số đơn hàng"
-                    icon={<ShoppingCart className="h-4 w-4" />}
                 />
                 <StatCard
                     title="Nhân viên bán hàng"

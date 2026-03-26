@@ -2,6 +2,8 @@ const { default: mongoose } = require("mongoose");
 const Order = require("../models/Order/Order");
 const User = require("../models/User");
 const Employee = require("../models/Employee");
+const hashPassword = require("../utils/hash-password");
+
 const getTotalOrder = async (req, res) => {
     // trả về số lượng đơn hàng đã hoàn thành
     try {
@@ -24,7 +26,7 @@ const getTotalOrder = async (req, res) => {
 };
 const createNewEmployee = async (req, res) => {
     try {
-        const { fullName, email, password, role } = req.body;
+        const { fullName, email, password, role, regionManaged } = req.body;
         // validate data
         if (!fullName.trim() || !email.trim() || !password.trim() || !role.trim()) {
             return res.status(400).json({
@@ -36,9 +38,10 @@ const createNewEmployee = async (req, res) => {
         const emailParsed = email.trim().toLowerCase();
         const passwordParsed = password.trim();
         const roleParsed = role.trim().toLowerCase();
-        console.log('Parsed form data:', { fullNameParsed, emailParsed, passwordParsed, roleParsed });
+        const regionManagedParsed = regionManaged ? regionManaged.trim().toLowerCase() : null;
+        // console.log('Parsed form data:', { fullNameParsed, emailParsed, passwordParsed, roleParsed, regionManagedParsed });
         // Kiểm tra nếu email đã tồn tại
-        const existingUser = await User.findOne({ email });
+        const existingUser = await Employee.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
                 success: false,
@@ -48,24 +51,69 @@ const createNewEmployee = async (req, res) => {
         // tạo userName mới
         let userName = "";
         if (role === "sale") {
-            const saleCount = await User.countDocuments({ role: "sale" });
-            console.log('Sale count:', saleCount);
-            userName = `sale${saleCount + 1}`;
+            const saleCount = await Employee.aggregate([{
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "departmentInfo"
+                }
+            }, {
+                $match: { "departmentInfo.code": "sale" }
+            }, {
+
+                $count: "total"
+            }])
+            userName = `sale${saleCount[0]?.total + 1 || Math.floor(Math.random() * 1000) + 1000}`;
         } else if (role === "staff") {
-            const staffCount = await User.countDocuments({ role: "staff" });
-            userName = `staff${staffCount + 1}`;
+            const staffCount = await Employee.aggregate([{
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "departmentInfo"
+                }
+            }, {
+                $match: { "departmentInfo.code": "staff" }
+            }, {
+
+                $count: "total"
+            }])
+            userName = `staff${staffCount[0]?.total + 1 || Math.floor(Math.random() * 1000) + 1000}`;
         } else {
-            const adminCount = await User.countDocuments({ role: "admin" });
-            userName = `admin${adminCount + 1}`;
+            const adminCount = await Employee.aggregate([{
+                $lookup: {
+                    from: "departments",
+                    localField: "role",
+                    foreignField: "_id",
+                    as: "departmentInfo"
+                }
+            }, {
+                $match: { "departmentInfo.code": "sale" }
+            }, {
+
+                $count: "total"
+            }])
+            userName = `admin${adminCount[0]?.total + 1 || Math.floor(Math.random() * 1000) + 1000}`;
         }
-        // tạo nhân viên 
-        const newEmployee = new User({
+        // tạo nhân viên vì role dang được populate nên cần lấy roleId từ department
+        // console.log('User Name generated:', userName);
+        //console.log('Finding department with code:', roleParsed);
+        const department = await mongoose.model('Department').findOne({ code: roleParsed });
+        if (!department) {
+            return res.status(400).json({
+                success: false,
+                message: "Vai trò không hợp lệ"
+            });
+        }
+        const newEmployee = new Employee({
             fullName: fullNameParsed,
             email: emailParsed,
-            password: passwordParsed,
-            role: roleParsed,
+            password: await hashPassword(passwordParsed),
+            role: new mongoose.Types.ObjectId(department._id),
             userName,
-            isActive: "inactive"
+            isActive: "active",
+            regionManaged: regionManagedParsed
         });
         const newEmployeeSaved = await newEmployee.save();
         res.status(200).json({
@@ -238,7 +286,8 @@ const getDetailStaff = async (req, res) => {
                 role: 1,
                 createdAt: 1,
                 isActive: 1,
-                totalProducts: 1
+                totalProducts: 1,
+                address: 1
             }
         });
         const user = await Employee.aggregate(pipeline);
@@ -262,7 +311,7 @@ const getDetailStaff = async (req, res) => {
     }
 }
 const getDetailSales = async (req, res) => {
-    console.log('Received request for sales details with ID:', req.params.id);
+    console.log('Hi sale ne:', req.params.id);
     try {
         const { id } = req.params;
         if (!id) {
@@ -342,10 +391,12 @@ const getDetailSales = async (req, res) => {
                 isActive: 1,
                 processedOrders: 1,
                 generatedAmount: 1,
-                totalBlogs: 1
+                totalBlogs: 1,
+                address: 1
             }
         });
-        const user = await User.aggregate(pipeline);
+        const user = await Employee.aggregate(pipeline);
+        console.log('Aggregated sale data:', user);
         if (!user) {
             return res.status(400).json({
                 success: false,
