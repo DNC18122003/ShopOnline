@@ -117,7 +117,8 @@ export default function CommentManagementPage() {
         }
     };
     const { user } = useAuth();
-    // 2. Gọi API trả lời comment của sale
+    console.log('User in CommentManagementPage:', user);
+    // Gọi API trả lời comment của sale
     const handleSendReply = async (parentComment) => {
         setErrorMessage('');
 
@@ -131,13 +132,15 @@ export default function CommentManagementPage() {
         try {
             const replyData = {
                 productId: parentComment.productId?._id || parentComment.productId,
-                userId: user._id,
+                userId: user?._id || user?._doc?._id,
+                userModel: user.role !== 'customer' ? 'Employee' : 'User',
                 content: replyContent,
                 parentId: parentComment._id,
             };
 
             // Gọi hàm tạo comment
             const response = await commentService.createComment(replyData);
+            console.log('Create comment response:', response);
 
             if (response && response.success) {
                 toast.success('Phản hồi thành công!');
@@ -146,6 +149,7 @@ export default function CommentManagementPage() {
                 setReplyingTo(null);
                 // Lấy comment vừa tạo từ API trả về
                 const newReply = response.data;
+
                 // Cập nhật danh sách hiển thị
                 setProductComments((prevComments) =>
                     prevComments.map((comment) => {
@@ -157,7 +161,10 @@ export default function CommentManagementPage() {
                                     ...(comment.replies || []),
                                     {
                                         ...newReply,
-                                        userId: user, // Gán object user hiện tại để hiển thị ngay tên/avatar
+                                        userId: {
+                                            ...(user?._doc || user),
+                                            _id: user?._id || user?._doc?._id,
+                                        },
                                     },
                                 ],
                             };
@@ -589,7 +596,7 @@ export default function CommentManagementPage() {
                                                                 >
                                                                     <div
                                                                         className={`w-8 h-8 flex-shrink-0 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${
-                                                                            reply.userId?.role === 'admin'
+                                                                            reply.userId?.role !== 'customer'
                                                                                 ? 'bg-orange-500'
                                                                                 : 'bg-gray-400'
                                                                         }`}
@@ -604,15 +611,21 @@ export default function CommentManagementPage() {
                                                                                 {reply.userId?.userName ||
                                                                                     'Người dùng ẩn danh'}
                                                                             </span>
-                                                                            {reply.userId?.role === 'admin' && (
+                                                                            {reply.userId?.role !== 'customer' && (
                                                                                 <span className="bg-orange-100 text-orange-600 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold">
-                                                                                    QTV
+                                                                                    Sale
                                                                                 </span>
                                                                             )}
                                                                             <span className="text-xs text-gray-400">
                                                                                 {new Date(
                                                                                     reply.createdAt,
-                                                                                ).toLocaleDateString('vi-VN')}
+                                                                                ).toLocaleDateString('vi-VN', {
+                                                                                    day: '2-digit',
+                                                                                    month: '2-digit',
+                                                                                    year: 'numeric',
+                                                                                    hour: '2-digit',
+                                                                                    minute: '2-digit',
+                                                                                })}
                                                                             </span>
                                                                         </div>
                                                                         <div className="text-gray-700 text-sm leading-relaxed">

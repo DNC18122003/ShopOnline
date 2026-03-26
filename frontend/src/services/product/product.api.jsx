@@ -36,3 +36,6 @@ export const uploadImages = (formData) => {
 export const checkBuildPcCompatibility = (components) => {
     return api.post('/product/build-pc/check-compatibility', { components });
 };
+export const getProductsTopBought = (params) => {
+    return api.get(`/product/top-bought/limit`, { params });
+};

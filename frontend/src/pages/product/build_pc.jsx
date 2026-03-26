@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, AlertCircle, Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2, Info, X } from 'lucide-react';
-import { getProducts, checkBuildPcCompatibility } from '@/services/product/product.api';
+import { Cpu, Monitor, HardDrive, Layout, Zap, Thermometer, Box, Trash2, X, Plus, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { getProducts } from '@/services/product/product.api';
 import { toast } from 'react-toastify';
 import { useAuth } from '@/context/authContext';
 
@@ -22,59 +22,226 @@ const formatVND = (amount) =>
     currency: 'VND',
   }).format(amount || 0);
 
-function ProductCard({ product, onSelect, onRemove, isSelected }) {
+const getSocketValue = (product) => {
+  if (!product?.specifications) return '';
+  const specs = product.specifications;
+  const detail = specs.detail_json || {};
+
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
-      <div className="aspect-square mb-4 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center p-4">
-        <img 
-          src={product.images?.[0] || 'https://via.placeholder.com/200'} 
-          alt={product.name}
-          className="max-w-full max-h-full object-contain mix-blend-multiply"
-        />
-      </div>
-      <div className="flex-1">
-        <h3 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2 min-h-[40px]">
-          {product.name}
-        </h3>
-        {product.specifications && (
-          <p className="text-[10px] text-gray-500 mb-2">
-            {product.specifications.socket || product.specifications.ram_type || product.specifications.wattage || 'Sản phẩm chất lượng cao'}
-          </p>
-        )}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-blue-600 font-bold text-base">
-            {formatVND(product.price)}
-          </span>
-          <div className="flex items-center gap-1 text-yellow-400">
-            <span className="text-xs text-gray-500">★</span>
-            <span className="text-xs font-medium text-gray-700">4.8</span>
+    specs.socket ||
+    detail.Socket ||
+    detail.socket ||
+    detail['Loại Socket'] ||
+    ''
+  );
+};
+
+function ComponentPickerModal({
+  isOpen,
+  group,
+  products,
+  selectedItem,
+  onClose,
+  onSelect,
+}) {
+  const [search, setSearch] = useState('');
+  const [sortOption, setSortOption] = useState('default');
+  const [priceFilter, setPriceFilter] = useState('all');
+  const [socketFilter, setSocketFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 6;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSearch('');
+    setSortOption('default');
+    setPriceFilter('all');
+    setSocketFilter('all');
+    setPage(1);
+  }, [isOpen, group?.key]);
+
+  const socketOptions = ['cpu', 'mainboard'].includes(group?.key)
+    ? Array.from(
+        new Set(
+          products
+            .map((product) => getSocketValue(product))
+            .filter(Boolean)
+        )
+      ).sort((a, b) => a.localeCompare(b, 'vi'))
+    : [];
+
+  if (!isOpen || !group) return null;
+
+  const filtered = products.filter((product) => {
+    const keyword = search.trim().toLowerCase();
+    const name = (product?.name || '').toLowerCase();
+    const specText = Object.values(product?.specifications || {})
+      .map((v) => (typeof v === 'string' || typeof v === 'number' ? String(v).toLowerCase() : ''))
+      .join(' ');
+
+    const matchKeyword = !keyword || name.includes(keyword) || specText.includes(keyword);
+
+    const price = product?.price || 0;
+    const matchPrice =
+      priceFilter === 'all' ||
+      (priceFilter === 'lt1' && price < 1_000_000) ||
+      (priceFilter === '1to3' && price >= 1_000_000 && price < 3_000_000) ||
+      (priceFilter === '3to5' && price >= 3_000_000 && price < 5_000_000) ||
+      (priceFilter === '5to10' && price >= 5_000_000 && price < 10_000_000) ||
+      (priceFilter === 'gt10' && price >= 10_000_000);
+
+    const socket = getSocketValue(product);
+    const matchSocket =
+      !['cpu', 'mainboard'].includes(group.key) ||
+      socketFilter === 'all' ||
+      socket === socketFilter;
+
+    return matchKeyword && matchPrice && matchSocket;
+  });
+
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortOption === 'price_asc') return (a?.price || 0) - (b?.price || 0);
+    if (sortOption === 'price_desc') return (b?.price || 0) - (a?.price || 0);
+    if (sortOption === 'name_asc') return (a?.name || '').localeCompare(b?.name || '', 'vi');
+    if (sortOption === 'name_desc') return (b?.name || '').localeCompare(a?.name || '', 'vi');
+    return 0;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / itemsPerPage));
+  const safePage = Math.min(page, totalPages);
+  const visible = sorted.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm p-3 sm:p-6">
+      <div className="h-full bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-2xl flex flex-col">
+        <div className="bg-blue-900 text-white px-4 py-3 flex items-center justify-between">
+          <h3 className="font-bold text-xl">Chọn linh kiện - {group.label}</h3>
+          <button onClick={onClose} className="w-9 h-9 rounded-full border border-blue-300 hover:bg-blue-800 flex items-center justify-center">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-[280px_1fr] min-h-0">
+          <aside className="border-r border-gray-200 p-4 space-y-6 overflow-y-auto custom-scrollbar">
+            <div>
+              <h4 className="font-bold text-gray-800 mb-2">Lọc theo giá</h4>
+              <div className="space-y-2 text-sm">
+                {[
+                  ['all', 'Tất cả'],
+                  ['lt1', 'Dưới 1 triệu'],
+                  ['1to3', '1 - 3 triệu'],
+                  ['3to5', '3 - 5 triệu'],
+                  ['5to10', '5 - 10 triệu'],
+                  ['gt10', 'Trên 10 triệu'],
+                ].map(([value, label]) => (
+                  <label key={value} className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="price-filter" checked={priceFilter === value} onChange={() => { setPriceFilter(value); setPage(1); }} />
+                    <span>{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {['cpu', 'mainboard'].includes(group.key) && (
+              <div>
+                <h4 className="font-bold text-gray-800 mb-2">Lọc theo socket</h4>
+                <div className="space-y-2 text-sm max-h-56 overflow-y-auto custom-scrollbar pr-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="socket-filter"
+                      checked={socketFilter === 'all'}
+                      onChange={() => { setSocketFilter('all'); setPage(1); }}
+                    />
+                    <span>Tất cả</span>
+                  </label>
+
+                  {socketOptions.map((socket) => (
+                    <label key={socket} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="socket-filter"
+                        checked={socketFilter === socket}
+                        onChange={() => { setSocketFilter(socket); setPage(1); }}
+                      />
+                      <span>{socket}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+
+          <div className="p-4 sm:p-6 overflow-y-auto custom-scrollbar">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+              <div className="flex items-center flex-1 gap-2 border border-gray-200 rounded-xl px-3 py-2">
+                <Search size={18} className="text-gray-400" />
+                <input
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  placeholder="Tìm kiếm sản phẩm..."
+                  className="w-full outline-none text-sm"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={18} className="text-gray-500" />
+                <select
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-gray-200 text-sm"
+                >
+                  <option value="default">Mặc định</option>
+                  <option value="price_asc">Giá: thấp đến cao</option>
+                  <option value="price_desc">Giá: cao đến thấp</option>
+                  <option value="name_asc">Tên: A → Z</option>
+                  <option value="name_desc">Tên: Z → A</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm text-gray-700">Tìm thấy <span className="font-bold">{sorted.length}</span> sản phẩm</p>
+              {sorted.length > itemsPerPage && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1} className="p-1 rounded border border-gray-200 disabled:opacity-40">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-sm font-medium">{safePage}/{totalPages}</span>
+                  <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} className="p-1 rounded border border-gray-200 disabled:opacity-40">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {visible.length > 0 ? visible.map((product) => (
+                <div key={product._id} className="border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+                  <div className="w-16 h-16 bg-gray-50 rounded-lg p-1 flex items-center justify-center shrink-0">
+                    <img src={product.images?.[0] || 'https://via.placeholder.com/80'} alt={product.name} className="max-w-full max-h-full object-contain" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-900 line-clamp-2">{product.name}</p>
+                    <p className="text-red-600 font-bold mt-1">{formatVND(product.price)}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      onSelect(product);
+                      onClose();
+                    }}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold ${selectedItem?._id === product._id ? 'bg-green-100 text-green-700' : 'bg-blue-800 text-white hover:bg-blue-700'}`}
+                  >
+                    {selectedItem?._id === product._id ? 'Đã chọn' : 'Thêm'}
+                  </button>
+                </div>
+              )) : (
+                <div className="py-12 text-center text-gray-500">Không có sản phẩm phù hợp.</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
-      {isSelected ? (
-        <div className="flex gap-2">
-          <button
-            disabled
-            className="flex-1 py-2 rounded-lg text-sm font-semibold bg-green-100 text-green-600 cursor-default flex items-center justify-center gap-1"
-          >
-            <Check size={14} /> Đã thêm
-          </button>
-          <button
-            onClick={() => onRemove(product)}
-            className="px-3 py-2 rounded-lg text-sm font-semibold bg-red-50 text-red-500 hover:bg-red-100 transition-colors flex items-center justify-center"
-            title="Bỏ chọn linh kiện này"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => onSelect(product)}
-          className="w-full py-2 rounded-lg text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-        >
-          Thêm vào cấu hình
-        </button>
-      )}
     </div>
   );
 }
@@ -194,7 +361,7 @@ function LoadConfigModal({ isOpen, onClose, configs, onLoad, onDelete }) {
   );
 }
 
-function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibilityLoading, onLoadConfig, onSaveConfig }) {
+function RightSummary({ selectedItems, onLoadConfig, onSaveConfig }) {
   const navigate = useNavigate();
 
   const subtotal = useMemo(() => {
@@ -211,156 +378,36 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
       return;
     }
 
-    if (selectedCount >= 2 && !compatibilityResult?.isCompatible) {
-      toast.info(`Cấu hình có vấn đề tương thích. Bạn vẫn có thể tiếp tục thanh toán.`);
-    }
-
-    // Chuyển đổi selectedItems sang định dạng line items cho Checkout
     const items = Object.entries(selectedItems).map(([key, product]) => ({
       productId: product._id,
       nameSnapshot: product.name,
       priceSnapshot: product.price,
       imageSnapshot: product.images?.[0] || '',
       quantity: 1,
-      category: key
+      category: key,
     }));
 
     const buildPcData = {
       items,
       totalPrice: subtotal,
-      isBuildPc: true
+      isBuildPc: true,
     };
 
-    // Lưu vào localStorage để CheckoutPage có thể đọc được
     localStorage.setItem('buildpc_checkout', JSON.stringify(buildPcData));
-    
-    // Điều hướng sang trang checkout
     navigate('/checkout');
   };
 
   return (
     <div className="space-y-4 sticky top-6">
       <div className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-bold text-gray-900 mb-4 text-base">Kiểm tra tương thích</h2>
-        
-        {compatibilityLoading ? (
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 animate-pulse">
-            <div className="w-6 h-6 rounded-full bg-gray-200" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 bg-gray-200 rounded w-1/2" />
-              <div className="h-2 bg-gray-200 rounded w-3/4" />
-            </div>
-          </div>
-        ) : (
-          <div className={`space-y-3`}>
-            {/* Status Header */}
-            <div className={`flex items-center gap-3 p-3 rounded-xl ${
-              Object.keys(selectedItems || {}).length === 0 
-                ? 'bg-gray-50' 
-                : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-50' : 'bg-red-50')
-            }`}>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                Object.keys(selectedItems || {}).length < 2
-                  ? 'bg-gray-300' 
-                  : (!compatibilityResult || compatibilityResult.isCompatible ? 'bg-green-500' : 'bg-red-500')
-              }`}>
-                {Object.keys(selectedItems || {}).length < 2 ? (
-                  <Info size={14} className="text-white" />
-                ) : (!compatibilityResult || compatibilityResult.isCompatible ? (
-                  <Check size={14} className="text-white" />
-                ) : (
-                  <AlertCircle size={14} className="text-white" />
-                ))}
-              </div>
-              <div>
-                <p className={`text-xs font-bold ${
-                  Object.keys(selectedItems || {}).length === 0 
-                    ? 'text-gray-600' 
-                    : (!compatibilityResult || compatibilityResult.isCompatible ? 'text-green-700' : 'text-red-700')
-                }`}>
-                  {Object.keys(selectedItems || {}).length < 2
-                    ? 'Chọn ít nhất 2 linh kiện'
-                    : (!compatibilityResult || compatibilityResult.isCompatible ? 'Tương thích tốt' : 'Phát hiện vấn đề')}
-                </p>
-                <p className="text-[10px] text-gray-500">
-                  {Object.keys(selectedItems || {}).length < 2
-                    ? 'Chọn ít nhất 2 linh kiện để kiểm tra'
-                    : (!compatibilityResult || (compatibilityResult.issues?.length === 0 && compatibilityResult.warnings?.length === 0)
-                      ? 'Cấu hình hiện tại ổn định' 
-                      : `${compatibilityResult.issues?.length || 0} lỗi, ${compatibilityResult.warnings?.length || 0} cảnh báo`)}
-                </p>
-              </div>
-            </div>
-
-            {/* Issues List */}
-            {compatibilityResult?.issues?.length > 0 && (
-              <div className="space-y-2">
-                {compatibilityResult.issues.map((issue, idx) => (
-                  <div key={idx} className="flex gap-2 p-2 rounded-lg bg-red-50/50 border border-red-100">
-                    <AlertCircle size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-red-600 leading-tight">{issue.message}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Warnings List */}
-            {compatibilityResult?.warnings?.length > 0 && (
-              <div className="space-y-2">
-                {compatibilityResult.warnings.map((warn, idx) => (
-                  <div key={idx} className="flex gap-2 p-2 rounded-lg bg-yellow-50/50 border border-yellow-100">
-                    <Info size={12} className="text-yellow-600 flex-shrink-0 mt-0.5" />
-                    <p className="text-[10px] text-yellow-700 leading-tight">{warn.message}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm p-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-gray-900 text-base">Cấu hình hiện tại</h2>
-          <button 
+          <h2 className="font-bold text-gray-900 text-base">Tổng chi phí</h2>
+          <button
             onClick={onLoadConfig}
             className="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors"
           >
             Tải đã lưu
           </button>
-        </div>
-        <div className="space-y-3 mb-6 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
-          {COMPONENT_GROUPS.map((group) => {
-            const item = selectedItems[group.key];
-            return (
-              <div key={group.key} className="flex items-center gap-3 p-2 rounded-lg border border-gray-50 bg-gray-50/30 group">
-                <div className="w-10 h-10 bg-white rounded border border-gray-100 flex items-center justify-center p-1 flex-shrink-0">
-                  {item?.images?.[0] ? (
-                    <img src={item.images[0]} alt="" className="max-w-full max-h-full object-contain" />
-                  ) : (
-                    <div className="text-gray-300">{group.icon}</div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{group.label}</p>
-                  <p className="text-xs font-bold text-gray-800 truncate">
-                    {item ? item.name : 'Chưa chọn ' + group.label}
-                  </p>
-                </div>
-                {item && (
-                  <div className="text-right flex flex-col items-end gap-1">
-                    <p className="text-xs font-bold text-gray-900">{formatVND(item.price).replace('₫', '')}₫</p>
-                    <button 
-                      onClick={() => onRemove(group.key)}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded text-red-500 transition-all"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
 
         <div className="space-y-2 border-t border-gray-100 pt-4">
@@ -379,7 +426,7 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
         </div>
 
         <div className="mt-6 space-y-2">
-          <button 
+          <button
             onClick={handleCheckout}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-200 text-sm"
           >
@@ -400,15 +447,11 @@ function RightSummary({ selectedItems, onRemove, compatibilityResult, compatibil
 export default function BuildPcPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState('cpu');
   const [allProducts, setAllProducts] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState({});
-  const [compatibilityResult, setCompatibilityResult] = useState(null);
-  const [compatibilityLoading, setCompatibilityLoading] = useState(false);
-  const [sortOption, setSortOption] = useState('default');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const [pickerGroupKey, setPickerGroupKey] = useState(null);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [savedConfigs, setSavedConfigs] = useState([]);
@@ -544,105 +587,71 @@ export default function BuildPcPage() {
     return 0;
   }, []);
 
-  // Kiểm tra tương thích mỗi khi selectedItems thay đổi
-  useEffect(() => {
-    const checkCompat = async () => {
-      const keys = Object.keys(selectedItems);
-      if (keys.length === 0) {
-        setCompatibilityResult(null);
-        return;
+
+  const getConstraintsByCategory = useCallback((categoryKey) => {
+    const constraints = {};
+
+    if (categoryKey === 'mainboard') {
+      const cpuSocket = getSpec(selectedItems.cpu, 'socket');
+      if (cpuSocket) constraints.socket = cpuSocket;
+    } else if (categoryKey === 'ram') {
+      const mainRamType = getSpec(selectedItems.mainboard, 'ram_type');
+      if (mainRamType) constraints.ram_type = mainRamType;
+      else {
+        const cpuRamType = getSpec(selectedItems.cpu, 'ram_type');
+        if (cpuRamType) constraints.ram_type = cpuRamType;
       }
+    } else if (categoryKey === 'case') {
+      const mainForm = getSpec(selectedItems.mainboard, 'form_factor');
+      if (mainForm) constraints.form_factor = mainForm;
+    } else if (categoryKey === 'cpu' && selectedItems.mainboard) {
+      const mainSocket = getSpec(selectedItems.mainboard, 'socket');
+      if (mainSocket) constraints.socket = mainSocket;
+    } else if (categoryKey === 'psu') {
+      const totalWattage = Object.values(selectedItems)
+        .reduce((sum, product) => sum + getWattage(product), 0);
 
-      try {
-        if (keys.length < 2) {
-          setCompatibilityResult(null);
-          return;
-        }
-
-        setCompatibilityLoading(true);
-        const components = {};
-        keys.forEach(k => {
-          components[k] = selectedItems[k]._id;
-        });
-        const res = await checkBuildPcCompatibility(components);
-        if (res.success) {
-          setCompatibilityResult(res.data);
-        }
-      } catch (err) {
-        console.error('Check compatibility error:', err);
-      } finally {
-        setCompatibilityLoading(false);
+      if (totalWattage > 0) {
+        const recommendedWattage = Math.ceil((totalWattage * 1.3) / 50) * 50;
+        constraints.min_wattage = recommendedWattage;
       }
-    };
-
-    const timer = setTimeout(checkCompat, 500);
-    return () => clearTimeout(timer);
-  }, [selectedItems]);
-
-  // Fetch sản phẩm cho category hiện tại kèm theo filter tương thích
-  const fetchProductsForCategory = useCallback(async (categoryKey, constraints = {}) => {
-    try {
-      const group = COMPONENT_GROUPS.find(g => g.key === categoryKey);
-      if (!group) return;
-
-      const params = { 
-        category: group.categorySlug, 
-        limit: 50,
-        ...constraints 
-      };
-      
-      const res = await getProducts(params);
-      setAllProducts(prev => ({ ...prev, [categoryKey]: res?.data || [] }));
-    } catch (err) {
-      console.error(`Fetch ${categoryKey} error:`, err);
     }
-  }, []);
 
-  // Hiệu ứng fetch ban đầu và refetch khi có ràng buộc mới
+    return constraints;
+  }, [selectedItems, getSpec, getWattage]);
+
   useEffect(() => {
-    const fetchWithConstraints = async () => {
+    const fetchAllCategories = async () => {
       setLoading(true);
-      
-      // Xác định ràng buộc dựa trên linh kiện đã chọn
-      const constraints = {};
-      
-      if (activeCategory === 'mainboard') {
-        const cpuSocket = getSpec(selectedItems.cpu, 'socket');
-        if (cpuSocket) constraints.socket = cpuSocket;
-      } else if (activeCategory === 'ram') {
-        const mainRamType = getSpec(selectedItems.mainboard, 'ram_type');
-        if (mainRamType) constraints.ram_type = mainRamType;
-        else {
-          const cpuRamType = getSpec(selectedItems.cpu, 'ram_type');
-          if (cpuRamType) constraints.ram_type = cpuRamType;
-        }
-      } else if (activeCategory === 'case') {
-        const mainForm = getSpec(selectedItems.mainboard, 'form_factor');
-        if (mainForm) constraints.form_factor = mainForm;
-      } else if (activeCategory === 'cpu' && selectedItems.mainboard) {
-        const mainSocket = getSpec(selectedItems.mainboard, 'socket');
-        if (mainSocket) constraints.socket = mainSocket;
-      } else if (activeCategory === 'psu') {
-        const totalWattage = Object.values(selectedItems)
-          .reduce((sum, product) => sum + getWattage(product), 0);
-        
-        if (totalWattage > 0) {
-          // Recommend 30% overhead and round up to nearest 50W
-          const recommendedWattage = Math.ceil((totalWattage * 1.3) / 50) * 50;
-          constraints.min_wattage = recommendedWattage;
-        }
-      }
+      try {
+        const entries = await Promise.all(
+          COMPONENT_GROUPS.map(async (group) => {
+            try {
+              const constraints = getConstraintsByCategory(group.key);
+              const res = await getProducts({
+                category: group.categorySlug,
+                limit: 50,
+                ...constraints,
+              });
+              return [group.key, res?.data || []];
+            } catch (err) {
+              console.error(`Fetch ${group.key} error:`, err);
+              return [group.key, []];
+            }
+          })
+        );
 
-      await fetchProductsForCategory(activeCategory, constraints);
-      setCurrentPage(1);
-      setLoading(false);
+        setAllProducts(Object.fromEntries(entries));
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchWithConstraints();
-  }, [activeCategory, selectedItems, fetchProductsForCategory, getSpec, getWattage]);
+    fetchAllCategories();
+  }, [getConstraintsByCategory]);
 
-  const handleSelect = (product) => {
-    setSelectedItems(prev => ({ ...prev, [activeCategory]: product }));
+  const handleSelect = (categoryKey, product) => {
+    setSelectedItems((prev) => ({ ...prev, [categoryKey]: product }));
   };
 
   useEffect(() => {
@@ -663,166 +672,94 @@ export default function BuildPcPage() {
     });
   };
 
-  const activeGroup = COMPONENT_GROUPS.find(g => g.key === activeCategory);
-  const rawDisplayProducts = allProducts[activeCategory] || [];
-  const displayProducts = useMemo(() => {
-    const products = [...rawDisplayProducts];
+  const pickerGroup = COMPONENT_GROUPS.find((g) => g.key === pickerGroupKey) || null;
+  const pickerProducts = pickerGroup ? (allProducts[pickerGroup.key] || []) : [];
 
-    switch (sortOption) {
-      case 'price_asc':
-        return products.sort((a, b) => (a?.price || 0) - (b?.price || 0));
-      case 'price_desc':
-        return products.sort((a, b) => (b?.price || 0) - (a?.price || 0));
-      case 'name_asc':
-        return products.sort((a, b) => (a?.name || '').localeCompare(b?.name || '', 'vi'));
-      case 'name_desc':
-        return products.sort((a, b) => (b?.name || '').localeCompare(a?.name || '', 'vi'));
-      default:
-        return products;
-    }
-  }, [rawDisplayProducts, sortOption]);
-
-  const totalPages = Math.max(1, Math.ceil(displayProducts.length / itemsPerPage));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginatedProducts = displayProducts.slice(
-    (safePage - 1) * itemsPerPage,
-    safePage * itemsPerPage
-  );
+  const openPicker = (groupKey) => {
+    setPickerGroupKey(groupKey);
+    setIsPickerOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] py-8">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
         <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* Left Sidebar: Categories */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sticky top-6">
-              <h2 className="px-4 py-2 text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Chọn linh kiện</h2>
-              <nav className="space-y-1">
-                {COMPONENT_GROUPS.map((group) => (
-                  <button
-                    key={group.key}
-                    onClick={() => setActiveCategory(group.key)}
-                    className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                      activeCategory === group.key
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-100'
-                        : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {group.icon}
-                      <span>{group.label}</span>
-                    </div>
-                    {selectedItems[group.key] && (
-                      <Check size={14} className={activeCategory === group.key ? 'text-white' : 'text-green-500'} />
-                    )}
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </aside>
-
-          {/* Center: Product List */}
           <main className="flex-1">
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-1">{activeGroup?.label} - Bộ vi xử lý</h1>
-                <p className="text-sm text-gray-500 font-medium">Chọn {activeGroup?.label} phù hợp cho cấu hình của bạn</p>
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h1 className="text-2xl font-bold text-gray-900">Danh sách linh kiện</h1>
+                <p className="text-sm text-gray-500 mt-1">Nhấn nút chọn để mở modal chọn linh kiện cho từng nhóm</p>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label htmlFor="buildpc-sort" className="text-sm font-semibold text-gray-600">Sắp xếp:</label>
-                <select
-                  id="buildpc-sort"
-                  value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value)}
-                  className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="default">Mặc định</option>
-                  <option value="price_asc">Giá: Thấp đến cao</option>
-                  <option value="price_desc">Giá: Cao đến thấp</option>
-                  <option value="name_asc">Tên: A → Z</option>
-                  <option value="name_desc">Tên: Z → A</option>
-                </select>
-              </div>
-            </div>
+              {loading ? (
+                <div className="p-5 space-y-3 animate-pulse">
+                  {COMPONENT_GROUPS.map((group) => (
+                    <div key={group.key} className="h-16 bg-gray-100 rounded-lg" />
+                  ))}
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {COMPONENT_GROUPS.map((group, index) => {
+                    const item = selectedItems[group.key];
+                    return (
+                      <div key={group.key} className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3 p-4 items-center bg-gray-50/40 odd:bg-white">
+                        <div className="font-bold text-gray-800 flex items-center gap-2">
+                          <span>{index + 1}.</span>
+                          {group.icon}
+                          <span>{group.label}</span>
+                        </div>
 
-            {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 animate-pulse">
-                {[1, 2, 3, 4, 5, 6].map(i => (
-                  <div key={i} className="h-80 bg-gray-200 rounded-2xl"></div>
-                ))}
-              </div>
-            ) : (
-              <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {paginatedProducts.length > 0 ? (
-                    paginatedProducts.map((product) => (
-                    <ProductCard
-                      key={product._id}
-                      product={product}
-                      onSelect={handleSelect}
-                      onRemove={() => handleRemove(activeCategory)}
-                      isSelected={selectedItems[activeCategory]?._id === product._id}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full py-20 text-center bg-white rounded-3xl border-2 border-dashed border-gray-100">
-                    <div className="text-gray-300 mb-4 flex justify-center">{activeGroup?.icon}</div>
-                    <p className="text-gray-500 font-bold">Không tìm thấy sản phẩm {activeGroup?.label}</p>
-                  </div>
-                )}
-              </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
+                          {!item && (
+                            <button
+                              onClick={() => openPicker(group.key)}
+                              className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg px-4 py-2 w-fit"
+                            >
+                              <Plus size={16} />
+                              {`Chọn ${group.label}`}
+                            </button>
+                          )}
 
-                {displayProducts.length > itemsPerPage && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6">
-                    <p className="text-xs text-gray-500">
-                      Hiển thị {(safePage - 1) * itemsPerPage + 1} - {Math.min(safePage * itemsPerPage, displayProducts.length)} trên tổng {displayProducts.length} sản phẩm
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                        disabled={safePage === 1}
-                        className="px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 disabled:text-gray-300 disabled:border-gray-100 disabled:cursor-not-allowed hover:bg-gray-50"
-                      >
-                        Trước
-                      </button>
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
-                          <button
-                            key={page}
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-9 h-9 rounded-lg text-sm font-semibold border transition-colors ${
-                              page === safePage
-                                ? 'bg-blue-600 text-white border-blue-600'
-                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        ))}
+                          {item && (
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <img
+                                src={item.images?.[0] || 'https://via.placeholder.com/50'}
+                                alt={item.name}
+                                className="w-12 h-12 rounded border border-gray-200 object-contain bg-white"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
+                                <p className="text-xs font-bold text-red-600">{formatVND(item.price)}</p>
+                              </div>
+
+                              <button
+                                onClick={() => openPicker(group.key)}
+                                className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                                title="Đổi linh kiện"
+                              >
+                                <Pencil size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleRemove(group.key)}
+                                className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                title="Xóa linh kiện"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <button
-                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                        disabled={safePage === totalPages}
-                        className="px-3 py-2 rounded-lg text-sm font-semibold border border-gray-200 text-gray-600 disabled:text-gray-300 disabled:border-gray-100 disabled:cursor-not-allowed hover:bg-gray-50"
-                      >
-                        Sau
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </main>
 
-          {/* Right Sidebar: Summary */}
           <aside className="lg:w-80 flex-shrink-0">
             <RightSummary 
-              selectedItems={selectedItems} 
-              onRemove={handleRemove}
-              compatibilityResult={compatibilityResult}
-              compatibilityLoading={compatibilityLoading}
+              selectedItems={selectedItems}
               onLoadConfig={handleOpenLoadModal}
               onSaveConfig={handleSaveConfig}
             />
@@ -831,6 +768,19 @@ export default function BuildPcPage() {
         </div>
       </div>
       
+      <ComponentPickerModal
+        isOpen={isPickerOpen}
+        group={pickerGroup}
+        products={pickerProducts}
+        selectedItem={pickerGroup ? selectedItems[pickerGroup.key] : null}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={(product) => {
+          if (pickerGroup) {
+            handleSelect(pickerGroup.key, product);
+          }
+        }}
+      />
+
       <SaveConfigModal
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}

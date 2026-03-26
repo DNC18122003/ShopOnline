@@ -16,7 +16,7 @@ import { CreateBlogModal } from '@/components/Blog/create-blog-modal';
 import { ViewBlogModal } from '@/components/Blog/view-blog-modal';
 import { EditBlogModal } from '@/components/Blog/edit-blog-modal';
 
-// Helper function cho format ngày tháng
+//  function  format ngày tháng về dạng VN
 const formatDate = (dateString) => {
     if (!dateString) return '---';
     try {
@@ -28,7 +28,7 @@ const formatDate = (dateString) => {
     }
 };
 
-// Hook debounce
+// Timeout Delay
 function useDebounce(value, delay) {
     const [debouncedValue, setDebouncedValue] = useState(value);
     useEffect(() => {
@@ -63,18 +63,18 @@ export default function BlogManagementPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    // --- EFFECTS ---
+    // Lấy name của account sale để tự động thêm vào author trong create Blog ---
     useEffect(() => {
         const data_ui = JSON.parse(localStorage.getItem('data_ui'));
         if (data_ui?.userName) setCurrentUserName(data_ui.userName);
         fetchBlogs();
     }, []);
-
+    //  reset lại trang về trang đầu sau khi search
     useEffect(() => {
         setCurrentPage(1);
     }, [debouncedSearch, statusFilter, startDate, endDate]);
 
-    // --- ACTIONS ---
+    // Gọi API lấy danh sách Blog
     const fetchBlogs = async () => {
         setIsLoading(true);
         try {
@@ -89,13 +89,34 @@ export default function BlogManagementPage() {
             setIsLoading(false);
         }
     };
+    // Gọi API tạo Blog mới
+    const handleCreateBlog = async (payload) => {
+        try {
+            setIsLoading(true);
+            // Gọi API tạo blog mới với payload đã được Form chuẩn bị sẵn
+            const res = await blogService.createBlog(payload);
 
+            if (res) {
+                toast.success('Đã tạo bài viết mới thành công!');
+                setIsCreateModalOpen(false);
+                fetchBlogs(); // Refresh danh sách
+            }
+        } catch (error) {
+            console.error('Lỗi tạo blog:', error);
+            const errorMsg = error.response?.data?.message || 'Không thể tạo bài viết. Vui lòng thử lại!';
+            toast.error(errorMsg);
+            throw error;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    // Gọi API xóa Blog
     const handleConfirmDelete = async () => {
         if (!blogToDelete) return;
         try {
-            const id = blogToDelete._id || blogToDelete.id;
+            const id = blogToDelete._id;
             await blogService.deleteBlog(id);
-            setBlogPosts((prev) => prev.filter((p) => (p._id || p.id) !== id));
+            setBlogPosts((prev) => prev.filter((p) => p.id !== id));
             setDeleteModalOpen(false);
             setBlogToDelete(null);
             toast.success('Đã xóa bài viết thành công!');
@@ -103,7 +124,7 @@ export default function BlogManagementPage() {
             toast.error('Xóa thất bại!');
         }
     };
-
+    // Gọi API update thông tin Blog
     const handleUpdateBlog = async (id, payload) => {
         try {
             setIsLoading(true);
@@ -122,10 +143,12 @@ export default function BlogManagementPage() {
     const filteredData = useMemo(() => {
         return blogPosts.filter((item) => {
             const query = debouncedSearch.toLowerCase().trim();
+            //Lọc theo tiêu đề
             const title = (item.title || '').toLowerCase();
             const matchesSearch = title.includes(query);
+            //Lọc theo trạng thái
             const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-
+            //Lọc theo ngày bắt đầu và ngày kết thúc
             let matchesDate = true;
             if (startDate || endDate) {
                 const itemTime = new Date(item.createdAt).getTime();
@@ -141,7 +164,7 @@ export default function BlogManagementPage() {
             return matchesSearch && matchesStatus && matchesDate;
         });
     }, [blogPosts, debouncedSearch, statusFilter, startDate, endDate]);
-
+    // Xử lý phân trang
     const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
     const totalPages = Math.ceil(filteredData.length / itemsPerPage) || 1;
 
@@ -252,7 +275,7 @@ export default function BlogManagementPage() {
                                                 )}
                                             </TableCell>
                                             <TableCell className="font-medium line-clamp-2">{post.title}</TableCell>
-                                            <TableCell className="text-center">{post.author || 'Admin'}</TableCell>
+                                            <TableCell className="text-center">{post.author}</TableCell>
                                             <TableCell className="text-center">{formatDate(post.createdAt)}</TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex items-center justify-center gap-1">
@@ -283,7 +306,7 @@ export default function BlogManagementPage() {
                                                         size="icon"
                                                         className="h-8 w-8 text-blue-600"
                                                         onClick={() => {
-                                                            setSelectedBlogId(post._id || post.id);
+                                                            setSelectedBlogId(post._id);
                                                             setIsViewModalOpen(true);
                                                         }}
                                                     >
@@ -294,7 +317,7 @@ export default function BlogManagementPage() {
                                                         size="icon"
                                                         className="h-8 w-8 text-orange-600"
                                                         onClick={() => {
-                                                            setSelectedBlogId(post._id || post.id);
+                                                            setSelectedBlogId(post._id);
                                                             setIsEditModalOpen(true);
                                                         }}
                                                     >
@@ -338,7 +361,7 @@ export default function BlogManagementPage() {
                 <CreateBlogModal
                     isOpen={isCreateModalOpen}
                     onOpenChange={setIsCreateModalOpen}
-                    onSubmit={fetchBlogs}
+                    onSubmit={handleCreateBlog}
                     currentUser={currentUserName}
                 />
                 <DeleteBlogModal

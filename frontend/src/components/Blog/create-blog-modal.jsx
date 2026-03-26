@@ -11,7 +11,7 @@ export function CreateBlogModal({ isOpen, onOpenChange, onSubmit, currentUser })
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-white">
                 <CreateBlogForm
-                    key={currentUser} // Thêm dòng này vào
+                    key={currentUser}
                     currentUser={currentUser}
                     onSubmit={handleSubmit}
                     onCancel={() => onOpenChange(false)}

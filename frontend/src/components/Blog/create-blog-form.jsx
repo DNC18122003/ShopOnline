@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-
+// Component form tạo bài viết mới, được sử dụng trong CreateBlogModal
 export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
     const [isLoading, setIsLoading] = useState(false);
     const [errorText, setErrorText] = useState('');
@@ -15,9 +15,8 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
         status: 'published',
         thumbnail: '',
     });
-
+    // State để lưu trữ preview ảnh
     const [thumbnailPreview, setThumbnailPreview] = useState('');
-
     // Đồng bộ author khi currentUser từ layout truyền xuống
     useEffect(() => {
         if (currentUser) {
@@ -26,16 +25,17 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                 author: currentUser,
             }));
         }
-    }, [currentUser]); // Chạy lại mỗi khi currentUser thay đổ
-
+    }, [currentUser]); // Chạy lại mỗi khi currentUser thay đổi
+    // Hàm xử lý thay đổi input chung
     const handleInputChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
         if (errorText) setErrorText('');
     };
-
+    // Hàm xử lý khi chọn ảnh
     const handleThumbnailChange = (e) => {
         //Xóa báo lỗi cũ đi mỗi khi bắt đầu chọn file
         setErrorText('');
+        // 1. Lấy file ảnh được chọn
         const file = e.target.files?.[0];
         if (!file) return;
         // 2. Kiểm tra định dạng ảnh
@@ -46,7 +46,6 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             setErrorText('Lỗi: Định dạng ảnh phải là PNG hoặc JPG.');
             return;
         }
-
         // 3. Kiểm tra dung lượng ảnh (Tối đa 5MB)
         if (file.size > 5 * 1024 * 1024) {
             setThumbnailPreview('');
@@ -56,17 +55,19 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             return;
         }
         // 4. NẾU ẢNH HỢP LỆ -> Xử lý lưu state và hiển thị preview
+        // Sử dụng FileReader để đọc file ảnh và chuyển thành Data URL để hiển thị preview
         const reader = new FileReader();
+        // Khi file được đọc xong, cập nhật state thumbnail và thumbnailPreview
         reader.onloadend = () => {
             setThumbnailPreview(reader.result);
             handleInputChange('thumbnail', reader.result);
         };
         reader.readAsDataURL(file);
     };
+    // Hàm xử lý submit form
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        // Validate
+        // 1. Kiểm tra các trường bắt buộc
         if (!formData.title.trim() || !formData.excerpt.trim() || !formData.author.trim()) {
             setErrorText('Lỗi: Vui lòng điền đầy đủ các thông tin bắt buộc.');
             return;
@@ -85,7 +86,6 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
             setErrorText('Lỗi: Nội dung bài viết không được vượt quá 10000 ký tự.');
             return;
         }
-
         setIsLoading(true);
         try {
             const payload = {
@@ -112,6 +112,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Hiển thị lỗi nếu có */}
             {errorText && (
                 <div className="bg-red-50 border border-red-200 rounded-md p-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">
                     <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
@@ -120,7 +121,6 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                     </p>
                 </div>
             )}
-
             <div className="space-y-4">
                 {/* Ảnh bài viết */}
                 <div className="flex flex-col gap-3">
@@ -128,6 +128,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                         Ảnh bài viết <span className="text-red-500">*</span>
                     </Label>
                     <div className="flex items-center gap-4">
+                        {/* Khung preview ảnh, hiển thị ảnh nếu có hoặc icon upload nếu chưa có */}
                         <div
                             className={`w-20 h-20 border-2 border-dashed rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden ${
                                 isImageError && !formData.thumbnail ? 'border-red-500' : 'border-gray-200'
@@ -139,6 +140,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                                 <Upload className="text-gray-400 w-6 h-6" />
                             )}
                         </div>
+                        {/* Input file để chọn ảnh, ẩn đi và sử dụng label để kích hoạt */}
                         <div className="flex-1">
                             <Input
                                 type="file"
@@ -171,6 +173,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                             {formData.title.length}/50
                         </span>
                     </div>
+                    {/* Input tiêu đề, hiển thị lỗi nếu có và đếm số ký tự */}
                     <Input
                         value={formData.title}
                         onChange={(e) => handleInputChange('title', e.target.value)}
@@ -191,6 +194,7 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                             {formData.excerpt.length}/500
                         </span>
                     </div>
+                    {/* Textarea nội dung, hiển thị lỗi nếu có và đếm số ký tự */}
                     <Textarea
                         value={formData.excerpt}
                         onChange={(e) => handleInputChange('excerpt', e.target.value)}
@@ -207,15 +211,15 @@ export function CreateBlogForm({ onSubmit, onCancel, currentUser }) {
                         </Label>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            {/* Input người tạo, chỉ hiển thị và không cho chỉnh sửa */}
                             <Input
                                 className={`pl-9 bg-gray-50 cursor-not-allowed ${isAuthorError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
                                 value={formData.author}
                                 readOnly
-                                placeholder="Tên tác giả..."
                             />
                         </div>
                     </div>
-
+                    {/* Trạng thái bài viết*/}
                     <div className="space-y-2">
                         <Label className="font-bold text-sm">Trạng thái</Label>
                         <div className="flex h-10 items-center gap-6 px-3 border rounded-md bg-white">

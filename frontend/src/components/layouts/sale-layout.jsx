@@ -41,6 +41,11 @@ const navLinkItems = [
         title: 'Quản lý comment',
         icon: <MessageCircleCode className="w-5 h-5" />,
     },
+    {
+        href: '/sale/forgot-password',
+        title: 'Quên mật khẩu',
+        icon: <MessageCircleCode className="w-5 h-5" />,
+    },
 ];
 
 const SaleLayout = () => {
@@ -123,7 +128,10 @@ const SaleLayout = () => {
                     {data_ui && (
                         <div className="p-3 border-t">
                             <div className="flex flex-col md:flex-row items-center gap-2">
-                                <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
+                                <Avatar
+                                    className="h-8 w-8 md:h-10 md:w-10 cursor-pointer"
+                                    onClick={() => navigate('/sale/profile')}
+                                >
                                     <AvatarImage src={data_ui.avatar} />
 
                                     <AvatarFallback>

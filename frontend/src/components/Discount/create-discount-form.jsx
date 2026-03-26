@@ -20,7 +20,7 @@ const ErrorAlert = ({ message }) => {
         </div>
     );
 };
-
+// Form tạo mã giảm giá
 export function CreateDiscountForm({ onSubmit, onCancel }) {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
