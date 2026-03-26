@@ -37,15 +37,15 @@ export const CartProvider = ({ children }) => {
         await fetchCart();
     };
 
-    const updateQuantity = async (productId, quantity) => {
-        await cartApi.updateCartItem({ productId, quantity });
-        await fetchCart();
-    };
+ const updateQuantity = async (productId, quantity, productType) => {
+     await cartApi.updateCartItem({ productId, quantity, productType });
+     await fetchCart();
+ };
 
-    const removeItem = async (productId) => {
-        await cartApi.removeCartItem(productId);
-        await fetchCart();
-    };
+   const removeItem = async (productId, productType) => {
+       await cartApi.removeCartItem(productId, productType);
+       await fetchCart();
+   };
 
     const clearCart = async () => {
         await cartApi.clearCart();
@@ -55,9 +55,9 @@ export const CartProvider = ({ children }) => {
     const removeMultipleItems = async (productIds) => {
         try {
             setLoading(true);
-            for (const id of productIds) {
-                await cartApi.removeCartItem(id);
-            }
+          for (const item of productIds) {
+              await cartApi.removeCartItem(item.productId, item.productType);
+          }
 
             await fetchCart();
         } catch (err) {

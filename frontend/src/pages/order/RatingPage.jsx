@@ -19,48 +19,61 @@ export default function RatingPage() {
     const [product, setProduct] = useState(null);
     const [hasReviewed, setHasReviewed] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [currentProduct, setCurrentProduct] = useState(null);
     
-    const fetchReviews = async () => {
-        try {
-            setLoading(true);
-            const res = await getReviewsByProduct(product.productId);
+ const fetchReviews = async () => {
+     if (!product || product.length === 0) return;
 
-            const reviews = Array.isArray(res) ? res : res.data || [];
-           
-            setRatings(reviews);
+     setLoading(true);
 
-            // kiểm tra user đã review chưa
-            const myReview = reviews.find((r) => r.orderId?._id === orderId || r.orderId === orderId);
+     try {
+         let allReviews = [];
 
-            if (myReview) {
-                setHasReviewed(true);
-            }
-            
-        } catch (error) {
-            console.error('Lỗi load review:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-    useEffect(() => {
-        const fetchOrder = async () => {
-            try {
-                const orderData = await getOrderDetail(orderId);
+         for (let p of product) {
+             const res = await getReviewsByProduct(p.productId);
+             // res có thể là {reviews, total,...} hoặc array
+             const reviews = Array.isArray(res) ? res : res.reviews || res.data?.reviews || [];
+             allReviews.push(...reviews);
+         }
 
-                console.log('Order response:', orderData);
+         setRatings(allReviews);
 
-                setOrder(orderData);
+         // Kiểm tra xem user đã review sản phẩm nào chưa
+         const myReview = allReviews.find((r) =>
+             product.some((p) => r.productId.toString() === p.productId.toString()),
+         );
 
-                const item = orderData.items?.[0];
-                setProduct(item);
-            } catch (err) {
-                console.error('Lỗi load order:', err);
-            }
-        };
+         setHasReviewed(!!myReview);
 
-        if (orderId) fetchOrder();
-    }, [orderId]);
+         console.log('Fetched reviews:', allReviews);
+         console.log('Has reviewed:', !!myReview);
+     } catch (err) {
+         console.error('Lỗi load review:', err);
+     } finally {
+         setLoading(false);
+     }
+ };
+   useEffect(() => {
+       const fetchOrder = async () => {
+           try {
+               const orderData = await getOrderDetail(orderId);
 
+               console.log('Order response:', orderData);
+
+               setOrder(orderData);
+               setProduct(orderData.items || []);
+
+               // mặc định chọn sản phẩm đầu tiên
+               if (orderData.items?.length > 0) {
+                   setCurrentProduct(orderData.items[0]);
+               }
+           } catch (err) {
+               console.error('Lỗi load order:', err);
+           }
+       };
+
+       if (orderId) fetchOrder();
+   }, [orderId]);
     useEffect(() => {
         if (product) {
             fetchReviews();
@@ -128,7 +141,7 @@ export default function RatingPage() {
 const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!product) {
+    if (!currentProduct) {
         toast.error('Không tìm thấy sản phẩm để đánh giá');
         return;
     }
@@ -144,11 +157,12 @@ const handleSubmit = async (e) => {
     }
 
     try {
-        setLoading(true); // ⭐ thêm
+        setLoading(true);
 
         const formData = new FormData();
 
-        formData.append('productId', product.productId);
+      
+        formData.append('productId', currentProduct.productId);
         formData.append('orderId', orderId);
         formData.append('rating', rating);
         formData.append('comment', comment);
@@ -175,7 +189,7 @@ const handleSubmit = async (e) => {
         console.error('Lỗi tạo review:', error);
         toast.error(error.response?.data?.message || 'Không thể tạo đánh giá');
     } finally {
-        setLoading(false); // ⭐ thêm
+        setLoading(false);
     }
 };
 
@@ -198,17 +212,18 @@ const handleSubmit = async (e) => {
         <div className="mt-12 p-10 max-w-6xl mx-auto">
             {/* Title */}
             <h1 className="text-center text-4xl font-bold mb-10">Đánh giá sản phẩm</h1>
-            {product && (
-                <div className="bg-white shadow rounded-xl p-4 mb-6 flex gap-4 items-center">
-                    <img src={product.imageSnapshot} className="w-20 h-20 object-cover rounded" />
+            {product &&
+                product.length > 0 &&
+                product.map((p) => (
+                    <div key={p.productId} className="bg-white shadow rounded-xl p-4 mb-6 flex gap-4 items-center">
+                        <img src={p.imageSnapshot} className="w-20 h-20 object-cover rounded" />
 
-                    <div>
-                        <p className="font-semibold">{product.nameSnapshot}</p>
-
-                        <p className="text-sm text-gray-500">{product.priceSnapshot?.toLocaleString('vi-VN')}đ</p>
+                        <div>
+                            <p className="font-semibold">{p.nameSnapshot}</p>
+                            <p className="text-sm text-gray-500">{p.priceSnapshot?.toLocaleString('vi-VN')}đ</p>
+                        </div>
                     </div>
-                </div>
-            )}
+                ))}
             {/* RATING SUMMARY */}
             <div className="bg-white rounded-3xl shadow-lg p-8 mb-10">
                 <div className="flex flex-col lg:flex-row gap-10 items-center">

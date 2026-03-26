@@ -6,7 +6,7 @@ const checkTimeoutAssignments = async () => {
     const timeoutLimit = new Date(Date.now() - 1 * 60 * 1000);
 
     const stagnantAssignments = await OrderAssignment.find({
-      status: "waiting",
+     status: "assigned",
       assignedAt: { $lte: timeoutLimit },
     });
 

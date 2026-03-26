@@ -33,6 +33,7 @@ const discountService = {
     checkDiscountValidity: (data) => {
         return customizeAPI.post('/discounts/check', data);
     },
+    
 };
 
 export default discountService;

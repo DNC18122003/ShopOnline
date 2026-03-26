@@ -60,7 +60,7 @@ const getProductImages = (product) => {
 // ============================================
 // COMPONENT - ProductCard
 // ============================================
-function ProductCard({ _id, name, price, averageRating, reviewCount, images, stock }) {
+function ProductCard({ _id, name, price, averageRating, reviewCount, images, stock ,productType}) {
     const navigate = useNavigate();
 
     // Format số tiền sang VND
@@ -146,6 +146,7 @@ export default function ProductDetailPage() {
                 setLoading(true);
                 setError(null);
                 const response = await getProductById(id);
+                console.log('Product API response:', response.data); 
                 setProduct(response.data);
             } catch (err) {
                 console.error('Error fetching product:', err);
@@ -355,6 +356,9 @@ export default function ProductDetailPage() {
             state: {
                 buyNowItem: {
                     productId: product._id,
+                   productType: product.productType
+    ? product.productType.charAt(0).toUpperCase() + product.productType.slice(1)
+    : "Product",
                     nameSnapshot: product.name,
                     priceSnapshot: product.price,
                     imageSnapshot: product.images?.[0] || '',
@@ -490,6 +494,7 @@ export default function ProductDetailPage() {
                                 <>
                                     <AddToCartButton
                                         productId={product._id}
+                                        productType={product.productType}
                                         name={product.name}
                                         price={product.price}
                                         image={product.images?.[0]}

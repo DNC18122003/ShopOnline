@@ -9,14 +9,12 @@ const getMySaleOrders = async (req, res) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
-
     const skip = (page - 1) * limit;
 
-    const assignments = await OrderAssignment.find({
+    const orderIds = await OrderAssignment.find({
       saleId,
-    }).select("orderId");
-
-    const orderIds = assignments.map((a) => a.orderId);
+      
+    }).distinct("orderId");
 
     const total = await Order.countDocuments({
       _id: { $in: orderIds },
@@ -27,7 +25,8 @@ const getMySaleOrders = async (req, res) => {
     })
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .lean();
 
     res.json({
       data: orders,
@@ -42,7 +41,6 @@ const getMySaleOrders = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 //  Lấy danh sách đơn hàng Sale ĐANG XỬ LÝ (đã nhận và chưa hoàn thành)
  

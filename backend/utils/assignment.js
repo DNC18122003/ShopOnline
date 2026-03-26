@@ -1,44 +1,61 @@
 const OrderAssignment = require("../models/Order/OrderAssignment");
-const User = require("../models/User");
+const Employee = require("../models/Employee");
+const Department = require("../models/Department");
 
 const assignOrderToSale = async (orderId) => {
-  const sales = await User.find({
-    role: "sale",
-    isActive: "active",
-  });
+  try {
+    // 1️⃣ tìm department sale
+    const saleDepartment = await Department.findOne({ name: "sale" });
 
-  if (!sales.length) {
-    console.log("Không có sale khả dụng");
-    return null;
-  }
+    if (!saleDepartment) {
+      console.log("Không tìm thấy department sale");
+      return null;
+    }
 
-  let selectedSale = null;
-  let minOrders = Infinity;
-
-  for (const sale of sales) {
-    const activeOrders = await OrderAssignment.countDocuments({
-      saleId: sale._id,
-      status: "assigned",
+    // 2️⃣ lấy danh sách sale đang active
+    const sales = await Employee.find({
+      role: saleDepartment._id,
+      isActive: "active",
     });
 
-    if (activeOrders < minOrders) {
-      minOrders = activeOrders;
-      selectedSale = sale;
+    if (!sales.length) {
+      console.log("Không có sale khả dụng");
+      return null;
     }
+
+    // 3️⃣ tìm sale có ít đơn nhất
+    let selectedSale = null;
+    let minOrders = Infinity;
+
+    for (const sale of sales) {
+      const activeOrders = await OrderAssignment.countDocuments({
+        saleId: sale._id,
+        status: "assigned",
+      });
+
+      if (activeOrders < minOrders) {
+        minOrders = activeOrders;
+        selectedSale = sale;
+      }
+    }
+
+    if (!selectedSale) return null;
+
+    // 4️⃣ tạo assignment
+    const assignment = await OrderAssignment.create({
+      orderId,
+      saleId: selectedSale._id,
+      status: "assigned",
+      assignedAt: new Date(),
+    });
+
+    console.log(`Đã gán đơn ${orderId} cho sale ${selectedSale.fullName}`);
+
+    return assignment;
+  } catch (error) {
+    console.error("Assign order error:", error);
+    return null;
   }
-
-  if (!selectedSale) return null;
-
-  const assignment = await OrderAssignment.create({
-    orderId,
-    saleId: selectedSale._id,
-    status: "assigned",
-    assignedAt: new Date(),
-  });
-
-  console.log("Đã gán đơn", orderId, "cho sale", selectedSale.fullName);
-
-  return assignment;
 };
 
 module.exports = { assignOrderToSale };

@@ -12,7 +12,7 @@ router.use(authenticateToken);
 
 router.get("/my-orders", orderController.getMyOrders);
 router.post("/create", orderController.createOrder);
-router.get("/:orderId", orderController.getOrderById);
+
 
 router.get("/",checkRoleAndStatus(["admin", "sale"]),orderController.getAllOrder);
 router.patch("/:orderId/status",checkRoleAndStatus(["admin", "sale"]),orderController.updateOrderStatus);
@@ -23,5 +23,6 @@ router.post("/momo/cancel", cancelMomoPayment);
 // Nhóm các route chuyên biệt cho Sale để dễ quản lý
 router.get("/sale/orders", checkRoleAndStatus(["sale"]), saleController.getMySaleOrders);
 router.get("/sale/my-processing", checkRoleAndStatus(["sale"]), saleController.getMyProcessingOrders);
+router.get("/:orderId", orderController.getOrderById);
 
 module.exports = router;

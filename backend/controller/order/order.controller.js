@@ -1,6 +1,5 @@
 const Order = require("../../models/Order/Order");
 const Cart = require("../../models/Order/Cart");
-const Product = require("../../models/Products/Product");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
@@ -14,6 +13,20 @@ const statusFlow = {
   confirmed: ["shipping"],
   shipping: ["delivered", "delivery_failed"],
   delivered: ["completed", "returned"],
+};
+const getModelByType = (type) => {
+  switch ((type || "").toLowerCase()) {
+    case "cpu":
+      return mongoose.model("Cpu");
+    case "gpu":
+      return mongoose.model("Gpu");
+    case "ram":
+      return mongoose.model("Ram");
+    case "mainboard":
+      return mongoose.model("Mainboard");
+    default:
+      return mongoose.model("Product"); 
+  }
 };
 
 const createOrder = async (req, res) => {
@@ -87,7 +100,8 @@ const createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const cartItem of itemsToCheckout) {
-      const product = await Product.findById(cartItem.productId).lean();
+      const Model = getModelByType(cartItem.productType);
+      const product = await Model.findById(cartItem.productId).lean();
 
       if (!product || !product.isActive) {
         return res.status(400).json({
@@ -128,6 +142,7 @@ const createOrder = async (req, res) => {
 
       orderItems.push({
         productId: cartItem.productId,
+        productType: cartItem.productType,
         nameSnapshot: cartItem.nameSnapshot,
         imageSnapshot: cartItem.imageSnapshot,
         priceSnapshot: cartItem.priceSnapshot,
@@ -228,9 +243,11 @@ const createOrder = async (req, res) => {
     // Giu hang trong 5
     if (paymentMethod === "MOMOPAY") {
       for (const item of orderItems) {
-        await Product.findByIdAndUpdate(item.productId, {
-          $inc: { reservedStock: item.quantity },
-        });
+       const Model = getModelByType(item.productType);
+
+       await Model.findByIdAndUpdate(item.productId, {
+         $inc: { reservedStock: item.quantity },
+       });
       }
 
       newOrder.reservationExpiresAt = new Date(Date.now() + 1 * 60 * 1000);
@@ -257,11 +274,12 @@ const createOrder = async (req, res) => {
 
     //  TRỪ STOCK (COD / BANK)
     for (const item of orderItems) {
-      const updated = await Product.findOneAndUpdate(
-        { _id: item.productId, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } },
-        { new: true }
-      );
+     const Model = getModelByType(item.productType);
+     const updated = await Model.findOneAndUpdate(
+       { _id: item.productId, stock: { $gte: item.quantity } },
+       { $inc: { stock: -item.quantity } },
+       { new: true }
+     );
 
       if (!updated) {
         await Order.findByIdAndUpdate(newOrder._id, {
@@ -282,23 +300,20 @@ const createOrder = async (req, res) => {
     }
 
     //  XÓA CART (NẾU CHECKOUT CART)
-    if (selectedProductIds?.length) {
+    if (!items?.length && itemsToCheckout.length) {
+      const productIdsToRemove = itemsToCheckout.map(
+        (item) => new mongoose.Types.ObjectId(item.productId)
+      );
+
       await Cart.updateOne(
         { userId },
         {
           $pull: {
-            items: {
-              productId: {
-                $in: selectedProductIds.map(
-                  (id) => new mongoose.Types.ObjectId(id)
-                ),
-              },
-            },
+            items: { productId: { $in: productIdsToRemove } },
           },
         }
       );
     }
-
     return res.status(201).json({
       success: true,
       message: "Tạo đơn hàng thành công!",
@@ -421,17 +436,19 @@ const getOrderById = async (req, res) => {
 const getAllOrder = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const skip = (page - 1) * limit;
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+    const skip = (pageNumber - 1) * limitNumber;
 
     const orders = await Order.find()
       .sort({ createdAt: -1 })
       .skip(skip)
-      .limit(Number(limit))
+      .limit(limitNumber)
       .lean();
 
     const total = await Order.countDocuments();
 
-    // Lấy assignment
     const assignments = await OrderAssignment.find()
       .populate("saleId", "fullName userName")
       .lean();
@@ -450,6 +467,7 @@ const getAllOrder = async (req, res) => {
 
     for (const order of orders) {
       const assignment = assignmentMap[order._id.toString()];
+
       order.assignedSale = assignment ? assignment.saleInfo : null;
       order.assignmentStatus = assignment ? assignment.status : "unassigned";
 
@@ -465,35 +483,37 @@ const getAllOrder = async (req, res) => {
 
       for (const item of order.items) {
         const productId = item.productId.toString();
+        const key = `${item.productType}_${productId}`;
 
-        if (!productStockMap[productId]) {
-          if (!productCache[productId]) {
-            productCache[productId] = await Product.findById(productId).lean();
+        if (!productStockMap[key]) {
+          if (!productCache[key]) {
+            const Model = getModelByType(item.productType);
+            productCache[key] = await Model.findById(productId).lean();
           }
 
-          const product = productCache[productId];
-          productStockMap[productId] = product.stock || 0;
+          const product = productCache[key];
+          productStockMap[key] = product?.stock || 0;
         }
 
         if (
           order.paymentMethod === "COD" &&
           order.orderStatus === "pending" &&
-          productStockMap[productId] < 0 &&
-          !oversellDetected[productId]
+          productStockMap[key] < 0 &&
+          !oversellDetected[key]
         ) {
           order.stockWarning = true;
-          oversellDetected[productId] = true;
+          oversellDetected[key] = true;
         }
 
-        productStockMap[productId] += item.quantity;
+        productStockMap[key] -= item.quantity;
       }
     }
 
     res.json({
       orders,
       total,
-      page: Number(page),
-      totalPages: Math.ceil(total / limit),
+      page: pageNumber,
+      totalPages: Math.ceil(total / limitNumber),
     });
   } catch (error) {
     res.status(500).json({ message: "Get all order fail" });
@@ -525,14 +545,31 @@ const updateOrderStatus = async (req, res) => {
     // Restock nếu huỷ
     if (status === "cancelled") {
       for (const item of order.items) {
-        await Product.findByIdAndUpdate(item.productId, {
-          $inc: { stock: item.quantity },
-        });
+        const Model = getModelByType(item.productType);
+
+        if (order.paymentMethod === "MOMOPAY") {
+          await Model.findByIdAndUpdate(item.productId, {
+            $inc: { reservedStock: -item.quantity },
+          });
+        } else {
+          await Model.findByIdAndUpdate(item.productId, {
+            $inc: { stock: item.quantity },
+          });
+        }
       }
     }
 
-    // Update order status
     order.orderStatus = status;
+
+    if (order.paymentMethod === "COD") {
+      if (status === "completed") {
+        order.paymentStatus = "paid";
+      }
+
+      if (status === "returned") {
+        order.paymentStatus = "refunded";
+      }
+    }
 
     order.statusLogs.push({
       status,
@@ -542,19 +579,14 @@ const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-  
     const assignment = await OrderAssignment.findOne({ orderId });
 
     if (assignment) {
-      if (status === "confirmed" || status === "shipping") {
+      if (["confirmed", "shipping"].includes(status)) {
         assignment.status = "processing";
       }
 
-      if (
-        status === "completed" ||
-        status === "cancelled" ||
-        status === "returned"
-      ) {
+      if (["completed", "cancelled", "returned"].includes(status)) {
         assignment.status = "completed";
       }
 
@@ -590,7 +622,6 @@ const cancelMyOrder = async (req, res) => {
       });
     }
 
-    // Chỉ cho hủy khi pending
     if (order.orderStatus !== "pending") {
       return res.status(400).json({
         success: false,
@@ -598,7 +629,6 @@ const cancelMyOrder = async (req, res) => {
       });
     }
 
-    //  Không cho hủy nếu đã thanh toán
     if (order.paymentStatus === "paid") {
       return res.status(400).json({
         success: false,
@@ -606,19 +636,29 @@ const cancelMyOrder = async (req, res) => {
       });
     }
 
-    //  Hoàn lại stock
+    // Restock
     for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { stock: item.quantity },
-      });
+      const Model = getModelByType(item.productType);
+
+      if (order.paymentMethod === "MOMOPAY") {
+        await Model.findByIdAndUpdate(item.productId, {
+          $inc: { reservedStock: -item.quantity },
+        });
+      } else {
+        await Model.findByIdAndUpdate(item.productId, {
+          $inc: { stock: item.quantity },
+        });
+      }
     }
 
     order.orderStatus = "cancelled";
+
     order.statusLogs.push({
       status: "cancelled",
       note: "Customer cancelled order",
       updatedBy: userId,
     });
+
     await order.save();
 
     return res.json({
@@ -643,4 +683,5 @@ module.exports = {
   getMyOrders,
   updateOrderStatus,
   cancelMyOrder,
+  getModelByType
 };

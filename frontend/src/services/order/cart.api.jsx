@@ -21,8 +21,10 @@ export const updateCartItem = (payload) => {
 };
 
 // REMOVE cart item
-export const removeCartItem = (productId) => {
-    return api.delete(`/cart/remove/${productId}`, { withCredentials: true });
+export const removeCartItem = (productId, productType) => {
+    return api.delete(`/cart/remove/${productId}/${productType}`, {
+        withCredentials: true,
+    });
 };
 
 // CLEAR cart

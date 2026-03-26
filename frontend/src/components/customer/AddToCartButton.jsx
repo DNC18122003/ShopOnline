@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 
 export default function AddToCartButton({
     productId,
+    productType,
     name,
     price,
     image,
@@ -27,6 +28,7 @@ export default function AddToCartButton({
             console.log('CALLING addToCart FUNCTION');
             await addToCart({
                 productId,
+                productType,
                 quantity,
                 nameSnapshot: name || 'Sản phẩm',
                 priceSnapshot: price || 0,

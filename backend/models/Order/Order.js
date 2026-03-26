@@ -54,7 +54,11 @@ const orderItemSchema = new Schema(
   {
     productId: {
       type: Types.ObjectId,
-      ref: "Product",
+      required: true,
+    },
+    productType: {
+      type: String,
+      enum: ["Cpu", "Gpu", "Ram", "Mainboard", "Product"],
       required: true,
     },
 
@@ -79,7 +83,7 @@ const orderItemSchema = new Schema(
       min: 1,
     },
   },
-  { _id: false },
+  { _id: false }
 );
 
 const orderSchema = new Schema(

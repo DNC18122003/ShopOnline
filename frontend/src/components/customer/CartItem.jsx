@@ -14,10 +14,10 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
 
     // const isOutOfStock = item.stock < item.quantity;
 
-  const handleQuantityChange = async (newQty) => {
-     if (newQty < 1 || newQty > item.stock) return;
-      await onUpdateQuantity(item.productId, newQty);
-  };
+const handleQuantityChange = async (newQty) => {
+    if (newQty < 1 || newQty > item.stock) return;
+    await onUpdateQuantity(item.productId, newQty, item.productType); 
+};
 
     return (
         <div
@@ -37,7 +37,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
 
             <button
                 type="button"
-                onClick={() => onRemove(item.productId)}
+                onClick={() => onRemove(item.productId, item.productType)}
                 disabled={isPending || isPendingLocal}
                 className={cn(
                     'absolute top-4 right-4 z-10',
@@ -118,7 +118,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, isSelected = false, onTogg
                             onChange={(e) => {
                                 let value = Number(e.target.value);
 
-                               if (!Number.isInteger(value)) return;
+                                if (!Number.isInteger(value)) return;
 
                                 if (value < 1) value = 1;
                                 if (value > item.stock) value = item.stock;

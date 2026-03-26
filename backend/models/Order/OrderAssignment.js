@@ -29,7 +29,7 @@ const OrderAssignmentSchema = new mongoose.Schema(
     historySales: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Employee",
       },
     ],
 

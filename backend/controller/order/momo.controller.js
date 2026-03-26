@@ -5,6 +5,7 @@ const Order = require("../../models/Order/Order");
 const Product = require("../../models/Products/Product");
 const Cart = require("../../models/Order/Cart");
 const { assignOrderToSale } = require("../../utils/assignment");
+
 const momoConfig = {
   partnerCode: process.env.MOMO_PARTNER_CODE || "MOMO",
   accessKey: process.env.MOMO_ACCESS_KEY || "F8BBA842ECF85",
@@ -12,6 +13,20 @@ const momoConfig = {
   endpoint: "https://test-payment.momo.vn/v2/gateway/api/create",
   redirectUrl: "http://localhost:5173/payment-result",
   ipnUrl: "https://example.com/ipn",
+};
+const getModelByType = (type) => {
+  switch ((type || "").toLowerCase()) {
+    case "cpu":
+      return mongoose.model("Cpu");
+    case "gpu":
+      return mongoose.model("Gpu");
+    case "ram":
+      return mongoose.model("Ram");
+    case "mainboard":
+      return mongoose.model("Mainboard");
+    default:
+      return mongoose.model("Product");
+  }
 };
 
 exports.createMomoPayment = async (order) => {
@@ -96,12 +111,23 @@ exports.confirmMomoPayment = async (req, res) => {
 
     //  Trừ stock chỉ khi update thành công
     for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: {
-          stock: -item.quantity,
-          reservedStock: -item.quantity,
-        },
-      });
+      try {
+        const Model = getModelByType(item.productType); // lấy đúng model
+        if (!Model) {
+          throw new Error(
+            `Unknown productType: ${item.productType} (productId: ${item.productId})`
+          );
+        }
+        await Model.findByIdAndUpdate(item.productId, {
+          $inc: {
+            stock: -item.quantity,
+            reservedStock: -item.quantity,
+          },
+        });
+      } catch (err) {
+        console.error(`Error updating product ${item.productId}:`, err);
+        throw err; // để backend trả 500 và log chi tiết
+      }
     }
     await assignOrderToSale(order._id); // handle by sale
 
@@ -157,11 +183,22 @@ exports.cancelMomoPayment = async (req, res) => {
     }
 
     // release reserved stock
-    for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
-        $inc: { reservedStock: -item.quantity },
-      });
-    }
+   for (const item of order.items) {
+     try {
+       const Model = getModelByType(item.productType);
+       if (!Model) {
+         throw new Error(
+           `Unknown productType: ${item.productType} (productId: ${item.productId})`
+         );
+       }
+       await Model.findByIdAndUpdate(item.productId, {
+         $inc: { reservedStock: -item.quantity },
+       });
+     } catch (err) {
+       console.error(`Error releasing product ${item.productId}:`, err);
+       throw err; // để backend log chi tiết
+     }
+   }
 
     return res.json({
       success: true,

@@ -270,6 +270,7 @@ const CheckoutPage = () => {
             discountCode: formData.discountCode?.trim() || undefined,
             items: selectedItems.map((item) => ({
                 productId: item.productId?._id || item.productId,
+                productType: item.productType || item.productId?.productType,
                 quantity: item.quantity,
                 priceSnapshot: item.priceSnapshot,
                 nameSnapshot: item.nameSnapshot,
@@ -299,10 +300,13 @@ const CheckoutPage = () => {
                 position: 'top-right',
                 autoClose: 4000,
             });
-            if (fromCart) {
-                const idsToRemove = selectedItems.map((i) => i.productId);
-                await removeMultipleItems(idsToRemove);
-            }
+           if (fromCart) {
+               const itemsToRemove = selectedItems.map((i) => ({
+                   productId: i.productId?._id || i.productId,
+                   productType: i.productType || i.productId?.productType,
+               }));
+               await removeMultipleItems(itemsToRemove);
+           }
 
             navigate('/order-success', {
                 state: { orderId },

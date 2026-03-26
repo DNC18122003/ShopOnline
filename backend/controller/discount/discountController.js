@@ -561,7 +561,7 @@ const discountController = {
 
       const discounts = await Discount.find(query)
         .select(
-          "code discountType value maxDiscountValue minOrderValue description validFrom expiredAt",
+          "code discountType value maxDiscountValue minOrderValue description validFrom expiredAt"
         )
         .sort({ value: -1, discountType: 1 })
         .limit(12)
@@ -577,6 +577,93 @@ const discountController = {
       res.status(500).json({
         success: false,
         message: "Lỗi server",
+      });
+    }
+  },
+
+  checkDiscount: async (req, res) => {
+    try {
+      const { code, orderValue } = req.body;
+
+      if (!code)
+        return res
+          .status(400)
+          .json({ success: false, message: "Vui lòng nhập mã giảm giá" });
+
+      if (!orderValue || isNaN(orderValue))
+        return res.status(400).json({
+          success: false,
+          message: "Vui lòng nhập giá trị đơn hàng hợp lệ",
+        });
+
+      // Tìm mã giảm giá đang active
+      const discount = await Discount.findOne({
+        code: code.toUpperCase(),
+        status: "active",
+      });
+
+      if (!discount)
+        return res
+          .status(404)
+          .json({ success: false, message: "Mã giảm giá không tồn tại" });
+
+      const now = new Date();
+
+      // Check thời gian hiệu lực
+      if (discount.validFrom && discount.validFrom > now)
+        return res
+          .status(400)
+          .json({ success: false, message: "Mã chưa được kích hoạt" });
+
+      if (discount.expiredAt && discount.expiredAt < now)
+        return res
+          .status(400)
+          .json({ success: false, message: "Mã đã hết hạn" });
+
+      if (discount.usedCount >= discount.usageLimit)
+        return res
+          .status(400)
+          .json({ success: false, message: "Mã giảm giá đã hết lượt sử dụng" });
+
+      if (discount.minOrderValue && orderValue < discount.minOrderValue)
+        return res.status(400).json({
+          success: false,
+          message: `Đơn hàng phải từ ${discount.minOrderValue} trở lên để áp dụng mã`,
+        });
+
+      // Tính giá trị giảm
+      let calculatedDiscount = 0;
+      if (discount.discountType === "percent") {
+        calculatedDiscount = orderValue * (discount.value / 100);
+      } else if (discount.discountType === "fixed") {
+        calculatedDiscount = discount.value;
+      }
+
+      if (discount.maxDiscountValue) {
+        calculatedDiscount = Math.min(
+          calculatedDiscount,
+          discount.maxDiscountValue
+        );
+      }
+
+      calculatedDiscount = Math.floor(calculatedDiscount / 1000) * 1000;
+
+      return res.json({
+        success: true,
+        data: {
+          code: discount.code,
+          discountType: discount.discountType,
+          value: discount.value,
+          maxDiscountValue: discount.maxDiscountValue,
+          minOrderValue: discount.minOrderValue,
+          calculatedDiscount,
+        },
+      });
+    } catch (err) {
+      console.error("checkDiscount error:", err);
+      res.status(500).json({
+        success: false,
+        message: "Lỗi server khi kiểm tra mã giảm giá",
       });
     }
   },

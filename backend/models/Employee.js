@@ -49,11 +49,6 @@ const employeeSchema = new Schema({
         ref: 'Department',
         required: true
     },
-    isActive: {
-        type: String,
-        enum: ['active', 'inactive', 'banned'],
-        default: 'inactive'
-    },
     address: addressSchema,
 
     regionManaged: {

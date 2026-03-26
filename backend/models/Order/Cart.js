@@ -4,7 +4,11 @@ const cartItemSchema = new Schema(
   {
     productId: {
       type: Types.ObjectId,
-      ref: "Product",
+      required: true,
+    },
+    productType: {
+      type: String,
+      enum: ["Cpu", "Gpu", "Ram", "Mainboard", "Product"],
       required: true,
     },
     quantity: {

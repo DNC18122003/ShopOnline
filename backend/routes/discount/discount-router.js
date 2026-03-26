@@ -20,4 +20,6 @@ router.put("/:id", discountController.updateDiscount);
 // 5. DELETE: Xóa mã giảm giá theo ID
 router.delete("/:id", discountController.deleteDiscount);
 
+router.post("/check", discountController.checkDiscount);
+
 module.exports = router;
