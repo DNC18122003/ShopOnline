@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, User, Calendar, Eye, Image as ImageIcon, AlertCircle } from 'lucide-react';
-
+import blogService from '@/services/blog/blog.api';
 export function EditBlogForm({ blogId, onSubmit, onCancel }) {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,16 +18,13 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
         createdAt: '',
         viewCount: 0,
     });
-
+    // Fetch chi tiết bài viết
     useEffect(() => {
         if (!blogId) return;
-
         const fetchBlogDetail = async () => {
             setIsLoading(true);
             try {
-                const response = await fetch(`http://localhost:9999/api/blogs/${blogId}`);
-                const result = await response.json();
-
+                const result = await blogService.getBlogDetail(blogId);
                 if (result.success && result.data) {
                     setFormData({
                         title: result.data.title || '',
@@ -45,17 +42,16 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
                 setIsLoading(false);
             }
         };
-
         fetchBlogDetail();
     }, [blogId]);
-
+    // hàm xử lý thay đổi input
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
         if (errorText) setErrorText('');
     };
 
-    // ---> HÀM ĐÃ ĐƯỢC SỬA ĐỂ PHÙ HỢP VỚI STATE CỦA EDIT FORM <---
+    // hàm xử lý thay đổi ảnh đại diện (thumbnail) với validate định dạng và dung lượng
     const handleThumbnailChange = (e) => {
         setErrorText('');
         const file = e.target.files?.[0];
@@ -85,7 +81,7 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
         reader.readAsDataURL(file);
     };
 
-    // ---> HÀM ĐÃ ĐƯỢC CHUẨN HOÁ VALIDATE (THÊM TRIM) <---
+    // Hàm xử lý submit form với validate dữ liệu đầu vào và gọi onSubmit
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -135,7 +131,7 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
             setIsSubmitting(false);
         }
     };
-
+    // Hàm định dạng ngày tháng theo chuẩn
     const formatDateTime = (dateString) => {
         if (!dateString) return 'Chưa cập nhật';
         const date = new Date(dateString);
@@ -159,6 +155,7 @@ export function EditBlogForm({ blogId, onSubmit, onCancel }) {
         (errorText.includes('nội dung') && !formData.content.trim()) || errorText.includes('Nội dung');
 
     return (
+        // Form chỉnh sửa bài viết với các trường thông tin và validate lỗi
         <form onSubmit={handleSubmit} className="space-y-5">
             {errorText && (
                 <div className="bg-red-50 border border-red-200 rounded-md p-3 flex items-start gap-2 animate-in fade-in slide-in-from-top-2">

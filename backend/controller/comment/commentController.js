@@ -11,7 +11,7 @@ const commentController = {
         parentId: null,
         isActive: true,
       })
-        .populate("userId", "userName role createdAt")
+        .populate("userId", "userName role ")
         .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên trước
         .lean();
 
@@ -23,7 +23,7 @@ const commentController = {
         parentId: { $in: rootCommentIds },
         isActive: true,
       })
-        .populate("userId", "userName role createdAt")
+        .populate("userId", "userName role ")
         .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên trước
         .lean();
 
@@ -48,36 +48,47 @@ const commentController = {
   //2 đăng tải comment
   createComment: async (req, res) => {
     try {
-      // Chỉ lấy những trường sau
-      const { productId, userId, content, parentId } = req.body;
-
-      // Kiểm tra dữ liệu bắt buộc
+      const { productId, userId, userModel, content, parentId } = req.body;
+      // Validate
       if (!content) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Thiếu thông tin nội dung" });
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu thông tin nội dung",
+        });
       }
       if (!productId) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Thiếu thông tin sản phẩm" });
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu thông tin sản phẩm",
+        });
       }
       if (!userId) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Thiếu thông tin người dùng" });
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu thông tin người dùng",
+        });
       }
-      // Khởi tạo data
-      const newCommentData = {
+      if (!userModel) {
+        return res.status(400).json({
+          success: false,
+          message: "Thiếu thông tin loại người dùng",
+        });
+      }
+      if (!["User", "Employee"].includes(userModel)) {
+        return res.status(400).json({
+          success: false,
+          message: "userModel không hợp lệ",
+        });
+      }
+      // Tạo comment
+      const newComment = await Comment.create({
         productId,
         userId,
+        userModel,
         content,
         parentId: parentId || null,
         isActive: true,
-      };
-
-      const newComment = await Comment.create(newCommentData);
-
+      });
       res.status(201).json({
         success: true,
         message: "Tạo comment thành công",
