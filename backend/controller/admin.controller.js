@@ -348,25 +348,34 @@ const getDetailSales = async (req, res) => {
                     as: "blogs"
                 }
             });
-        pipeline.push(
-            {
-                $lookup: {
-                    from: "orders",
-                    localField: "_id",
-                    foreignField: "createdBy",
-                    as: "orders"
-                }
-            });
-        // loc các đơn hàng đã hoàn thành
+        pipeline.push({
+            $lookup: {
+                from: "orderassignments",
+                localField: "_id",
+                foreignField: "saleId",
+                as: "orders"
+            }
+        });
+        // step 5: loc orderStatus = completed
         pipeline.push({
             $addFields: {
                 orders: {
                     $filter: {
                         input: "$orders",
                         as: "order",
-                        cond: { $eq: ["$$order.orderStatus", "completed"] }
+                        cond: { $eq: ["$$order.status", "completed"] }
                     }
                 }
+            }
+        });
+        // step 6: tinh toan so don da xu ly va so tien da tao ra
+        // join voi bang order de lay finalAmount
+        pipeline.push({
+            $lookup: {
+                from: "orders",
+                localField: "orders.orderId",
+                foreignField: "_id",
+                as: "orderDetails"
             }
         });
         // tinh toan so don da xu ly va so tien da tao ra
@@ -374,7 +383,7 @@ const getDetailSales = async (req, res) => {
             $addFields: {
                 processedOrders: { $size: "$orders" },
                 generatedAmount: {
-                    $sum: "$orders.finalAmount"
+                    $sum: "$orderDetails.finalAmount"
                 },
                 totalBlogs: { $size: "$blogs" }
             }
@@ -396,7 +405,7 @@ const getDetailSales = async (req, res) => {
             }
         });
         const user = await Employee.aggregate(pipeline);
-        console.log('Aggregated sale data:', user);
+        //console.log('Aggregated sale data:', user);
         if (!user) {
             return res.status(400).json({
                 success: false,

@@ -1,5 +1,5 @@
 const express = require("express");
-const  productController = require("../../controller/productController")
+const productController = require("../../controller/productController")
 const compatibilityController = require("../../controller/compatibilityController");
 const { isAuth, checkRoleAndStatus } = require("../../middleware/authorization");
 
@@ -9,6 +9,7 @@ router.post("/build-pc/check-compatibility", compatibilityController.checkCompat
 router.get("/", productController.getProducts);
 router.get("/:id/similar", productController.getSimilarProducts);
 router.get("/:id", productController.getProductById);
+router.get("/top-bought/limit", productController.getProductsTopBought);
 
 // Staff/Admin APIs
 router.post("/", isAuth, checkRoleAndStatus(["staff", "admin"]), productController.createProduct);
