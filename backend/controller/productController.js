@@ -7,6 +7,7 @@ const Mainboard = require("../models/Products/Mainboard");
 const Brand = require("../models/Brands/Brand");
 const Category = require("../models/Category/Category");
 
+
 // ========== HELPER: Chọn model theo productType ==========
 const ALL_MODELS = [
   { key: "cpu", model: Cpu },
@@ -43,6 +44,86 @@ const findProductAcrossModels = async (id) => {
  * Lấy danh sách sản phẩm + filter + sort + pagination
  * Query từ tất cả collections
  */
+
+
+
+const getProductsTopBought = async (req, res) => {
+  console.log("Before top buy query");
+  try {
+    const { limit = 5 } = req.query;
+    /*
+    Có tất cả 5 collection (cpu, gpu, ram, mainboard, product) → query top buy từ tất cả rồi merge & sort chung
+     - Mỗi collection cần lookup với Orders để lấy status là "completed"
+     - Sau khi lấy completed orders cần addFields : totalBought = sum size
+     - Sau do cần nối các collection lại rồi sort theo totalBought để lấy top buy
+     - Chi lay top 5 thôi
+    */
+    const modelsToQuery = ALL_MODELS;
+    const queryPromises = modelsToQuery.map(async ({ key, model }) => {
+      const docs = await model.aggregate([
+        {
+          $lookup: {
+            from: "orders",
+            localField: "_id",
+            foreignField: "items.productId",
+            as: "orders"
+          }
+        },
+        {
+          $match: {
+            "orders.orderStatus": { $eq: "completed" }
+          }
+        },
+        {
+          $addFields: {
+            "totalBought": { $size: "$orders" } // Tính số lượng đơn hàng đã mua
+          }
+        },
+        {
+          $project: {
+            orders: 0 // Loại bỏ trường orders khỏi kết quả trả về
+          }
+        }
+      ]);
+
+      // Nếu docs có dữ liệu, trả về các tài liệu với trường productType
+      //console.log(`Top bought for ${key}:`, docs);
+      return docs.length > 0 ? docs.map(doc => ({ ...doc, productType: key })) : [];
+
+    });
+
+    const allResults = await Promise.all(queryPromises);
+    let mergedProducts = allResults.flat();
+
+    // Kiểm tra nếu mergedProducts có dữ liệu không
+    if (mergedProducts.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No products found.",
+        data: mergedProducts,
+      });
+    }
+
+    // Sắp xếp các sản phẩm theo totalBought (giảm dần)
+    mergedProducts.sort((a, b) => b.totalBought - a.totalBought);
+
+    // Chỉ lấy top `limit` sản phẩm
+    mergedProducts = mergedProducts.slice(0, limit);
+
+    res.status(200).json({
+      success: true,
+      data: mergedProducts,
+    });
+  } catch (error) {
+    console.error("Get products error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi server",
+    });
+  }
+};
+
+
 const getProducts = async (req, res) => {
   try {
     const {
@@ -437,5 +518,6 @@ module.exports = {
   getSimilarProducts,
   createProduct,
   updateProduct,
-  deleteProduct
+  deleteProduct,
+  getProductsTopBought
 };

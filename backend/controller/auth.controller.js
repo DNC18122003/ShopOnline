@@ -210,12 +210,13 @@ const findEmailForgotPassword = async (req, res) => {
   const emailParsed = email.trim();
   try {
     const user = await User.findOne({ email: emailParsed });
-    if (!user) {
+    const employee = await Employee.findOne({ email: emailParsed });
+    if (!user && !employee) {
       return res.status(404).json({ message: "Email không tồn tại" });
     }
     // Email tồn tại, gửi email xác nhận
     await sendOTPService(emailParsed, req.session);
-    return res.json({ success: true, message: "Email tồn tại", user });
+    return res.json({ success: true, message: "Email tồn tại", user: user || employee });
   } catch (error) {
     console.error("Error finding user:", error);
     return res.status(500).json({ message: "Server error" });
@@ -228,13 +229,19 @@ const changeByForgotPassword = async (req, res) => {
   const newPasswordParsed = newPassword.trim();
   try {
     const user = await User.findOne({ email: emailParsed });
-    if (!user) {
+    const employee = await Employee.findOne({ email: emailParsed });
+    if (!user && !employee) {
       return res.status(404).json({ message: "Email không tồn tại" });
     }
     // Email tồn tại, tiến hành đổi mật khẩu
     const hashedPassword = await hashPassword(newPasswordParsed);
-    user.password = hashedPassword;
-    await user.save();
+    if (user) {
+      user.password = hashedPassword;
+      await user.save();
+    } else {
+      employee.password = hashedPassword;
+      await employee.save();
+    }
     return res.json({ success: true, message: "Đổi mật khẩu thành công" });
   } catch (error) {
     console.error("Error finding user:", error);
@@ -249,18 +256,24 @@ const changePasswordByOldPassword = async (req, res) => {
   console.log("hi change by old password", oldPasswordParsed, newPasswordParsed);
   try {
     const user = await User.findById(userId);
-    if (!user) {
+    const employee = await Employee.findById(userId);
+    if (!user && !employee) {
       return res.status(404).json({ message: "Tài khoản không tồn tại !" });
     }
-    const isMatch = await bcrypt.compare(oldPasswordParsed, user.password);
+    const isMatch = await bcrypt.compare(oldPasswordParsed, user ? user.password : employee.password);
     console.log("isMatch:", isMatch);
     if (!isMatch) {
       console.log("Mật khẩu cũ không đúng");
       return res.status(404).json({ message: "Mật khẩu cũ không đúng" });
     }
     const hashedPassword = await hashPassword(newPasswordParsed);
-    user.password = hashedPassword;
-    await user.save();
+    if (user) {
+      user.password = hashedPassword;
+      await user.save();
+    } else {
+      employee.password = hashedPassword;
+      await employee.save();
+    }
     return res.json({ success: true, message: "Đổi mật khẩu thành công" });
   } catch (error) {
     console.error("Error changing password:", error);

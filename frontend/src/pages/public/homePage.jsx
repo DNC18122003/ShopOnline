@@ -23,7 +23,7 @@ import banner1 from '../../assets/img_banner_section1.png';
 import banner2 from '../../assets/img_banner_section2.png';
 import AddToCartButton from '@/components/customer/AddToCartButton';
 import { useNavigate } from 'react-router-dom';
-import { getProducts } from '@/services/product/product.api';
+import { getProducts, getProductsTopBought } from '@/services/product/product.api';
 const categories = [
     { id: 'cpu', name: 'CPU', desc: 'Bộ vi xử lý', icon: <Cpu /> },
     { id: 'vga', name: 'VGA', desc: 'Card đồ họa', icon: <Monitor /> },
@@ -48,12 +48,22 @@ const homePage = () => {
     const navigate = useNavigate();
     useEffect(() => {
         // Fetch new products
-        const fetchNewProducts = async () => {
+        // const fetchNewProducts = async () => {
+        //     try {
+        //         const response = await getProducts({ sort: 'updated', limit: 5, labels: ['new'] });
+        //         setDataNewProducts(response.data || []);
+        //     } catch (error) {
+        //         console.error('Error fetching new products:', error);
+        //     }
+        // };
+        const fetchTopBoughtProducts = async () => {
+            console.log('Fetching top bought products...');
             try {
-                const response = await getProducts({ sort: 'updated', limit: 5, labels: ['new'] });
+                const response = await getProductsTopBought();
+                console.log('Top bought products response:', response.data);
                 setDataNewProducts(response.data || []);
             } catch (error) {
-                console.error('Error fetching new products:', error);
+                console.error('Error fetching top bought products:', error);
             }
         };
         const fetchHotProducts = async () => {
@@ -65,7 +75,8 @@ const homePage = () => {
             }
         };
         fetchHotProducts();
-        fetchNewProducts();
+        //fetchNewProducts();
+        fetchTopBoughtProducts();
     }, []);
     const handleCategoryClick = (categorySlug) => {
         navigate(`/product?category=${categorySlug}`);
@@ -113,7 +124,7 @@ const homePage = () => {
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-4">
+                {/* <div className="flex gap-4">
                     <div className="bg-blue-50 px-6 py-2 rounded-xl text-center">
                         <p className="text-[10px] uppercase text-slate-400 font-bold">Điểm tích lũy</p>
                         <p className="text-blue-600 font-bold text-xl">2,450</p>
@@ -122,7 +133,7 @@ const homePage = () => {
                         <p className="text-[10px] uppercase text-slate-400 font-bold">Voucher</p>
                         <p className="text-orange-600 font-bold text-xl">5</p>
                     </div>
-                </div>
+                </div> */}
             </div>
 
             {/* --- CATEGORIES SECTION --- */}
@@ -150,7 +161,7 @@ const homePage = () => {
             {/* --- NEW PRODUCTS SECTION --- */}
             <section className="mb-12 space-y-5">
                 <div className="mt-16 flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-slate-800">Sản Phẩm Mới</h2>
+                    <h2 className="text-2xl font-bold text-slate-800">Top lượt mua</h2>
                     <Button variant="link" className="text-blue-600 font-semibold">
                         Xem tất cả →
                     </Button>

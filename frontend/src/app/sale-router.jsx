@@ -11,6 +11,7 @@ import SalesDashboard from '@/pages/SaleDashboard/page';
 import OrderProcessing from '@/pages/Sale/OrderProcessing';
 import CommentPage from '@/pages/Comment/page';
 import Profile from '@/pages/Sale/Profile';
+import ChangePasswordPage from '@/pages/password/changePwEmloyee';
 // Chỉ export mảng object, không tạo router tại đây
 export const saleRoutes = [
     {
@@ -61,6 +62,10 @@ export const saleRoutes = [
             {
                 path: 'profile',
                 element: <Profile />,
+            },
+            {
+                path: 'forgot-password',
+                element: <ChangePasswordPage />,
             },
         ],
     },

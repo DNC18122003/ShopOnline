@@ -10,6 +10,7 @@ import { ProductManagement } from '@/pages/Staff/ProductManagement';
 import Dashboard from '@/pages/Staff/Dashboard';
 import CustomerManager from '@/pages/Staff/CustomerManager';
 import Profile from '@/pages/Staff/Profile';
+import ChangePasswordPage from '@/pages/password/changePwEmloyee';
 
 // Chỉ export mảng object, không tạo router tại đây
 export const staffRoutes = [
@@ -52,6 +53,10 @@ export const staffRoutes = [
             {
                 path: 'manage-customers',
                 element: <CustomerManager />,
+            },
+            {
+                path: 'forgot-password',
+                element: <ChangePasswordPage />,
             },
         ],
     },

@@ -4,7 +4,18 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
 
-import { Menu, Home, Package, FolderOpen, LogOut, Users, ShoppingCart, Cpu, FolderOpenIcon } from 'lucide-react';
+import {
+    Menu,
+    Home,
+    Package,
+    FolderOpen,
+    LogOut,
+    Users,
+    ShoppingCart,
+    Cpu,
+    FolderOpenIcon,
+    ClipboardCheck,
+} from 'lucide-react';
 
 import { toast, ToastContainer } from 'react-toastify';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,6 +42,11 @@ const navLinkItems = [
         href: '/admin/manage-department',
         title: 'Quản lý phòng ban',
         icon: <FolderOpenIcon />,
+    },
+    {
+        href: '/admin/forgot-password',
+        title: 'Quên mật khẩu',
+        icon: <ClipboardCheck />,
     },
 ];
 const AdminLayout = () => {

@@ -41,6 +41,11 @@ const navLinkItems = [
         title: 'Quản lý comment',
         icon: <MessageCircleCode className="w-5 h-5" />,
     },
+    {
+        href: '/sale/forgot-password',
+        title: 'Quên mật khẩu',
+        icon: <MessageCircleCode className="w-5 h-5" />,
+    },
 ];
 
 const SaleLayout = () => {

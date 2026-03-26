@@ -16,6 +16,7 @@ import {
     Tag,
     PlusCircle,
     Clipboard,
+    ClipboardCheck,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -59,6 +60,11 @@ const navLinkItems = [
         href: '/staff/manage-customers',
         title: 'Quản lý khách hàng',
         icon: <Users />,
+    },
+    {
+        href: '/staff/forgot-password',
+        title: 'Quên mật khẩu',
+        icon: <ClipboardCheck />,
     },
 ];
 const StaffLayout = () => {
