@@ -5,11 +5,26 @@ const Category = require("../../models/Category/Category");
 const Brand = require("../../models/Brands/Brand");
 const Discount = require("../../models/Discounts/Discount");
 const Order = require("../../models/Order/Order");
+const Cpu = require("../../models/Products/CPU");
+const Gpu = require("../../models/Products/GPU");
+const Ram = require("../../models/Products/RAM");
+const Mainboard = require("../../models/Products/Mainboard");
 
 exports.getDashboard = async (req, res) => {
   try {
     // tổng số
-    const totalProducts = await Product.countDocuments();
+   
+    const [totalCpu, totalGpu, totalRam, totalMainboard, totalProduct] =
+      await Promise.all([
+        Cpu.countDocuments(),
+        Gpu.countDocuments(),
+        Ram.countDocuments(),
+        Mainboard.countDocuments(),
+        Product.countDocuments(),
+      ]);
+
+    const totalProducts =
+      totalCpu + totalGpu + totalRam + totalMainboard + totalProduct;
     const totalCategories = await Category.countDocuments();
     const totalBrands = await Brand.countDocuments();
     const totalDiscounts = await Discount.countDocuments();
@@ -41,35 +56,45 @@ exports.getDashboard = async (req, res) => {
       .populate("customerId", "userName email");
 
     // sản phẩm sắp hết hàng
-    const lowStockProducts = await Product.find({ stock: { $lt: 5 } })
-      .select("name stock price images")
-      .limit(5);
+  const lowStockProducts = [
+    ...(await Cpu.find({ stock: { $lt: 5 } })),
+    ...(await Gpu.find({ stock: { $lt: 5 } })),
+    ...(await Ram.find({ stock: { $lt: 5 } })),
+    ...(await Mainboard.find({ stock: { $lt: 5 } })),
+    ...(await Product.find({ stock: { $lt: 5 } })),
+  ]
+    .sort((a, b) => a.stock - b.stock)
+    .slice(0, 5);
 
     // top selling products
     const topProducts = await Order.aggregate([
       { $unwind: "$items" },
+
       {
         $group: {
-          _id: "$items.productId",
+          _id: {
+            productId: "$items.productId",
+            productType: "$items.productType",
+            name: "$items.nameSnapshot",
+            image: "$items.imageSnapshot",
+            price: "$items.priceSnapshot",
+          },
           sold: { $sum: "$items.quantity" },
         },
       },
+
       { $sort: { sold: -1 } },
+
       { $limit: 5 },
-      {
-        $lookup: {
-          from: "products",
-          localField: "_id",
-          foreignField: "_id",
-          as: "product",
-        },
-      },
-      { $unwind: "$product" },
+
       {
         $project: {
-          name: "$product.name",
-          price: "$product.price",
-          images: "$product.images",
+          _id: 0,
+          productId: "$_id.productId",
+          productType: "$_id.productType",
+          name: "$_id.name",
+          images: ["$_id.image"],
+          price: "$_id.price",
           sold: 1,
         },
       },

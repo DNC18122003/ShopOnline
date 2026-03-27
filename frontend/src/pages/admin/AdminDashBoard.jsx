@@ -4,7 +4,7 @@ import { DollarSign, ShoppingCart, Package, Layers, Tag, Percent, AlertTriangle 
 import PaymentChart from './PaymentChart';
 import OrderChart from './OrderChart';
 import RevenueChart from './RevenueChart';
-
+import productImage from '../../assets/product.jpg';
 const AdminDashBoard = () => {
     const [dashboard, setDashboard] = useState(null);
 
@@ -84,7 +84,7 @@ const AdminDashBoard = () => {
 
                     {dashboard.topProducts.map((p) => (
                         <div key={p._id} className="flex items-center gap-4 py-3 border-b last:border-none">
-                            <img src={p.images[0]} className="w-14 h-14 object-cover rounded-lg" />
+                            <img src={p.images?.[0] || productImage} className="w-14 h-14 object-cover rounded-lg" />
 
                             <div className="flex-1">
                                 <p className="font-semibold">{p.name}</p>
