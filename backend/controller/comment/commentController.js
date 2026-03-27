@@ -11,7 +11,7 @@ const commentController = {
         parentId: null,
         isActive: true,
       })
-        .populate("userId", "userName role ")
+        .populate("userId", " userName role avatar")
         .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên trước
         .lean();
 
@@ -23,7 +23,7 @@ const commentController = {
         parentId: { $in: rootCommentIds },
         isActive: true,
       })
-        .populate("userId", "userName role ")
+        .populate("userId", "userName role avatar")
         .sort({ createdAt: -1 }) // Câu hỏi mới nhất lên trước
         .lean();
 

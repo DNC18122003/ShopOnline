@@ -14,6 +14,9 @@ const commentService = {
     toggleCommentStatus: (id, isActive) => {
         return customizeAPI.put(`/comments/${id}`, { isActive });
     },
+    getAvailableDiscounts: (params = {}) => {
+        return customizeAPI.get('/discounts/available', { params });
+    },
 };
 
 export default commentService;

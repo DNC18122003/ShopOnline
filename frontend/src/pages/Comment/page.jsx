@@ -132,11 +132,12 @@ export default function CommentManagementPage() {
         try {
             const replyData = {
                 productId: parentComment.productId?._id || parentComment.productId,
-                userId: user?._id || user?._doc?._id,
+                userId: user?.id || user?._doc?.id || user?._id || user?._doc?._id,
                 userModel: user.role !== 'customer' ? 'Employee' : 'User',
                 content: replyContent,
                 parentId: parentComment._id,
             };
+            console.log('Reply data to send:', replyData);
 
             // Gọi hàm tạo comment
             const response = await commentService.createComment(replyData);
@@ -516,7 +517,19 @@ export default function CommentManagementPage() {
                                                     {/* THÂN BÌNH LUẬN CHÍNH */}
                                                     <div className="flex gap-4">
                                                         <div className="w-10 h-10 flex-shrink-0 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm">
-                                                            {comment.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                                            {comment.userId?.avatar ? (
+                                                                <img
+                                                                    src={comment.userId.avatar}
+                                                                    alt="avatar"
+                                                                    className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-10 h-10 flex-shrink-0 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm">
+                                                                    {comment.userId?.userName
+                                                                        ?.charAt(0)
+                                                                        .toUpperCase() || 'U'}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-3 mb-1">
@@ -594,17 +607,19 @@ export default function CommentManagementPage() {
                                                                     key={reply._id}
                                                                     className="flex gap-3 bg-gray-50 p-3 rounded-lg"
                                                                 >
-                                                                    <div
-                                                                        className={`w-8 h-8 flex-shrink-0 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm ${
-                                                                            reply.userId?.role !== 'customer'
-                                                                                ? 'bg-orange-500'
-                                                                                : 'bg-gray-400'
-                                                                        }`}
-                                                                    >
-                                                                        {reply.userId?.userName
-                                                                            ?.charAt(0)
-                                                                            .toUpperCase() || 'U'}
-                                                                    </div>
+                                                                    {comment.userId?.avatar ? (
+                                                                        <img
+                                                                            src={reply.userId.avatar}
+                                                                            alt="avatar"
+                                                                            className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                                                        />
+                                                                    ) : (
+                                                                        <div className="w-10 h-10 flex-shrink-0 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm">
+                                                                            {reply.userId?.userName
+                                                                                ?.charAt(0)
+                                                                                .toUpperCase() || 'U'}
+                                                                        </div>
+                                                                    )}
                                                                     <div className="flex-1">
                                                                         <div className="flex items-center gap-2 mb-1">
                                                                             <span className="font-bold text-gray-900 text-sm">
