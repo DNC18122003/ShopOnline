@@ -114,8 +114,10 @@ function ProductCard({ _id, name, price, averageRating, reviewCount, images, sto
 export default function ProductListingPage() {
     // --- STATE: từ URL ---
     const [searchParams] = useSearchParams();
-    // Lấy category từ URL
+    // Lấy category và keyword từ URL
     const categoryFromUrl = searchParams.get('category');
+    const keywordFromUrl = searchParams.get('keyword');
+
     // --- STATE: Dữ liệu sản phẩm ---
     const [products, setProducts] = useState([]);
     const [totalPages, setTotalPages] = useState(1);
@@ -164,7 +166,7 @@ export default function ProductListingPage() {
     }, []);
 
     // ============================================
-    // EFFECT: Lấy danh sách sản phẩm khi filter/sort/page thay đổi
+    // EFFECT: Lấy danh sách sản phẩm khi filter/sort/page/keyword thay đổi
     // ============================================
     useEffect(() => {
         const fetchProducts = async () => {
@@ -178,6 +180,7 @@ export default function ProductListingPage() {
                     sort: sortBy,
                     category: Array.from(selectedCategories).join(','),
                     brand: Array.from(selectedBrands).join(','),
+                    keyword: keywordFromUrl || undefined,
                     ...priceQuery,
                 };
 
@@ -194,7 +197,12 @@ export default function ProductListingPage() {
         };
 
         fetchProducts();
-    }, [currentPage, sortBy, selectedCategories, selectedBrands, selectedPriceRange]);
+    }, [currentPage, sortBy, selectedCategories, selectedBrands, selectedPriceRange, keywordFromUrl]);
+
+    // Reset trang 1 khi keyword thay đổi
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [keywordFromUrl]);
 
     // ============================================
     // HANDLERS - Các hàm xử lý sự kiện

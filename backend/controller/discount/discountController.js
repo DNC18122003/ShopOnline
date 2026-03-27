@@ -1,57 +1,21 @@
 const Discount = require("../../models/Discounts/Discount");
 
 const discountController = {
-  // 1. Lấy danh sách mã giảm giá (có phân trang + filter status + date)
+  // 1. Lấy danh sách mã giảm giá
   getAllDiscounts: async (req, res) => {
     try {
-      let page = parseInt(req.query.page) || 1;
-      let limit = req.query.limit; // Lấy raw value trước
-      if (limit === "all") {
-        limit = 0;
-        page = 1;
-      } else {
-        limit = parseInt(limit) || 10; // Mặc định là 10 nếu không truyền
-      }
-
-      const skip = limit === 0 ? 0 : (page - 1) * limit;
-      // Lấy các tham số filter từ query (thêm discountType)
-      const { status, code, discountType } = req.query;
-      let query = {};
-      // 1. Lọc theo trạng thái
-      if (status && status !== "all") {
-        query.status = status;
-      }
-      // 2. Lọc theo Loại giảm giá
-      if (discountType && discountType !== "all") {
-        query.discountType = discountType;
-      }
-      // 3. Tìm kiếm theo mã code
-      if (code) {
-        query.code = { $regex: code, $options: "i" };
-      }
-      // Thực hiện query
-      const [discounts, totalCount] = await Promise.all([
-        Discount.find(query)
-          // Sắp xếp theo ngày tạo giảm dần, NẾU ngày trùng nhau thì sắp xếp theo ID
-          .sort({ createdAt: -1, _id: -1 })
-          // --------------------
-          .skip(skip)
-          .limit(limit),
-        Discount.countDocuments(query),
-      ]);
+      // Sắp xếp theo ngày tạo mới nhất trước, nếu cùng ngày thì sắp xếp theo ID giảm dần
+      const discounts = await Discount.find().sort({ createdAt: -1, _id: -1 });
 
       res.status(200).json({
         success: true,
-        count: totalCount,
-        currentPage: page,
-        // Nếu lấy tất cả (limit=0) thì tổng số trang là 1, ngược lại tính toán bình thường
-        totalPages: limit === 0 ? 1 : Math.ceil(totalCount / limit),
+        count: discounts.length,
         data: discounts,
       });
     } catch (error) {
       res.status(500).json({
         success: false,
-        message: error.message,
+        message: "Lỗi máy chủ: " + error.message,
       });
     }
   },

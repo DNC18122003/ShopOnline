@@ -628,7 +628,17 @@ export default function ProductDetailPage() {
                                     {/* Nội dung người dùng hỏi */}
                                     <div className="flex gap-3 items-start mb-4">
                                         <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                                            {comment.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                            {comment.userId?.avatar ? (
+                                                <img
+                                                    src={comment.userId.avatar}
+                                                    alt="avatar"
+                                                    className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                                />
+                                            ) : (
+                                                <div className="w-10 h-10 flex-shrink-0 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm">
+                                                    {comment.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-1">
@@ -686,14 +696,24 @@ export default function ProductDetailPage() {
 
                                                 <div className="flex gap-3 items-start">
                                                     <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
-                                                        {reply.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                                        {reply.userId?.avatar ? (
+                                                            <img
+                                                                src={reply.userId.avatar}
+                                                                alt="avatar"
+                                                                className="w-10 h-10 rounded-full object-cover shadow-sm"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 flex-shrink-0 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-sm">
+                                                                {reply.userId?.userName?.charAt(0).toUpperCase() || 'U'}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className="font-bold text-gray-900 text-sm">
                                                                 {reply.userId?.userName}
                                                             </span>
-                                                            {reply.userId?.role === 'sale' && (
+                                                            {reply.userId?.role !== 'customer' && (
                                                                 <span className="bg-blue-600 text-[9px] text-white px-1 rounded font-bold uppercase">
                                                                     Quản trị viên
                                                                 </span>

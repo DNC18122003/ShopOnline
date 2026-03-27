@@ -207,7 +207,11 @@ const getProducts = async (req, res) => {
 
     // Tìm kiếm theo tên / mô tả
     if (keyword) {
-      filter.$text = { $search: keyword };
+      const searchRegex = new RegExp(keyword, 'i');
+      filter.$or = [
+        { name: searchRegex },
+        { description: searchRegex }
+      ];
     }
 
     // ===== 2. Sort =====
@@ -403,6 +407,17 @@ const createProduct = async (req, res) => {
     // Đảm bảo các trường số là Number
     if (productData.price) productData.price = Number(productData.price);
     if (productData.stock) productData.stock = Number(productData.stock);
+
+    // Gán người tạo từ token nhân viên/admin đang đăng nhập
+    productData.createdBy = req.user._id;
+
+    // Khởi tạo lịch sử giá ban đầu
+    if (productData.price) {
+      productData.price_history = [{
+        price: productData.price,
+        effectiveDate: new Date()
+      }];
+    }
 
     // Chọn model theo productType
     const Model = getModelByType(productType);

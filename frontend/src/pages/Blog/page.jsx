@@ -116,7 +116,7 @@ export default function BlogManagementPage() {
         try {
             const id = blogToDelete._id;
             await blogService.deleteBlog(id);
-            setBlogPosts((prev) => prev.filter((p) => p.id !== id));
+            setBlogPosts((prev) => prev.filter((p) => p._id !== id));
             setDeleteModalOpen(false);
             setBlogToDelete(null);
             toast.success('Đã xóa bài viết thành công!');
