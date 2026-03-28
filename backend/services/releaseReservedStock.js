@@ -1,6 +1,18 @@
 const Order = require("../models/Order/Order");
+const Cpu = require("../models/Products/CPU");
+const Gpu = require("../models/Products/GPU");
+const Ram = require("../models/Products/RAM");
+const Mainboard = require("../models/Products/Mainboard");
 const Product = require("../models/Products/Product");
-const mongoose = require("mongoose");
+
+const productModels = {
+  Cpu,
+  Gpu,
+  Ram,
+  Mainboard,
+  Product,
+};
+
 const releaseReservedStock = async () => {
   const expiredOrders = await Order.find({
     paymentMethod: "MOMOPAY",
@@ -25,7 +37,11 @@ const releaseReservedStock = async () => {
     if (!updatedOrder) continue;
 
     for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.productId, {
+      const Model = productModels[item.productType];
+
+      if (!Model) continue;
+
+      await Model.findByIdAndUpdate(item.productId, {
         $inc: { reservedStock: -item.quantity },
       });
     }
