@@ -60,6 +60,7 @@ const updateProfileController = async (req, res) => {
             province: address.province.trim(),
         };
         //console.log("data: ", fullNameParsed, phoneParsed, addressParsed);
+        //console.log("fN", fullNameParsed, "p", phoneParsed, "a", addressParsed);
         const user = await User.findById(userId);
         const employee = await Employee.findById(userId);
         // console.log("Current user data:", user);
@@ -84,7 +85,7 @@ const updateProfileController = async (req, res) => {
             employee.phone = phoneParsed;
             console.log("Updated employee data:", employee);
             const resUp = await employee.save();
-            console.log("Updated employee data:", resUp);
+            //console.log("Updated employee data:", resUp);
         }
         //console.log("Updated user:", resUp);
         res.json({

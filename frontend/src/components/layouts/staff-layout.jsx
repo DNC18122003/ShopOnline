@@ -3,7 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 import { AuthContext } from '@/context/authContext';
 import { cn } from '@/lib/utils';
-
+import { toast } from 'react-toastify';
 import {
     Menu,
     Home,
@@ -63,7 +63,7 @@ const navLinkItems = [
     },
     {
         href: '/staff/forgot-password',
-        title: 'Quên mật khẩu',
+        title: 'Đổi mật khẩu',
         icon: <ClipboardCheck />,
     },
 ];

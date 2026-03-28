@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { getProfile, updateProfileService } from '@/services/order/profile.api';
 import { getAddress } from '@/services/order/order.api';
 import { toast } from 'react-toastify';
-
+import { getRegionByProvince } from '@/hooks/test';
 const UserProfile = () => {
     // State lưu trữ thông tin người dùng
     const [data, setData] = useState({
@@ -22,6 +22,19 @@ const UserProfile = () => {
             ward: '',
             province: '',
         },
+        region: '',
+    });
+    const [userData, setUserData] = useState({
+        userName: '',
+        fullName: '',
+        email: '',
+        phone: '',
+        address: {
+            street: '',
+            ward: '',
+            province: '',
+        },
+        region: '',
     });
 
     const [isEditing, setIsEditing] = useState(false);
@@ -34,8 +47,17 @@ const UserProfile = () => {
         const fetchData = async () => {
             try {
                 const response = await getProfile();
-                console.log('Profile data fetched:', response.myProfile?.phone); // log đươc data phone 1234456
+                //console.log('Profile data fetched:', response.myProfile?.phone); // log đươc data phone 1234456
                 setData({
+                    ...data,
+                    userName: response.myProfile?.userName || '',
+                    fullName: response.myProfile?.fullName || '',
+                    email: response.myProfile?.email || '',
+                    phone: response.myProfile?.phone || '',
+                    address: response.myProfile?.address || '',
+                    region: response.myProfile?.region || '',
+                });
+                setUserData({
                     ...data,
                     userName: response.myProfile?.userName || '',
                     fullName: response.myProfile?.fullName || '',
@@ -69,6 +91,15 @@ const UserProfile = () => {
             },
         });
     };
+    const HandleValidatePhoneNumber = (phone) => {
+        const phoneRegex = /^\d+$/;
+        /*
+            ^ → bắt đầu chuỗi
+            \d+ → ít nhất 1 chữ số (0–9)
+            $ → kết thúc chuỗi
+        */
+        return phoneRegex.test(phone);
+    };
 
     // handle upate
     const updateProfile = async () => {
@@ -77,19 +108,24 @@ const UserProfile = () => {
         }
         try {
             setLoadingUpdate(true);
-
+            // validate data before sending to API
             const dataToUpdate = {
-                fullName: data.fullName ? data.fullName.trim() : '',
-                phone: data.phone ? data.phone.trim() : '',
+                fullName: data.fullName.trim() ? data.fullName.trim() : '',
+                phone: data.phone.trim() ? data.phone.trim() : '',
                 address: {
-                    street: data.address.street ? data.address.street.trim() : '',
-                    ward: data.address.ward ? data.address.ward.trim() : '',
-                    province: data.address.province ? data.address.province.trim() : '',
+                    street: data.address.street.trim() ? data.address.street.trim() : '',
+                    ward: data.address.ward.trim() ? data.address.ward.trim() : '',
+                    province: data.address.province.trim() ? data.address.province.trim() : '',
                 },
             };
+            //console.log('Data to update:', dataToUpdate);
+            // lấy thông tin region
+            dataToUpdate.region = getRegionByProvince(dataToUpdate.address.province);
+            console.log('Region determined:', dataToUpdate.region);
             const response = await updateProfileService(dataToUpdate);
-            console.log('Profile updated:', response);
+            //console.log('Profile updated:', response);
             setIsEditing(false);
+            setData({ ...data, ...dataToUpdate });
             toast.success('Cập nhật thông tin cá nhân thành công');
         } catch (error) {
             console.error('Error updating profile:', error);
@@ -188,9 +224,9 @@ const UserProfile = () => {
                                     (setIsEditing(false),
                                         setData({
                                             ...data,
-                                            fullName: '',
-                                            phone: '',
-                                            address: '',
+                                            fullName: userData.fullName || '',
+                                            phone: userData.phone || '',
+                                            address: userData.address || '',
                                         }));
                                 }}
                             >

@@ -13,6 +13,11 @@ import {
     CheckCircle2,
     Phone,
     Star,
+    CircuitBoard,
+    Power,
+    Fan,
+    Server,
+    LayoutGridIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -24,16 +29,19 @@ import banner2 from '../../assets/img_banner_section2.png';
 import AddToCartButton from '@/components/customer/AddToCartButton';
 import { useNavigate } from 'react-router-dom';
 import { getProducts, getProductsTopBought } from '@/services/product/product.api';
+import { getCategories } from '@/services/category/category.api';
+import { ca } from 'date-fns/locale';
 const categories = [
-    { id: 'cpu', name: 'CPU', desc: 'Bộ vi xử lý', icon: <Cpu /> },
-    { id: 'vga', name: 'VGA', desc: 'Card đồ họa', icon: <Monitor /> },
-    { id: 'mainboard', name: 'Mainboard', desc: 'Bo mạch chủ', icon: <Layout /> },
-    { id: 'ram', name: 'RAM', desc: 'Bộ nhớ trong', icon: <MemoryStick /> },
-    { id: 'ssd', name: 'Ổ cứng SSD', desc: 'Tốc độ cao', icon: <Zap /> },
-    { id: 'hdd', name: 'Ổ cứng HDD', desc: 'Lưu trữ lớn', icon: <Database /> },
-    { id: 'psu', name: 'Nguồn', desc: 'Công suất thực', icon: <Inbox /> },
-    { id: 'cooling', name: 'Tản nhiệt', desc: 'Làm mát tối ưu', icon: <Wind /> },
-    { id: 'case', name: 'Case', desc: 'Vỏ máy tính', icon: <Layout className="rotate-90" /> },
+    { id: 'cpuss', name: 'CPUSS', desc: 'Bộ vi xử lý trung tâm', icon: <Cpu /> },
+    { id: 'vga', name: 'VGA', desc: 'Xử lý hình ảnh, đồ họa', icon: <Monitor /> },
+    { id: 'mainboard', name: 'Mainboard', desc: 'Bo mạch chủ kết nối hệ thống', icon: <CircuitBoard /> },
+    { id: 'ram', name: 'RAM', desc: 'Bộ nhớ đệm xử lý đa nhiệm', icon: <MemoryStick /> },
+    { id: 'ssd', name: 'Ổ cứng SSD', desc: 'Ổ cứng thể rắn tốc độ cao', icon: <HardDrive /> },
+    { id: 'hdd', name: 'Ổ cứng HDD', desc: 'Ổ cứng cơ lưu trữ dung lượng lớn', icon: <Database /> },
+    { id: 'psu', name: 'Nguồn', desc: 'Cung cấp năng lượng cho hệ thống', icon: <Power /> },
+    { id: 'cooler', name: 'Tản nhiệt', desc: 'Hệ thống làm mát linh kiện', icon: <Fan /> },
+    { id: 'case', name: 'Case', desc: 'Vỏ thùng máy bảo vệ linh kiện', icon: <Server /> },
+    { id: 'orther', name: 'Khác', desc: 'Phụ kiện và linh kiện khác', icon: <LayoutGridIcon /> },
 ];
 const benefits = [
     'Tư vấn cấu hình phù hợp ngân sách',
@@ -45,6 +53,7 @@ const homePage = () => {
     const data_ui = JSON.parse(localStorage.getItem('data_ui')) || {};
     const [dataNewProducts, setDataNewProducts] = React.useState([]);
     const [dataHotProducts, setDataHotProducts] = React.useState([]);
+    const [dataCategories, setDataCategories] = React.useState([]);
     const navigate = useNavigate();
     useEffect(() => {
         // Fetch new products
@@ -57,10 +66,10 @@ const homePage = () => {
         //     }
         // };
         const fetchTopBoughtProducts = async () => {
-            console.log('Fetching top bought products...');
+            //console.log('Fetching top bought products...');
             try {
                 const response = await getProductsTopBought();
-                console.log('Top bought products response:', response.data);
+                //console.log('Top bought products response:', response.data);
                 setDataNewProducts(response.data || []);
             } catch (error) {
                 console.error('Error fetching top bought products:', error);
@@ -74,6 +83,17 @@ const homePage = () => {
                 console.error('Error fetching hot products:', error);
             }
         };
+        const fetchCategories = async () => {
+            try {
+                // Giả sử API trả về danh sách categories
+                const response = await getCategories();
+                console.log('Categories response:', response.data);
+                setDataCategories(response.data || []);
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        };
+        fetchCategories();
         fetchHotProducts();
         //fetchNewProducts();
         fetchTopBoughtProducts();
@@ -140,17 +160,22 @@ const homePage = () => {
             <section>
                 <h2 className="text-2xl font-bold mb-6 text-slate-800">Danh Mục Sản Phẩm</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.map((cat, index) => (
+                    {dataCategories.map((cat, index) => (
                         <Card
                             key={index}
                             className="hover:shadow-md transition-shadow cursor-pointer border-none bg-white py-6"
-                            onClick={() => handleCategoryClick(cat.id)}
+                            onClick={() => handleCategoryClick(cat.name.toLocaleLowerCase())}
                         >
                             <CardContent className="flex flex-col items-center justify-center p-0 space-y-3">
-                                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">{cat.icon}</div>
+                                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                                    {categories.find((c) => c.name.toLocaleLowerCase() === cat.name.toLocaleLowerCase())
+                                        ?.icon || <LayoutGridIcon />}
+                                </div>
                                 <div className="text-center">
                                     <p className="font-bold text-slate-800">{cat.title}</p>
-                                    <p className="text-[11px] text-slate-400">{cat.desc}</p>
+                                    <p className="text-[11px] text-slate-400">
+                                        {cat.desc ? cat.desc : 'Đang cập nhật mô tả...'}
+                                    </p>
                                 </div>
                             </CardContent>
                         </Card>

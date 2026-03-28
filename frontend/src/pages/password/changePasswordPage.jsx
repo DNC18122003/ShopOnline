@@ -95,6 +95,10 @@ const ChangePasswordPage = () => {
                     >
                         Tiếp tục
                     </Button>
+                    <ul className="mt-3 text-xs text-gray-500 list-disc list-inside space-y-1">
+                        <li>Tối thiểu 8 ký tự</li>
+                        <li>Phân biệt chữ hoa và chữ thường</li>
+                    </ul>
                 </div>
             ) : null}
         </div>

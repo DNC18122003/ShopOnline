@@ -31,7 +31,7 @@ const verifyOTP = async (req, res) => {
   // câp nhật lại trạng thái user 
   const user = await User.findOne({ email: emailParsed });
   if (user) {
-    user.isActive = true;
+    user.isActive = "active";
     await user.save();
   }
   return res.json({ message: "Xác thực OTP thành công !" });

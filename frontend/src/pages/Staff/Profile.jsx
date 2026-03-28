@@ -27,10 +27,11 @@ const Profile = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            // console.log('Fetching admin details for ID:', user._id);
+            // console.log('Fetching staaff details for ID:', user._id ? user._id : user.id);
+            // console.log('Fetching staaff details for ID:', user.id);
             try {
                 setLoading(true);
-                const response = await getDetailStaff(user._id);
+                const response = await getDetailStaff(user._id ? user._id : user.id);
                 console.log('API Response:', response);
                 setData(response.data[0]);
             } catch (error) {
@@ -194,7 +195,7 @@ const Profile = () => {
     if (!data) {
         return (
             <div className="flex items-center justify-center h-48">
-                <span>Không có dữ liệu admin</span>
+                <span>Không có dữ liệu staff</span>
             </div>
         );
     }

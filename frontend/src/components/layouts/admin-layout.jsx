@@ -45,7 +45,7 @@ const navLinkItems = [
     },
     {
         href: '/admin/forgot-password',
-        title: 'Quên mật khẩu',
+        title: 'Đổi mật khẩu',
         icon: <ClipboardCheck />,
     },
 ];
@@ -120,11 +120,11 @@ const AdminLayout = () => {
                     {/* Profile */}
                     {data_ui && (
                         <div className="p-3">
-                            <div
-                                className="flex flex-col md:flex-row items-center justify-center gap-2"
-                                onClick={() => navigate('/admin/profile')}
-                            >
-                                <Avatar className="h-8 w-8 md:h-10 md:w-10 cursor-pointer">
+                            <div className="flex flex-col md:flex-row items-center justify-center gap-2">
+                                <Avatar
+                                    className="h-8 w-8 md:h-10 md:w-10 cursor-pointer"
+                                    onClick={() => navigate('/admin/profile')}
+                                >
                                     <AvatarImage src={data_ui.avatar} />
                                     <AvatarFallback>
                                         {' '}
