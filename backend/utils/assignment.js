@@ -4,7 +4,7 @@ const Department = require("../models/Department");
 
 const assignOrderToSale = async (orderId) => {
   try {
-    // 1️⃣ tìm department sale
+    //  tìm department sale
     const saleDepartment = await Department.findOne({ name: "sale" });
 
     if (!saleDepartment) {
@@ -12,7 +12,7 @@ const assignOrderToSale = async (orderId) => {
       return null;
     }
 
-    // 2️⃣ lấy danh sách sale đang active
+    //  lấy danh sách sale đang active
     const sales = await Employee.find({
       role: saleDepartment._id,
       isActive: "active",
@@ -23,7 +23,7 @@ const assignOrderToSale = async (orderId) => {
       return null;
     }
 
-    // 3️⃣ tìm sale có ít đơn nhất
+    //  tìm sale có ít đơn nhất
     let selectedSale = null;
     let minOrders = Infinity;
 
@@ -41,7 +41,7 @@ const assignOrderToSale = async (orderId) => {
 
     if (!selectedSale) return null;
 
-    // 4️⃣ tạo assignment
+    //  tạo assignment
     const assignment = await OrderAssignment.create({
       orderId,
       saleId: selectedSale._id,
