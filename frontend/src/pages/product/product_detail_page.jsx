@@ -1,4 +1,4 @@
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { getProductById, getSimilarProducts } from '../../services/product/product.api';
@@ -8,7 +8,7 @@ import customizeAPI from '@/services/customizeApi';
 import AddToCartButton from '@/components/customer/AddToCartButton';
 import commentService from '@/services/comment/comment.api';
 import ProductReviewList from './ProductReviewList';
-import { useAuth } from '../../context/authContext';
+import { AuthContext, useAuth } from '../../context/authContext';
 // ============================================
 // HELPER FUNCTIONS - Các hàm tiện ích
 // ============================================
@@ -60,7 +60,7 @@ const getProductImages = (product) => {
 // ============================================
 // COMPONENT - ProductCard
 // ============================================
-function ProductCard({ _id, name, price, averageRating, reviewCount, images, stock ,productType}) {
+function ProductCard({ _id, name, price, averageRating, reviewCount, images, stock, productType }) {
     const navigate = useNavigate();
 
     // Format số tiền sang VND
@@ -138,7 +138,9 @@ export default function ProductDetailPage() {
     const [question, setQuestion] = useState('');
     const [replyContent, setReplyContent] = useState({});
     const [replyOpenId, setReplyOpenId] = useState(null);
-    const { user } = useAuth();
+    const { user } = useContext(AuthContext);
+    //const userId = user._id ? user._id : user.id;
+
     console.log('User from AuthContext in ProductDetailPage:', user);
     // Fetch product data
     useEffect(() => {
@@ -147,7 +149,7 @@ export default function ProductDetailPage() {
                 setLoading(true);
                 setError(null);
                 const response = await getProductById(id);
-                console.log('Product API response:', response.data); 
+                console.log('Product API response:', response.data);
                 setProduct(response.data);
             } catch (err) {
                 console.error('Error fetching product:', err);
@@ -244,7 +246,42 @@ export default function ProductDetailPage() {
     const handleReplyChange = (commentId, value) => {
         setReplyContent((prev) => ({ ...prev, [commentId]: value }));
     };
+    // --- HÀM GỬI CÂU HỎI  ---
+    const submitQuestion = async () => {
+        console.log('Hello');
+        console.log('Submitting question:', user === null);
+        if (!user) {
+            return toast.error('Vui lòng đăng nhập để gửi câu hỏi!');
+        }
+        if (question.length < 10) {
+            return toast.warning('Câu hỏi quá ngắn! Vui lòng nhập ít nhất 10 ký tự.');
+        }
+        console.log('Dữ liệu user đang đăng nhập (từ Context):', user);
 
+        try {
+            const productId = product._id || product.id;
+            const response = await commentService.createComment({
+                productId: productId,
+                userId: user._id ? user._id : user.id,
+                userModel: user.role == 'customer' ? 'User' : 'Employee',
+                content: question,
+                parentId: null,
+            });
+
+            if (response) {
+                toast.success('Gửi câu hỏi thành công!');
+                setQuestion('');
+
+                // Refresh lại list comment
+                const refreshResponse = await commentService.getCommentsByProductId(productId);
+                const commentsData = refreshResponse.data?.data || refreshResponse.data || [];
+                setComments(Array.isArray(commentsData) ? commentsData : []);
+            }
+        } catch (error) {
+            console.error('Lỗi khi gửi câu hỏi:', error);
+            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi câu hỏi.');
+        }
+    };
     const submitReply = async (boxId, targetParentId) => {
         // 1. Lấy nội dung từ ô input đang gõ (dựa vào ID của ô đó)
         const content = replyContent[boxId];
@@ -253,7 +290,7 @@ export default function ProductDetailPage() {
             return toast.warning('Vui lòng nhập nội dung phản hồi hợp lệ!');
         }
 
-        if (!user || !user.id) {
+        if (!user) {
             return toast.error('Vui lòng đăng nhập để gửi phản hồi!');
         }
 
@@ -263,7 +300,7 @@ export default function ProductDetailPage() {
             // 2. Gửi API
             const response = await commentService.createComment({
                 productId: productId,
-                userId: user.id,
+                userId: user._id ? user._id : user.id,
                 userModel: user.role == 'customer' ? 'User' : 'Employee',
                 content: content,
                 parentId: targetParentId, // ---> Gửi ID của comment gốc
@@ -286,43 +323,6 @@ export default function ProductDetailPage() {
             toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi phản hồi.');
         }
     };
-    // --- HÀM GỬI CÂU HỎI  ---
-    const submitQuestion = async () => {
-        if (question.length < 10) {
-            return toast.warning('Câu hỏi quá ngắn! Vui lòng nhập ít nhất 10 ký tự.');
-        }
-        console.log('Dữ liệu user đang đăng nhập (từ Context):', user);
-
-        //  SỬ DỤNG biến 'user'
-        if (!user || !user.id) {
-            return toast.error('Vui lòng đăng nhập để gửi câu hỏi!');
-        }
-
-        try {
-            const productId = product._id || product.id;
-            const response = await commentService.createComment({
-                productId: productId,
-                userId: user.id,
-                userModel: user.role == 'customer' ? 'User' : 'Employee',
-                content: question,
-                parentId: null,
-            });
-
-            if (response) {
-                toast.success('Gửi câu hỏi thành công!');
-                setQuestion('');
-
-                // Refresh lại list comment
-                const refreshResponse = await commentService.getCommentsByProductId(productId);
-                const commentsData = refreshResponse.data?.data || refreshResponse.data || [];
-                setComments(Array.isArray(commentsData) ? commentsData : []);
-            }
-        } catch (error) {
-            console.error('Lỗi khi gửi câu hỏi:', error);
-            toast.error(error.response?.data?.message || 'Có lỗi xảy ra khi gửi câu hỏi.');
-        }
-    };
-
     // add to cart
     const handleAddToCart = async () => {
         console.log('Adding to cart by dan:', id);
@@ -357,9 +357,9 @@ export default function ProductDetailPage() {
             state: {
                 buyNowItem: {
                     productId: product._id,
-                   productType: product.productType
-    ? product.productType.charAt(0).toUpperCase() + product.productType.slice(1)
-    : "Product",
+                    productType: product.productType
+                        ? product.productType.charAt(0).toUpperCase() + product.productType.slice(1)
+                        : 'Product',
                     nameSnapshot: product.name,
                     priceSnapshot: product.price,
                     imageSnapshot: product.images?.[0] || '',
