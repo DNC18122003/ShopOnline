@@ -211,6 +211,7 @@ export default function ProductDetailPage() {
 
             try {
                 const response = await getReviewsByProduct(productId);
+                //console.log('Reviews API response appii :', response);
                 const reviewsData = response.data?.data || response.data || [];
                 setReviews(Array.isArray(reviewsData) ? reviewsData : []);
             } catch (err) {

@@ -65,37 +65,6 @@ const Header = () => {
                     <span className="font-extrabold text-2xl tracking-tighter text-blue-700 ">TechStore</span>
                 </div>
 
-                {/* 🔍 Search Bar */}
-                <div className="hidden lg:flex items-center flex-1 max-w-md mx-8">
-                    <div className="relative w-full group">
-                        <input
-                            type="text"
-                            placeholder="Bạn đang tìm sản phẩm nào?..."
-                            className="w-full bg-gray-50 border border-gray-200 rounded-full py-2.5 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && e.target.value.trim()) {
-                                    navigate(`/product?keyword=${e.target.value.trim()}`);
-                                }
-                            }}
-                        />
-                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-4.5 w-4.5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                            </svg>
-                        </div>
-                    </div>
-                </div>
                 {/* Navigation Menu: Home, Products, About us, Support */}
                 <div className="hidden md:block">
                     <NavigationMenu>
