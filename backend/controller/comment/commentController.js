@@ -1,4 +1,32 @@
 const Comment = require("../../models/Comments/Comment");
+const Product = require("../../models/Products/Product");
+const Cpu = require("../../models/Products/CPU");
+const Gpu = require("../../models/Products/GPU");
+const Ram = require("../../models/Products/RAM");
+const Mainboard = require("../../models/Products/Mainboard");
+// Danh sách tất cả các model sản phẩm để dễ dàng populate
+const ALL_MODELS = [
+  { key: "cpu", model: Cpu },
+  { key: "gpu", model: Gpu },
+  { key: "ram", model: Ram },
+  { key: "mainboard", model: Mainboard },
+  { key: "product", model: Product },
+];
+// Hàm helper để lấy model theo productType
+const getModelByType = (productType) => {
+  switch (productType) {
+    case "cpu":
+      return Cpu;
+    case "gpu":
+      return Gpu;
+    case "ram":
+      return Ram;
+    case "mainboard":
+      return Mainboard;
+    default:
+      return Product;
+  }
+};
 const commentController = {
   //1 lấy comment theo từng sản phẩm
   getCommentsByProduct: async (req, res) => {
@@ -101,25 +129,48 @@ const commentController = {
       });
     }
   },
-  // 3. Lấy tất cả comment kèm theo thông tin sản phẩm cụ thể
   getAllComments: async (req, res) => {
     try {
-      // Tìm tất cả các comment đang active
+      const selectFields = "name price stock images specifications";
+
+      // 1. Lấy danh sách comment cơ bản và populate user
       const comments = await Comment.find()
-        // Lấy thêm thông tin người dùng
         .populate("userId", "userName role createdAt")
-        .populate({
-          path: "productId",
-          // Tìm các trường thông tin sản phẩm muốn hiển thị
-          select: "name price stock images specifications.detail_json",
-        })
-        .sort({ createdAt: -1 }) // Mới nhất lên trước
+        .sort({ createdAt: -1 })
         .lean();
+
+      // 2. Lặp qua từng comment để dò tìm productId trong TẤT CẢ các model
+      const populatedComments = await Promise.all(
+        comments.map(async (comment) => {
+          if (!comment.productId) return comment;
+
+          let productInfo = null;
+          // Tìm xem productId này thuộc về Model nào trong ALL_MODELS
+          for (const item of ALL_MODELS) {
+            const Model = item.model;
+
+            // Tìm thử trong model hiện tại
+            const foundProduct = await Model.findById(comment.productId)
+              .select(selectFields)
+              .lean();
+
+            // Nếu tìm thấy, gán data và dừng vòng lặp dò tìm cho comment này
+            if (foundProduct) {
+              productInfo = foundProduct;
+              break;
+            }
+          }
+
+          // Gắn thông tin sản phẩm tìm được vào comment
+          comment.productInfo = productInfo;
+          return comment;
+        }),
+      );
 
       res.status(200).json({
         success: true,
         message: "Lấy danh sách tất cả comment thành công",
-        data: comments,
+        data: populatedComments,
       });
     } catch (error) {
       res.status(500).json({

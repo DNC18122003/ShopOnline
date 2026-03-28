@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import blogService from '@/services/blog/blog.api';
 import { useNavigate } from 'react-router-dom';
+import { Pagination } from '@/components/Discount/pagination';
 const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -75,6 +76,12 @@ export default function BlogLayout() {
             try {
                 setLoading(true);
                 const response = await blogService.getAllBlogs();
+                if(response.data.status !== 'published') {
+                    // Lọc ra chỉ những bài có trạng thái 'published'
+                    const publishedBlogs = response.data.filter(blog => blog.status === 'published');
+                    setBlogs(publishedBlogs);
+                    return;
+                }
                 // Sắp xếp bài mới nhất lên đầu cho danh sách chính (tùy chọn)
                 const sortedByDate = response.data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
                 setBlogs(sortedByDate);
@@ -104,7 +111,6 @@ export default function BlogLayout() {
 
     const handlePageChange = (pageNumber) => {
         setCurrentPage(pageNumber);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
@@ -145,43 +151,15 @@ export default function BlogLayout() {
 
                     {mainArticles.length === 0 && <p className="text-gray-500 py-4">Chưa có bài viết nào.</p>}
                 </div>
-
-                {/* --- UI ĐIỀU HƯỚNG PHÂN TRANG --- */}
+                {/* PHÂN TRANG */}
                 {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-2 mt-8 mb-4">
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className={`px-3 py-1.5 rounded border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}
-                        >
-                            Trang trước
-                        </button>
-
-                        {[...Array(totalPages)].map((_, idx) => {
-                            const pageNumber = idx + 1;
-                            return (
-                                <button
-                                    key={pageNumber}
-                                    onClick={() => handlePageChange(pageNumber)}
-                                    className={`w-8 h-8 flex items-center justify-center rounded border ${
-                                        currentPage === pageNumber
-                                            ? 'bg-blue-600 text-white border-blue-600'
-                                            : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600'
-                                    }`}
-                                >
-                                    {pageNumber}
-                                </button>
-                            );
-                        })}
-
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className={`px-3 py-1.5 rounded border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}
-                        >
-                            Trang sau
-                        </button>
-                    </div>
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={blogs.length}
+                        itemsPerPage={recordsPerPage}
+                        onPageChange={handlePageChange}
+                    />
                 )}
             </div>
 
