@@ -24,9 +24,9 @@ const Page403 = () => {
                 {/* 2. Phần Thông điệp (Body) */}
                 <div className="mb-12">
                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 text-balance leading-tight">
-                        Bé yêu không có quyền hạn để vào được đây!
+                        Bạn không có quyền hạn để vào được đây!
                     </h2>
-                    <p className="text-lg text-slate-400 mb-12 text-balance">Đi ra chỗ khác chơi !</p>
+                    <p className="text-lg text-slate-400 mb-12 text-balance">Quay lại sau nhé !</p>
                 </div>
                 {/* 3. Phần Hành động (Actions) */}
                 <div className="flex gap-4 justify-center">
