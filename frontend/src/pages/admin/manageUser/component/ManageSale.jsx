@@ -13,7 +13,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 import { toast } from 'react-toastify';
 import { Pagination } from '@/components/public/pagination';
-import { getUserSale, updateUserStatus } from '@/services/account/account.api';
+import { getUserSale, updateEmployeeStatus } from '@/services/account/account.api';
 import { Badge } from '@/components/ui/badge';
 import DialogViewDetailSale from './DialogViewDetailSale';
 
@@ -104,8 +104,8 @@ const ManageSale = () => {
         console.log('Toggle status for user with ID:', id, 'to new status:', status);
         try {
             setLoadingUpdateStatus(true);
-            const response = await updateUserStatus(id, status);
-            console.log('Response from updateUserStatus:', response);
+            const response = await updateEmployeeStatus(id, status);
+            console.log('Response from updateEmployeeStatus:', response);
             if (response.success) {
                 toast.success('Cập nhật trạng thái người dùng thành công');
                 // Cập nhật trạng thái người dùng trong dataUser để UI phản ánh ngay lập tức
