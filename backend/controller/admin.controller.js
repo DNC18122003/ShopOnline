@@ -161,6 +161,38 @@ const updateUserStatus = async (req, res) => {
         });
     }
 }
+const updateEmployeeStatus = async (req, res) => {
+    try {
+        const { id, status } = req.body;
+        if (!id || !status) {
+            return res.status(400).json({
+                success: false,
+                message: "Vui lòng cung cấp đày đủ thông tin"
+            });
+        }
+        const user = await Employee.findById(id);
+        if (!user) {
+            //console.log('User not found with ID:', id);
+            return res.status(400).json({
+                success: false,
+                message: "Người dùng không tồn tại"
+            });
+        }
+        user.isActive = status;
+        await user.save();
+        res.status(200).json({
+            success: true,
+            message: "Cập nhật trạng thái người dùng thành công",
+            data: user
+        });
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Lỗi khi cập nhật trạng thái người dùng"
+        });
+    }
+}
 const getDetailAdmin = async (req, res) => {
     try {
         const { id } = req.params;
@@ -525,4 +557,4 @@ const getDetailCustomer = async (req, res) => {
         });
     }
 }
-module.exports = { getTotalOrder, createNewEmployee, updateUserStatus, getDetailAdmin, getDetailStaff, getDetailSales, getDetailCustomer };
+module.exports = { getTotalOrder, createNewEmployee, updateUserStatus, updateEmployeeStatus, getDetailAdmin, getDetailStaff, getDetailSales, getDetailCustomer };

@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { Pagination } from '@/components/public/pagination';
 
-import { getUserStaff, updateUserStatus } from '@/services/account/account.api';
+import { getUserStaff, updateEmployeeStatus } from '@/services/account/account.api';
 import DialogViewStaffDetail from './DialogViewStaffDetail';
 
 const ManageStaff = () => {
@@ -99,8 +99,8 @@ const ManageStaff = () => {
         console.log('Toggle status for user with ID:', id, 'to new status:', status);
         try {
             setLoadingUpdateStatus(true);
-            const response = await updateUserStatus(id, status);
-            console.log('Response from updateUserStatus:', response);
+            const response = await updateEmployeeStatus(id, status);
+            console.log('Response from updateEmployeeStatus:', response);
             if (response.success) {
                 toast.success('Cập nhật trạng thái người dùng thành công');
                 // Cập nhật trạng thái người dùng trong dataUser để UI phản ánh ngay lập tức

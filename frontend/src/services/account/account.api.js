@@ -22,6 +22,9 @@ export const createNewEmployee = (data) => {
 export const updateUserStatus = (id, status) => {
     return customizeAPI.put(`/admin/accounts/status`, { id, status })
 };
+export const updateEmployeeStatus = (id, status) => {
+    return customizeAPI.put(`/admin/accounts/employee-status`, { id, status })
+};
 export const getDetailAdmin = (id) => {
     return customizeAPI.get(`/admin/accounts/details-admin/${id}`);
 }
