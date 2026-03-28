@@ -1,15 +1,23 @@
 const mongoose = require("mongoose");
 const Discount = require("../../models/Discounts/Discount");
+const Orderassign = require("../../models/Order/OrderAssignment");
 const Order = mongoose.models.Order;
 const Review = mongoose.models.Review;
 const Blog = mongoose.models.Blog;
-
 const saleDashboardController = {
   getDashboardSummary: async (req, res) => {
     try {
       // 1. Lấy tham số tháng và năm
-      const { month, year } = req.query;
-
+      const { month, year, userId } = req.query;
+      console.log("Tham số query nhận được req.query:", req.query);
+      console.log(
+        "Tham số nhận được - month:",
+        month,
+        "year:",
+        year,
+        "userId:",
+        userId,
+      );
       if (!month || !year) {
         return res.status(400).json({
           success: false,
@@ -33,19 +41,32 @@ const saleDashboardController = {
         // Truy vấn doanh thu và số đơn hàng
         Order.aggregate([
           {
-            $match: {
-              createdAt: { $gte: startDate, $lt: endDate },
-              paymentStatus: { $in: ["paid"] },
+            $lookup: {
+              from: "orderassignments",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "assignmentInfo",
             },
           },
           {
-            $group: {
-              _id: null,
-              totalRevenue: { $sum: "$finalAmount" },
-              totalOrders: { $sum: 1 },
+            $match: {
+              "assignmentInfo.saleId": new mongoose.Types.ObjectId(userId),
+              createdAt: {
+                $gte: new Date(startDate),
+                $lt: new Date(endDate),
+              },
             },
           },
+          {
+            $addFields: {
+              total: { $size: "$assignmentInfo" },
+            },
+          },
+          {
+            $count: "totalOrders",
+          },
         ]),
+
         // Truy vấn đếm số lượng review trong khoảng thời gian
         Review.countDocuments({
           createdAt: { $gte: startDate, $lt: endDate },
@@ -81,9 +102,9 @@ const saleDashboardController = {
               as: "discountInfo",
             },
           },
-          // 5. Giải nén mảng (bắt buộc sau khi dùng lookup)
+          // 5. Bóc tách mảng discountInfo (vì JOIN có thể trả về mảng)
           { $unwind: "$discountInfo" },
-          // 6. Định dạng lại cấu trúc JSON trả về cho giống FE
+          // 6. Chọn các trường cần thiết để trả về
           {
             $project: {
               _id: 0,
@@ -115,7 +136,16 @@ const saleDashboardController = {
         ]),
         Order.aggregate([
           {
+            $lookup: {
+              from: "orderassignments",
+              localField: "_id",
+              foreignField: "orderId",
+              as: "assignmentInfo",
+            },
+          },
+          {
             $match: {
+              "assignmentInfo.saleId": new mongoose.Types.ObjectId(userId),
               createdAt: { $gte: startDate, $lt: endDate },
             },
           },
@@ -143,8 +173,8 @@ const saleDashboardController = {
       }
       // Xóa field _id mặc định của bước $group
       delete summaryData._id;
-
       // 5. Gán thêm số lượng  vào object kết quả
+      summaryData.orderResult = orderResult[0] ? orderResult[0].totalOrders : 0;
       summaryData.totalReviews = totalReviews;
       summaryData.totalBlogs = totalBlogs;
       summaryData.topDiscounts = topDiscounts;

@@ -1,8 +1,9 @@
 import { Star, TrendingUp, ShoppingCart, Eye, Users, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import saleDashboardService from '@/services/SaleDashboard/saleDashboard.api';
+import { AuthContext } from '@/context/authContext';
 export default function SalesDashboard() {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1;
@@ -10,6 +11,7 @@ export default function SalesDashboard() {
     const [selectedMonth, setSelectedMonth] = useState(currentMonth);
     const [selectedYear, setSelectedYear] = useState(currentYear);
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
 
     const [dashboardData, setDashboardData] = useState({
         totalRevenue: 0,
@@ -25,14 +27,19 @@ export default function SalesDashboard() {
         const fetchDashboardData = async () => {
             setIsLoading(true);
             try {
-                const response = await saleDashboardService.getDashboardSummary(selectedMonth, selectedYear);
+                console.log('User ID being sent to API:', user._id ? user._id : user.id);
+                const response = await saleDashboardService.getDashboardSummary(
+                    selectedMonth,
+                    selectedYear,
+                    user._id ? user._id : user.id,
+                );
+                console.log('Response from getDashboardSummary API:', response.data);
 
                 const result = response.data?.data || response.data;
 
                 if (result) {
                     setDashboardData({
-                        totalRevenue: result.totalRevenue || 0,
-                        totalOrders: result.totalOrders || 0,
+                        totalOrders: result.orderResult || 0,
                         totalBlogs: result.totalBlogs || 0,
                         totalReviews: result.totalReviews || 0,
                         topDiscounts: result.topDiscounts || [],
@@ -98,19 +105,7 @@ export default function SalesDashboard() {
             </div>
 
             {/* Top Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-blue-100 text-sm mb-1">Doanh thu</p>
-                            <p className="text-3xl font-bold">{dashboardData.totalRevenue}đ</p>
-                        </div>
-                        <div className="p-2 bg-white/20 rounded-lg">
-                            <TrendingUp className="w-5 h-5" />
-                        </div>
-                    </div>
-                </Card>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card
                     className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 p-6 text-white"
                     onClick={() => navigate('/sale/orders')}
