@@ -251,13 +251,13 @@ export default function PcTemplatesPage() {
                 return value
                     .filter((product) => product && product._id)
                     .map((product) => ({
-                        productId: product._id,
-                        nameSnapshot: product.name,
-                        priceSnapshot: product.price,
-                        imageSnapshot: product.images?.[0] || '',
-                        quantity: 1,
+                productId: product._id,
+                nameSnapshot: product.name,
+                priceSnapshot: product.price,
+                imageSnapshot: product.images?.[0] || '',
+                quantity: 1,
                         category: key,
-                    }));
+            }));
             }
 
             const product = value;
