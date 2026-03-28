@@ -77,7 +77,7 @@ const register = () => {
                 navigate('/verify_otp');
             }, 1000);
         } catch (error) {
-            //      toast.error(error.response.data.message);
+            toast.error(error.response.data.message);
             console.error('Register failed:', error);
         } finally {
             setLoadingLogin(false);

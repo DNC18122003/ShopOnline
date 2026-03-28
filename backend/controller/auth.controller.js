@@ -35,11 +35,11 @@ const loginController = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
-    console.log("Generated JWT token:", token);
-    console.log("User data for token payload:", {
-      _id: user ? user._id : employee._id,
-      role: user ? user.role : employee.role.code,
-    });
+    // console.log("Generated JWT token:", token);
+    // console.log("User data for token payload:", {
+    //   _id: user ? user._id : employee._id,
+    //   role: user ? user.role : employee.role.code,
+    // });
     // Giải mã và hiển thị nội dung token để kiểm tra payload
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
       if (err) {
@@ -98,6 +98,7 @@ const loginController = async (req, res) => {
 };
 // controller for register
 const registerController = async (req, res) => {
+  console.log("Register controller called with data:", req.body);
   const { email, phoneNumber, password } = req.body;
   // vallidate data in backend
   const emailParsed = email.trim();
@@ -108,11 +109,14 @@ const registerController = async (req, res) => {
     return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
   }
   try {
+    console.log("Test 1");
     // check emai exist
     const existingUser = await User.findOne({ email: emailParsed });
     if (existingUser) {
+      console.log("Email already exists:", emailParsed);
       return res.status(400).json({ message: "Email đã được sử dụng" });
     }
+    console.log("Test 2");
     //hash password
     const hash_Password = await hashPassword(passwordParsed);
     // create auto generate userName from email

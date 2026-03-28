@@ -52,6 +52,9 @@ const ForgotPasswordPage = () => {
             toast.success('OTP đã được xác minh thành công !');
             setStep(2);
         } catch (error) {
+            // console.error('Error verifying OTP error:', error);
+            // console.error('Error response error.res:', error.response);
+            // console.error('Error response error.res.data:', error.response.data);
             console.error('Error sending OTP:', error.response.data.message);
             toast.error(error.response.data.message || 'Xác minh OTP thất bại!');
         }

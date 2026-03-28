@@ -30,7 +30,7 @@ const Profile = () => {
             // console.log('Fetching admin details for ID:', user._id);
             try {
                 setLoading(true);
-                const response = await getDetailSales(user._id);
+                const response = await getDetailSales(user._id ? user._id : user.id);
                 console.log('API Response:', response);
                 setData(response.data[0]);
             } catch (error) {

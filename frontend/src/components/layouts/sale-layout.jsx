@@ -43,7 +43,7 @@ const navLinkItems = [
     },
     {
         href: '/sale/forgot-password',
-        title: 'Quên mật khẩu',
+        title: 'Đổi mật khẩu',
         icon: <MessageCircleCode className="w-5 h-5" />,
     },
 ];

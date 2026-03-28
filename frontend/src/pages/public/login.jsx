@@ -58,7 +58,7 @@ const login = () => {
 
             //console.log('Login successful api:', response);
             // set data in auth context
-            //console.log('User data from API response:', response.user);
+            console.log('User data from API response:', response.user);
             setUser(response.user);
             await fetchCart();
             // set data in local storage

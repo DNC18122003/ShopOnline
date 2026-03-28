@@ -48,7 +48,7 @@ const findProductAcrossModels = async (id) => {
 
 
 const getProductsTopBought = async (req, res) => {
-  console.log("Before top buy query");
+  //console.log("Before top buy query");
   try {
     const { limit = 5 } = req.query;
     /*
@@ -69,9 +69,26 @@ const getProductsTopBought = async (req, res) => {
             as: "orders"
           }
         },
+        // {
+        //   $match: {
+        //     "orders.orderStatus": { $eq: "completed" }
+        //   }
+        // },
         {
-          $match: {
-            "orders.orderStatus": { $eq: "completed" }
+          $addFields: {
+            orders: {
+              $filter: {
+                input: "$orders", // "orders" : nguồn lọc dữ liệu, "$": dấu này đại diện cho 1 trường trong doctuments hiện tại đang xét  
+                as: "order", // biến đại diện giống "for (let order of orders)."
+                cond: { $eq: ["$$order.orderStatus", "completed"] }
+                /*
+                cond: điều kiện
+                "$eq": so sánh 2 giá trị có bằng nhau không
+                "$$order.orderStatus": lấy trường orderStatus của biến "order" đang xét
+                "$$": 2 dấu "$$" giúp mongse hiểu rằng sử dụng biến tạm thời 'as : "order" ' bên trên để xét
+                */
+              }
+            }
           }
         },
         {
