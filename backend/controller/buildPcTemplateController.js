@@ -76,29 +76,30 @@ const getTemplates = async (req, res) => {
       }
 
       const componentKeys = ["cpu", "main", "ram", "gpu", "ssd", "hdd", "psu", "case"];
-      const lookupStages = componentKeys.map(key => ({
+      const lookupStages = componentKeys.map((key) => ({
         $lookup: {
           from: "products",
-          let: { componentId: { $toObjectId: `$components.${key}` } },
-          pipeline: [
-            { $match: { $expr: { $eq: ["$_id", "$$componentId"] } } },
-            { $project: { price: 1 } }
-          ],
-          as: `${key}Details`
-        }
+          localField: `components.${key}`,
+          foreignField: "_id",
+          as: `${key}Details`,
+        },
       }));
   
       const addFieldsStage = {
         $addFields: {
           totalPrice: {
-            $sum: componentKeys.map(key => ({ $ifNull: [{ $first: `$${key}Details.price` }, 0] }))
-          }
-        }
+            $sum: componentKeys.map((key) => ({
+              $sum: "$" + key + "Details.price",
+            })),
+          },
+        },
       };
       
       if (minPrice || maxPrice) {
         addFieldsStage.$addFields.totalPrice = {
-            $sum: componentKeys.map(key => ({ $ifNull: [{ $first: `$${key}Details.price` }, 0] }))
+          $sum: componentKeys.map((key) => ({
+            $sum: "$" + key + "Details.price",
+          })),
         };
         matchStage.totalPrice = {};
         if (minPrice) {
@@ -180,14 +181,26 @@ const getTemplateById = async (req, res) => {
     const componentDetails = {};
     let totalPrice = 0;
 
-    for (const [key, productId] of Object.entries(template.components || {})) {
-      if (!productId) continue;
-      const product = await Product.findById(productId)
-        .select("name price images specifications")
-        .lean();
-      if (product) {
-        componentDetails[key] = product;
-        totalPrice += product.price || 0;
+    for (const [key, productValue] of Object.entries(template.components || {})) {
+      if (!productValue) continue;
+
+      const productIds = Array.isArray(productValue) ? productValue : [productValue];
+      const details = [];
+
+      for (const productId of productIds) {
+        const product = await Product.findById(productId)
+          .select("name price images specifications")
+          .lean();
+        if (product) {
+          details.push(product);
+          totalPrice += product.price || 0;
+        }
+      }
+
+      if (Array.isArray(productValue)) {
+        componentDetails[key] = details;
+      } else if (details[0]) {
+        componentDetails[key] = details[0];
       }
     }
 
@@ -314,33 +327,41 @@ const getPublicTemplates = async (req, res) => {
     }
 
     const componentKeys = ["cpu", "main", "ram", "gpu", "ssd", "hdd", "psu", "case"];
-    const lookupStages = componentKeys.map(key => ({
+    const lookupStages = componentKeys.map((key) => ({
       $lookup: {
         from: "products",
-        let: { componentId: { $toObjectId: `$components.${key}` } },
-        pipeline: [
-          { $match: { $expr: { $eq: ["$_id", "$$componentId"] } } },
-          { $project: { _id: 1, name: 1, price: 1, images: { $slice: ["$images", 1] } } }
-        ],
-        as: `${key}Details`
-      }
+        localField: `components.${key}`,
+        foreignField: "_id",
+        pipeline: [{ $project: { _id: 1, name: 1, price: 1, images: { $slice: ["$images", 1] } } }],
+        as: `${key}Details`,
+      },
     }));
 
     const addFieldsStage = {
       $addFields: {
         totalPrice: {
-          $sum: componentKeys.map(key => ({ $ifNull: [{ $first: `$${key}Details.price` }, 0] }))
+          $sum: componentKeys.map((key) => ({
+            $sum: "$" + key + "Details.price",
+          })),
         },
         componentDetails: {
-          $mergeObjects: componentKeys.map(key => ({
+          $mergeObjects: componentKeys.map((key) => ({
             $cond: {
-              if: { $gt: [{ $size: `$${key}Details` }, 0] },
-              then: { [key]: { $first: `$${key}Details` } },
-              else: {}
-            }
-          }))
-        }
-      }
+              if: { $gt: [{ $size: "$" + key + "Details" }, 0] },
+              then: {
+                [key]: {
+                  $cond: {
+                    if: { $in: [key, ["ram", "ssd"]] },
+                    then: "$" + key + "Details",
+                    else: { $first: "$" + key + "Details" },
+                  },
+                },
+              },
+              else: {},
+            },
+          })),
+        },
+      },
     };
 
     const currentPage = Number(page);
@@ -407,12 +428,24 @@ const getPublicTemplateById = async (req, res) => {
     const componentDetails = {};
     let totalPrice = 0;
 
-    for (const [key, productId] of Object.entries(template.components || {})) {
-      if (!productId) continue;
-      const product = await Product.findById(productId).select("name price images stock").lean();
-      if (product) {
-        componentDetails[key] = product;
-        totalPrice += product.price || 0;
+    for (const [key, productValue] of Object.entries(template.components || {})) {
+      if (!productValue) continue;
+
+      const productIds = Array.isArray(productValue) ? productValue : [productValue];
+      const details = [];
+
+      for (const productId of productIds) {
+        const product = await Product.findById(productId).select("name price images stock").lean();
+        if (product) {
+          details.push(product);
+          totalPrice += product.price || 0;
+        }
+      }
+
+      if (Array.isArray(productValue)) {
+        componentDetails[key] = details;
+      } else if (details[0]) {
+        componentDetails[key] = details[0];
       }
     }
 

@@ -34,9 +34,9 @@ const buildPcTemplateSchema = new Schema(
     components: {
       cpu: { type: Types.ObjectId, ref: "CPU" },
       main: { type: Types.ObjectId, ref: "Mainboard" },
-      ram: { type: Types.ObjectId, ref: "RAM" },
+      ram: [{ type: Types.ObjectId, ref: "RAM" }],
       gpu: { type: Types.ObjectId, ref: "GPU" },
-      ssd: { type: Types.ObjectId, ref: "Product" },
+      ssd: [{ type: Types.ObjectId, ref: "Product" }],
       hdd: { type: Types.ObjectId, ref: "Product" },
       psu: { type: Types.ObjectId, ref: "Product" },
       case: { type: Types.ObjectId, ref: "Product" },

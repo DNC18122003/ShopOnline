@@ -216,8 +216,24 @@ function ComponentPickerModal({
             </div>
 
             <div className="space-y-3">
-              {visible.length > 0 ? visible.map((product) => (
-                <div key={product._id} className="border border-gray-200 rounded-xl p-3 flex items-center gap-3">
+              {visible.length > 0 ? visible.map((product) => {
+                const isSelected = Array.isArray(selectedItem)
+                  ? selectedItem.some((item) => item?._id === product._id)
+                  : selectedItem?._id === product._id;
+
+                const handleChooseProduct = () => {
+                  onSelect(product);
+                  if (!['ram', 'storage'].includes(group.key)) {
+                    onClose();
+                  }
+                };
+
+                return (
+                <div
+                  key={product._id}
+                  onClick={handleChooseProduct}
+                  className="border border-gray-200 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:border-blue-300 hover:bg-blue-50/40 transition-colors"
+                >
                   <div className="w-16 h-16 bg-gray-50 rounded-lg p-1 flex items-center justify-center shrink-0">
                     <img src={product.images?.[0] || 'https://via.placeholder.com/80'} alt={product.name} className="max-w-full max-h-full object-contain" />
                   </div>
@@ -226,16 +242,17 @@ function ComponentPickerModal({
                     <p className="text-red-600 font-bold mt-1">{formatVND(product.price)}</p>
                   </div>
                   <button
-                    onClick={() => {
-                      onSelect(product);
-                      onClose();
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleChooseProduct();
                     }}
-                    className={`px-4 py-2 rounded-lg text-sm font-bold ${selectedItem?._id === product._id ? 'bg-green-100 text-green-700' : 'bg-blue-800 text-white hover:bg-blue-700'}`}
+                    className={`px-4 py-2 rounded-lg text-sm font-bold ${isSelected ? 'bg-green-100 text-green-700' : 'bg-blue-800 text-white hover:bg-blue-700'}`}
                   >
-                    {selectedItem?._id === product._id ? 'Đã chọn' : 'Thêm'}
+                    {isSelected ? 'Đã chọn' : 'Thêm'}
                   </button>
                 </div>
-              )) : (
+                );
+              }) : (
                 <div className="py-12 text-center text-gray-500">Không có sản phẩm phù hợp.</div>
               )}
             </div>
@@ -361,31 +378,86 @@ function LoadConfigModal({ isOpen, onClose, configs, onLoad, onDelete }) {
   );
 }
 
-function RightSummary({ selectedItems, onLoadConfig, onSaveConfig }) {
+function ConfirmClearModal({ isOpen, onClose, onConfirm }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
+        <div className="p-6 border-b border-gray-200">
+          <h3 className="font-bold text-lg text-gray-900">Xác nhận xóa tất cả</h3>
+        </div>
+        <div className="p-6 text-sm text-gray-600">
+          Bạn có chắc muốn xóa toàn bộ linh kiện đã chọn không?
+        </div>
+        <div className="p-6 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg transition-colors"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+          >
+            Xóa tất cả
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RightSummary({ selectedItems, onLoadConfig, onSaveConfig, onClearAll }) {
   const navigate = useNavigate();
 
   const subtotal = useMemo(() => {
-    return Object.values(selectedItems).reduce((sum, item) => sum + (item?.price || 0), 0);
+    return Object.values(selectedItems).reduce((sum, item) => {
+      if (Array.isArray(item)) {
+        return sum + item.reduce((arrSum, product) => arrSum + (product?.price || 0), 0);
+      }
+      return sum + (item?.price || 0);
+    }, 0);
   }, [selectedItems]);
 
   const tax = Math.round(subtotal * 0.1);
   const total = subtotal + tax;
 
   const handleCheckout = () => {
-    const selectedCount = Object.keys(selectedItems).length;
+    const selectedCount = Object.values(selectedItems).reduce((count, item) => {
+      if (Array.isArray(item)) return count + item.length;
+      return count + (item ? 1 : 0);
+    }, 0);
+
     if (selectedCount === 0) {
       toast.warning('Vui lòng chọn ít nhất một linh kiện để thanh toán');
       return;
     }
 
-    const items = Object.entries(selectedItems).map(([key, product]) => ({
-      productId: product._id,
-      nameSnapshot: product.name,
-      priceSnapshot: product.price,
-      imageSnapshot: product.images?.[0] || '',
-      quantity: 1,
-      category: key,
-    }));
+    const items = Object.entries(selectedItems).flatMap(([key, product]) => {
+      if (Array.isArray(product)) {
+        return product.map((p) => ({
+          productId: p._id,
+          nameSnapshot: p.name,
+          priceSnapshot: p.price,
+          imageSnapshot: p.images?.[0] || '',
+          quantity: 1,
+          category: key,
+        }));
+      }
+
+      if (!product) return [];
+
+      return [{
+        productId: product._id,
+        nameSnapshot: product.name,
+        priceSnapshot: product.price,
+        imageSnapshot: product.images?.[0] || '',
+        quantity: 1,
+        category: key,
+      }];
+    });
 
     const buildPcData = {
       items,
@@ -438,12 +510,17 @@ function RightSummary({ selectedItems, onLoadConfig, onSaveConfig }) {
           >
             Lưu cấu hình
           </button>
+          <button
+            onClick={onClearAll}
+            className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-bold py-3 rounded-xl transition-all text-sm"
+          >
+            Xóa tất cả
+          </button>
         </div>
       </div>
     </div>
   );
 }
-
 export default function BuildPcPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -454,6 +531,7 @@ export default function BuildPcPage() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [isLoadModalOpen, setIsLoadModalOpen] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [savedConfigs, setSavedConfigs] = useState([]);
 
   const getBuildPcStorageKey = useCallback(() => {
@@ -587,6 +665,11 @@ export default function BuildPcPage() {
     return 0;
   }, []);
 
+  const normalizeToArray = useCallback((value) => {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    return value ? [value] : [];
+  }, []);
+
 
   const getConstraintsByCategory = useCallback((categoryKey) => {
     const constraints = {};
@@ -609,7 +692,12 @@ export default function BuildPcPage() {
       if (mainSocket) constraints.socket = mainSocket;
     } else if (categoryKey === 'psu') {
       const totalWattage = Object.values(selectedItems)
-        .reduce((sum, product) => sum + getWattage(product), 0);
+        .reduce((sum, item) => {
+          if (Array.isArray(item)) {
+            return sum + item.reduce((arrSum, product) => arrSum + getWattage(product), 0);
+          }
+          return sum + getWattage(item);
+        }, 0);
 
       if (totalWattage > 0) {
         const recommendedWattage = Math.ceil((totalWattage * 1.3) / 50) * 50;
@@ -621,6 +709,36 @@ export default function BuildPcPage() {
   }, [selectedItems, getSpec, getWattage]);
 
   useEffect(() => {
+    const buildParamsByGroup = (group, constraints) => {
+      // Backend productType map theo model chuyên biệt
+      const productTypeMap = {
+        cpu: 'cpu',
+        gpu: 'gpu',
+        ram: 'ram',
+        mainboard: 'mainboard',
+      };
+
+      // category slug aliases để chịu lỗi data slug không đồng nhất
+      const categoryAliasMap = {
+        cooling: ['cooling', 'cooler', 'tan-nhiet'],
+      };
+
+      const params = {
+        limit: 50,
+        ...constraints,
+      };
+
+      if (productTypeMap[group.key]) {
+        params.productType = productTypeMap[group.key];
+      } else if (categoryAliasMap[group.key]) {
+        params.category = categoryAliasMap[group.key].join(',');
+      } else {
+        params.category = group.categorySlug;
+      }
+
+      return params;
+    };
+
     const fetchAllCategories = async () => {
       setLoading(true);
       try {
@@ -628,11 +746,7 @@ export default function BuildPcPage() {
           COMPONENT_GROUPS.map(async (group) => {
             try {
               const constraints = getConstraintsByCategory(group.key);
-              const res = await getProducts({
-                category: group.categorySlug,
-                limit: 50,
-                ...constraints,
-              });
+              const res = await getProducts(buildParamsByGroup(group, constraints));
               return [group.key, res?.data || []];
             } catch (err) {
               console.error(`Fetch ${group.key} error:`, err);
@@ -651,7 +765,14 @@ export default function BuildPcPage() {
   }, [getConstraintsByCategory]);
 
   const handleSelect = (categoryKey, product) => {
-    setSelectedItems((prev) => ({ ...prev, [categoryKey]: product }));
+    setSelectedItems((prev) => {
+      if (['ram', 'storage'].includes(categoryKey)) {
+        const current = normalizeToArray(prev[categoryKey]);
+        return { ...prev, [categoryKey]: [...current, product] };
+      }
+
+      return { ...prev, [categoryKey]: product };
+    });
   };
 
   useEffect(() => {
@@ -664,12 +785,35 @@ export default function BuildPcPage() {
     }
   }, [selectedItems, authLoading, getBuildPcSelectionKey]);
 
-  const handleRemove = (key) => {
-    setSelectedItems(prev => {
+  const handleRemove = (key, index = null) => {
+    setSelectedItems((prev) => {
       const next = { ...prev };
+
+      if (index !== null && ['ram', 'storage'].includes(key) && Array.isArray(next[key])) {
+        const updated = next[key].filter((_, idx) => idx !== index);
+        if (updated.length > 0) {
+          next[key] = updated;
+        } else {
+          delete next[key];
+        }
+        return next;
+      }
+
       delete next[key];
       return next;
     });
+  };
+
+  const handleClearAll = () => {
+    setIsClearAllModalOpen(true);
+  };
+
+  const executeClearAll = () => {
+    setSelectedItems({});
+    const selectionKey = getBuildPcSelectionKey();
+    localStorage.removeItem(selectionKey);
+    setIsClearAllModalOpen(false);
+    toast.success('Đã xóa toàn bộ linh kiện đã chọn');
   };
 
   const pickerGroup = COMPONENT_GROUPS.find((g) => g.key === pickerGroupKey) || null;
@@ -701,6 +845,9 @@ export default function BuildPcPage() {
                 <div className="divide-y divide-gray-100">
                   {COMPONENT_GROUPS.map((group, index) => {
                     const item = selectedItems[group.key];
+                    const itemsArray = normalizeToArray(item);
+                    const isMulti = ['ram', 'storage'].includes(group.key);
+
                     return (
                       <div key={group.key} className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3 p-4 items-center bg-gray-50/40 odd:bg-white">
                         <div className="font-bold text-gray-800 flex items-center gap-2">
@@ -710,7 +857,7 @@ export default function BuildPcPage() {
                         </div>
 
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full">
-                          {!item && (
+                          {(!item || (isMulti && itemsArray.length === 0)) && (
                             <button
                               onClick={() => openPicker(group.key)}
                               className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg px-4 py-2 w-fit"
@@ -721,31 +868,64 @@ export default function BuildPcPage() {
                           )}
 
                           {item && (
-                            <div className="flex items-center gap-2 min-w-0 flex-1">
-                              <img
-                                src={item.images?.[0] || 'https://via.placeholder.com/50'}
-                                alt={item.name}
-                                className="w-12 h-12 rounded border border-gray-200 object-contain bg-white"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
-                                <p className="text-xs font-bold text-red-600">{formatVND(item.price)}</p>
-                              </div>
+                            <div className="flex flex-col gap-3 min-w-0 flex-1">
+                              {isMulti ? (
+                                itemsArray.map((selectedProduct, selectedIndex) => (
+                                  <div key={`${selectedProduct._id}-${selectedIndex}`} className="flex items-center gap-2 min-w-0">
+                                    <img
+                                      src={selectedProduct.images?.[0] || 'https://via.placeholder.com/50'}
+                                      alt={selectedProduct.name}
+                                      className="w-12 h-12 rounded border border-gray-200 object-contain bg-white"
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-semibold text-gray-800 truncate">{selectedProduct.name}</p>
+                                      <p className="text-xs font-bold text-red-600">{formatVND(selectedProduct.price)}</p>
+                                    </div>
 
-                              <button
-                                onClick={() => openPicker(group.key)}
-                                className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                                title="Đổi linh kiện"
-                              >
-                                <Pencil size={15} />
-                              </button>
-                              <button
-                                onClick={() => handleRemove(group.key)}
-                                className="p-2 text-red-500 hover:bg-red-50 rounded"
-                                title="Xóa linh kiện"
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                                    <button
+                                      onClick={() => openPicker(group.key)}
+                                      className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                                      title="Thêm linh kiện"
+                                    >
+                                      <Pencil size={15} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleRemove(group.key, selectedIndex)}
+                                      className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                      title="Xóa linh kiện"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <img
+                                    src={item.images?.[0] || 'https://via.placeholder.com/50'}
+                                    alt={item.name}
+                                    className="w-12 h-12 rounded border border-gray-200 object-contain bg-white"
+                                  />
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-gray-800 truncate">{item.name}</p>
+                                    <p className="text-xs font-bold text-red-600">{formatVND(item.price)}</p>
+                                  </div>
+
+                                  <button
+                                    onClick={() => openPicker(group.key)}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+                                    title="Đổi linh kiện"
+                                  >
+                                    <Pencil size={15} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemove(group.key)}
+                                    className="p-2 text-red-500 hover:bg-red-50 rounded"
+                                    title="Xóa linh kiện"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -762,6 +942,7 @@ export default function BuildPcPage() {
               selectedItems={selectedItems}
               onLoadConfig={handleOpenLoadModal}
               onSaveConfig={handleSaveConfig}
+              onClearAll={handleClearAll}
             />
           </aside>
 
@@ -793,6 +974,12 @@ export default function BuildPcPage() {
         configs={savedConfigs}
         onLoad={handleLoadConfig}
         onDelete={handleDeleteConfig}
+      />
+
+      <ConfirmClearModal
+        isOpen={isClearAllModalOpen}
+        onClose={() => setIsClearAllModalOpen(false)}
+        onConfirm={executeClearAll}
       />
 
       <style jsx global>{`

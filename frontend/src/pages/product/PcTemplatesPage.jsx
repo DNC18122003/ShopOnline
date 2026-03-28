@@ -32,14 +32,16 @@ const getPaginationItems = (currentPage, totalPages) => {
     return rangeWithDots;
 };
 
-function TemplateCard({ template, onAddToCart, onViewDetails }) {
+function TemplateCard({ template, onBuyNow, onViewDetails }) {
     const { name, usageType, totalPrice, componentDetails } = template;
 
+    const pickDisplayComponent = (value) => Array.isArray(value) ? value[0] : value;
+
     const mainComponents = {
-        cpu: componentDetails?.cpu,
-        gpu: componentDetails?.gpu,
-        ram: componentDetails?.ram,
-        ssd: componentDetails?.ssd || componentDetails?.storage,
+        cpu: pickDisplayComponent(componentDetails?.cpu),
+        gpu: pickDisplayComponent(componentDetails?.gpu),
+        ram: pickDisplayComponent(componentDetails?.ram),
+        ssd: pickDisplayComponent(componentDetails?.ssd || componentDetails?.storage),
     };
 
     const componentIcons = {
@@ -81,9 +83,9 @@ function TemplateCard({ template, onAddToCart, onViewDetails }) {
                     <button onClick={() => onViewDetails(template._id)} className="flex-1 text-center py-2.5 px-4 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-100 transition-colors text-sm">
                         Xem chi tiết
                     </button>
-                    <button onClick={() => onAddToCart(template)} className="flex-1 flex items-center justify-center gap-2 text-center py-2.5 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <button onClick={() => onBuyNow(template)} className="flex-1 flex items-center justify-center gap-2 text-center py-2.5 px-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors text-sm">
                         <ShoppingCart size={16} />
-                        Thêm vào giỏ
+                        Mua ngay
                     </button>
                 </div>
             </div>
@@ -91,7 +93,7 @@ function TemplateCard({ template, onAddToCart, onViewDetails }) {
     );
 }
 
-function TemplateDetailModal({ templateId, onClose, onAddToCart }) {
+function TemplateDetailModal({ templateId, onClose, onBuyNow }) {
     const [template, setTemplate] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -120,7 +122,16 @@ function TemplateDetailModal({ templateId, onClose, onAddToCart }) {
     if (!template && !loading) return null;
 
     const COMPONENT_ORDER = ['cpu', 'main', 'ram', 'gpu', 'ssd', 'hdd', 'psu', 'case', 'cooling'];
-    const sortedComponents = template ? COMPONENT_ORDER.map(key => ({ key, ...template.components[key] })).filter(c => c._id) : [];
+    const sortedComponents = template
+        ? COMPONENT_ORDER.flatMap((key) => {
+            const value = template.components?.[key];
+            if (!value) return [];
+            if (Array.isArray(value)) {
+                return value.filter(Boolean).map((item, idx) => ({ key, ...item, __rowKey: `${key}-${item?._id || idx}` }));
+            }
+            return [{ key, ...value, __rowKey: `${key}-${value?._id || 'single'}` }];
+        }).filter(c => c._id)
+        : [];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
@@ -152,7 +163,7 @@ function TemplateDetailModal({ templateId, onClose, onAddToCart }) {
                             <h3 className="font-semibold text-gray-800 mb-4">Danh sách linh kiện</h3>
                             <div className="space-y-3">
                                 {sortedComponents.map(comp => (
-                                    <div key={comp._id} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                    <div key={comp.__rowKey} className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100 shadow-sm">
                                         <div className="w-12 h-12 bg-gray-50 rounded-md flex items-center justify-center p-1 flex-shrink-0">
                                             <img src={comp.images?.[0] || 'https://via.placeholder.com/100'} alt={comp.name} className="max-w-full max-h-full object-contain" />
                                         </div>
@@ -177,11 +188,11 @@ function TemplateDetailModal({ templateId, onClose, onAddToCart }) {
                                 <p className="text-2xl font-bold text-red-600">{formatVND(template.totalPrice)}</p>
                             </div>
                             <button 
-                                onClick={() => onAddToCart(template)}
+                                onClick={() => onBuyNow(template)}
                                 className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                             >
                                 <ShoppingCart size={18} />
-                                Thêm vào giỏ
+                                Mua ngay
                             </button>
                         </div>
                     </>
@@ -232,21 +243,37 @@ export default function PcTemplatesPage() {
         return () => clearTimeout(timer);
     }, [currentPage, searchTerm, minPrice, maxPrice]);
 
-    const handleAddToCart = (template) => {
+    const handleBuyNow = (template) => {
         const components = template.componentDetails || template.components || {};
-        const items = Object.entries(components)
-            .filter(([, product]) => product && product._id)
-            .map(([key, product]) => ({
+        const items = Object.entries(components).flatMap(([key, value]) => {
+            if (!value) return [];
+            if (Array.isArray(value)) {
+                return value
+                    .filter((product) => product && product._id)
+                    .map((product) => ({
+                        productId: product._id,
+                        nameSnapshot: product.name,
+                        priceSnapshot: product.price,
+                        imageSnapshot: product.images?.[0] || '',
+                        quantity: 1,
+                        category: key,
+                    }));
+            }
+
+            const product = value;
+            if (!product?._id) return [];
+            return [{
                 productId: product._id,
                 nameSnapshot: product.name,
                 priceSnapshot: product.price,
                 imageSnapshot: product.images?.[0] || '',
                 quantity: 1,
-                category: key
-            }));
+                category: key,
+            }];
+        });
 
         if (items.length === 0) {
-            toast.warn("Cấu hình này hiện chưa có linh kiện, không thể thêm vào giỏ hàng.");
+            toast.warn("Cấu hình này hiện chưa có linh kiện, không thể mua ngay.");
             return;
         }
 
@@ -259,7 +286,7 @@ export default function PcTemplatesPage() {
 
         localStorage.setItem('buildpc_checkout', JSON.stringify(buildPcData));
         navigate('/checkout');
-        toast.success(`Đã thêm cấu hình "${template.name}" vào giỏ hàng.`);
+        toast.success(`Đang chuyển đến trang thanh toán cho cấu hình "${template.name}".`);
     };
 
     const handleViewDetails = (templateId) => {
@@ -303,7 +330,7 @@ export default function PcTemplatesPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {templates.map(template => (
-                            <TemplateCard key={template._id} template={template} onAddToCart={handleAddToCart} onViewDetails={handleViewDetails} />
+                            <TemplateCard key={template._id} template={template} onBuyNow={handleBuyNow} onViewDetails={handleViewDetails} />
                         ))}
                     </div>
                 )}
@@ -340,7 +367,7 @@ export default function PcTemplatesPage() {
                 <TemplateDetailModal 
                     templateId={selectedTemplateId} 
                     onClose={() => setSelectedTemplateId(null)} 
-                    onAddToCart={(tpl) => { handleAddToCart(tpl); setSelectedTemplateId(null); }} 
+                    onBuyNow={(tpl) => { handleBuyNow(tpl); setSelectedTemplateId(null); }} 
                 />
             )}
         </div>

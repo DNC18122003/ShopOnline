@@ -1,4 +1,4 @@
-  import { useEffect, useState } from 'react';
+  import { useEffect, useState, useCallback } from 'react';
   import { Search, Plus, Edit2, Trash2, Eye, ChevronLeft, ChevronRight, X } from 'lucide-react';
   import { toast } from 'react-toastify';
   import {
@@ -7,14 +7,14 @@
     updateBuildPcTemplate,
     deleteBuildPcTemplate,
   } from '@/services/buildPcTemplate.api';
-import { getProducts, checkBuildPcCompatibility } from '@/services/product/product.api';
+import { getProducts } from '@/services/product/product.api';
 
   const EMPTY_COMPONENTS = {
     cpu: '',
     main: '',
-    ram: '',
+    ram: [],
     gpu: '',
-    ssd: '',
+    ssd: [],
     hdd: '',
     psu: '',
     case: '',
@@ -50,8 +50,33 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
       case: [],
     });
     const [loadingComponents, setLoadingComponents] = useState(false);
-    const [compatibilityResult, setCompatibilityResult] = useState(null);
-    const [compatibilityLoading, setCompatibilityLoading] = useState(false);
+
+    const getSpec = useCallback((product, key) => {
+      if (!product?.specifications) return null;
+      if (product.specifications[key]) return product.specifications[key];
+      const detail = product.specifications.detail_json || {};
+      const aliases = {
+        socket: ['Socket', 'socket', 'Loại Socket'],
+        ram_type: ['Hỗ trợ RAM', 'Loại RAM', 'ram_type', 'RAM'],
+        form_factor: ['Kích thước mainboard', 'Chuẩn mainboard', 'form_factor'],
+      };
+      const keys = aliases[key] || [key];
+      for (const k of keys) {
+        if (detail[k]) return detail[k];
+      }
+      return null;
+    }, []);
+
+    const getWattage = useCallback((product) => {
+      if (!product?.specifications) return 0;
+      const wattage = product.specifications.wattage || product.specifications.power;
+      if (typeof wattage === 'number') return wattage;
+      if (typeof wattage === 'string') {
+        const parsed = parseInt(String(wattage).replace(/W/i, '').trim(), 10);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      return 0;
+    }, []);
 
     const [formData, setFormData] = useState({
       name: '',
@@ -60,6 +85,9 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
       isPublic: true,
       components: { ...EMPTY_COMPONENTS },
     });
+    const [multiSearch, setMultiSearch] = useState({ ram: '', ssd: '' });
+    const [multiDropdownOpen, setMultiDropdownOpen] = useState({ ram: false, ssd: false });
+    const [multiScrollTop, setMultiScrollTop] = useState({ ram: 0, ssd: 0 });
 
     const resetForm = () => {
       setFormData({
@@ -69,6 +97,9 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
         isPublic: true,
         components: { ...EMPTY_COMPONENTS },
       });
+      setMultiSearch({ ram: '', ssd: '' });
+      setMultiDropdownOpen({ ram: false, ssd: false });
+      setMultiScrollTop({ ram: 0, ssd: 0 });
       setEditingTemplate(null);
     };
 
@@ -149,6 +180,21 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
     };
 
     const openEditModal = (template) => {
+      const normalizeMultiIds = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) {
+          return value
+            .map((v) => {
+              if (typeof v === 'string') return v;
+              if (typeof v === 'object') return v?._id || v?.productId || v?.id || null;
+              return null;
+            })
+            .filter(Boolean);
+        }
+        if (typeof value === 'object') return [value?._id || value?.productId || value?.id].filter(Boolean);
+        return [value];
+      };
+
       setEditingTemplate(template);
       setFormData({
         name: template.name,
@@ -158,6 +204,8 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
         components: {
           ...EMPTY_COMPONENTS,
           ...(template.components || {}),
+          ram: normalizeMultiIds(template.components?.ram),
+          ssd: normalizeMultiIds(template.components?.ssd),
         },
       });
       setShowModal(true);
@@ -186,35 +234,138 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
       }));
     };
 
-    const checkCompatibility = async (components) => {
-      const entries = Object.entries(components).filter(([, v]) => v);
-      if (entries.length < 2) {
-        setCompatibilityResult(null);
-        return;
-      }
-
-      try {
-        setCompatibilityLoading(true);
-        const payload = entries.reduce((acc, [key, value]) => {
-          acc[key] = value;
-          return acc;
-        }, {});
-        const res = await checkBuildPcCompatibility(payload);
-        if (res.success) {
-          setCompatibilityResult(res.data);
+    const handleMultiComponentQuantityChange = (key, value, delta) => {
+      setFormData((prev) => {
+        const current = Array.isArray(prev.components[key]) ? [...prev.components[key]] : [];
+        if (delta > 0) {
+          current.push(value);
+        } else {
+          const index = current.findIndex((id) => id === value);
+          if (index !== -1) current.splice(index, 1);
         }
-      } catch (error) {
-        console.error('Error checking compatibility:', error);
-        setCompatibilityResult(null);
-      } finally {
-        setCompatibilityLoading(false);
-      }
+
+        return {
+          ...prev,
+          components: {
+            ...prev.components,
+            [key]: current,
+          },
+        };
+      });
     };
 
-    useEffect(() => {
-      checkCompatibility(formData.components);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.components]);
+    const selectedProducts = Object.entries(formData.components).reduce((acc, [key, value]) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) return acc;
+
+      if (Array.isArray(value)) {
+        const firstMatched = (componentOptions[key] || []).find((item) => value.includes(item._id));
+        if (firstMatched) {
+          acc[key] = firstMatched;
+        }
+        return acc;
+      }
+
+      const product = (componentOptions[key] || []).find((item) => item._id === value);
+      if (product) acc[key] = product;
+      return acc;
+    }, {});
+
+    const isOptionCompatible = useCallback((key, candidate, currentSelected) => {
+      const next = {
+        ...currentSelected,
+        [key]: candidate,
+      };
+
+      const cpu = next.cpu;
+      const main = next.main;
+      const ram = Array.isArray(next.ram) ? next.ram[0] : next.ram;
+      const pcCase = next.case;
+      const psu = next.psu;
+
+      // 1) CPU <-> Mainboard (2 chiều)
+      if (cpu && main) {
+        const cpuSocket = getSpec(cpu, 'socket');
+        const mainSocket = getSpec(main, 'socket');
+        if (cpuSocket && mainSocket && cpuSocket !== mainSocket) return false;
+      }
+
+      // 2) RAM <-> Mainboard (2 chiều)
+      if (ram && main) {
+        const ramType = getSpec(ram, 'ram_type');
+        const mainRamType = getSpec(main, 'ram_type');
+        if (ramType && mainRamType && ramType !== mainRamType) return false;
+      }
+
+      // 3) Case <-> Mainboard (2 chiều)
+      if (pcCase && main) {
+        const caseFormFactor = getSpec(pcCase, 'form_factor');
+        const mainFormFactor = getSpec(main, 'form_factor');
+        if (caseFormFactor && mainFormFactor && caseFormFactor !== mainFormFactor) return false;
+      }
+
+      // 4) PSU đủ công suất với các part hiện tại
+      if (psu) {
+        const parts = [next.cpu, next.gpu, next.main, next.ram, next.ssd, next.hdd, next.case].filter(Boolean);
+        const estimated = parts.reduce((sum, product) => sum + getWattage(product), 0);
+        const required = Math.ceil((estimated * 1.3) / 50) * 50;
+        const psuWatt = getWattage(psu);
+        if (required > 0 && psuWatt > 0 && psuWatt < required) return false;
+      }
+
+      return true;
+    }, [getSpec, getWattage]);
+
+    const getFilteredOptions = useCallback((key) => {
+      const options = componentOptions[key] || [];
+      const currentValue = formData.components[key];
+      const currentIds = Array.isArray(currentValue) ? currentValue : [currentValue];
+
+      return options.filter((item) => {
+        if (currentIds.includes(item._id)) return true;
+        return isOptionCompatible(key, item, selectedProducts);
+      });
+    }, [componentOptions, formData.components, isOptionCompatible, selectedProducts]);
+
+    const getMultiComponentView = useCallback((key) => {
+      const filtered = getFilteredOptions(key);
+      const keyword = (multiSearch[key] || '').trim().toLowerCase();
+      const selectedIds = Array.isArray(formData.components[key]) ? formData.components[key] : [];
+
+      const selectedCountMap = selectedIds.reduce((acc, id) => {
+        acc[id] = (acc[id] || 0) + 1;
+        return acc;
+      }, {});
+
+      const searched = filtered.filter((item) => {
+        if (!keyword) return true;
+        return (item.name || '').toLowerCase().includes(keyword);
+      });
+
+      const sorted = [...searched].sort((a, b) => {
+        const aQty = selectedCountMap[a._id] || 0;
+        const bQty = selectedCountMap[b._id] || 0;
+        if (aQty !== bQty) return bQty - aQty;
+        return (a.name || '').localeCompare(b.name || '', 'vi');
+      });
+
+      const rowHeight = 44;
+      const viewportHeight = 220;
+      const overscan = 3;
+      const totalCount = sorted.length;
+      const start = Math.max(0, Math.floor((multiScrollTop[key] || 0) / rowHeight) - overscan);
+      const visibleCount = Math.ceil(viewportHeight / rowHeight) + overscan * 2;
+      const end = Math.min(totalCount, start + visibleCount);
+
+      return {
+        selectedCountMap,
+        sorted,
+        rowHeight,
+        viewportHeight,
+        totalCount,
+        start,
+        end,
+      };
+    }, [formData.components, getFilteredOptions, multiScrollTop, multiSearch]);
 
     const handleSubmit = async (e) => {
       e.preventDefault();
@@ -225,6 +376,7 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
 
       try {
         setLoading(true);
+
         const payload = {
           name: formData.name.trim(),
           description: formData.description.trim(),
@@ -551,56 +703,114 @@ import { getProducts, checkBuildPcCompatibility } from '@/services/product/produ
                     <h3 className="text-sm font-semibold text-gray-700">
                       Chọn linh kiện
                     </h3>
-                    {compatibilityLoading ? (
-                      <span className="text-xs text-gray-400">Đang kiểm tra...</span>
-                    ) : compatibilityResult ? (
-                      <span
-                        className={`text-xs font-semibold ${
-                          compatibilityResult.isCompatible ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {compatibilityResult.isCompatible ? 'Tương thích' : 'Không tương thích'}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-gray-400">Chọn &gt;= 2 linh kiện</span>
-                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {Object.keys(EMPTY_COMPONENTS).map((key) => (
                       <div key={key}>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          {key.toUpperCase()}
+                          {key.toUpperCase()} {['ram', 'ssd'].includes(key) ? '(chọn nhiều)' : ''}
                         </label>
-                        <select
-                          value={formData.components[key] || ''}
-                          onChange={(e) => handleComponentChange(key, e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                          disabled={loadingComponents}
-                        >
-                          <option value="">
-                            {loadingComponents ? 'Đang tải linh kiện...' : `Chọn ${key.toUpperCase()}`}
-                          </option>
-                          {(componentOptions[key] || []).map((item) => (
-                            <option key={item._id} value={item._id}>
-                              {item.name}
+                        {['ram', 'ssd'].includes(key) ? (
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={multiSearch[key] || ''}
+                              onChange={(e) => setMultiSearch((prev) => ({ ...prev, [key]: e.target.value }))}
+                              onFocus={() => setMultiDropdownOpen((prev) => ({ ...prev, [key]: true }))}
+                              placeholder={`Tìm ${key.toUpperCase()}...`}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            />
+
+                            {multiDropdownOpen[key] && (
+                              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                                {(() => {
+                                  const view = getMultiComponentView(key);
+                                  return (
+                                    <>
+                                      <div
+                                        className="relative overflow-y-auto"
+                                        style={{ height: `${view.viewportHeight}px` }}
+                                        onScroll={(e) => {
+                                          setMultiScrollTop((prev) => ({ ...prev, [key]: e.currentTarget.scrollTop }));
+                                        }}
+                                      >
+                                        <div style={{ height: `${view.totalCount * view.rowHeight}px`, position: 'relative' }}>
+                                          {view.sorted.slice(view.start, view.end).map((item, index) => {
+                                            const realIndex = view.start + index;
+                                            const quantity = view.selectedCountMap[item._id] || 0;
+                                            return (
+                                              <div
+                                                key={item._id}
+                                                className="absolute left-0 right-0 flex items-center justify-between gap-2 text-sm px-3 border-b border-gray-100"
+                                                style={{
+                                                  top: `${realIndex * view.rowHeight}px`,
+                                                  height: `${view.rowHeight}px`,
+                                                }}
+                                              >
+                                                <span className="text-gray-700 truncate pr-2">{item.name}</span>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleMultiComponentQuantityChange(key, item._id, -1)}
+                                                    disabled={loadingComponents || quantity === 0}
+                                                    className="w-7 h-7 rounded border border-gray-300 text-gray-700 disabled:opacity-40"
+                                                  >
+                                                    -
+                                                  </button>
+                                                  <span className="w-6 text-center font-semibold text-gray-800">{quantity}</span>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => handleMultiComponentQuantityChange(key, item._id, 1)}
+                                                    disabled={loadingComponents}
+                                                    className="w-7 h-7 rounded border border-gray-300 text-gray-700"
+                                                  >
+                                                    +
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                      {!loadingComponents && view.totalCount === 0 && (
+                                        <p className="text-xs text-gray-400 p-3">Không có linh kiện tương thích.</p>
+                                      )}
+                                      <div className="p-2 border-t border-gray-100 text-right">
+                                        <button
+                                          type="button"
+                                          onClick={() => setMultiDropdownOpen((prev) => ({ ...prev, [key]: false }))}
+                                          className="text-xs text-blue-600 hover:underline"
+                                        >
+                                          Đóng
+                                        </button>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <select
+                            value={formData.components[key] || ''}
+                            onChange={(e) => handleComponentChange(key, e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            disabled={loadingComponents}
+                          >
+                            <option value="">
+                              {loadingComponents ? 'Đang tải linh kiện...' : `Chọn ${key.toUpperCase()}`}
                             </option>
-                          ))}
-                        </select>
+                            {getFilteredOptions(key).map((item) => (
+                              <option key={item._id} value={item._id}>
+                                {item.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Danh sách lấy từ kho sản phẩm hiện tại.
-                  </p>
-                  {compatibilityResult?.issues?.length > 0 && (
-                    <div className="mt-2 space-y-1">
-                      {compatibilityResult.issues.map((issue, idx) => (
-                        <p key={idx} className="text-xs text-red-600">
-                          • {issue.message}
-                        </p>
-                      ))}
-                    </div>
-                  )}
+                 
                 </div>
 
                 <div className="flex items-center">
