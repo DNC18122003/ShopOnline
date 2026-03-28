@@ -1,5 +1,10 @@
 const Order = require("../../models/Order/Order");
 const Cart = require("../../models/Order/Cart");
+const Product = require("../../models/Products/Product");
+const Cpu = require("../../models/Products/CPU");
+const Gpu = require("../../models/Products/GPU");
+const Ram = require("../../models/Products/RAM");
+const Mainboard = require("../../models/Products/Mainboard");
 const Discount = require("../../models/Discounts/Discount");
 const { createMomoPayment } = require("./momo.controller");
 const mongoose = require("mongoose");
@@ -14,18 +19,29 @@ const statusFlow = {
   shipping: ["delivered", "delivery_failed"],
   delivered: ["completed", "returned"],
 };
+
+const PRODUCT_MODELS = [Product, Cpu, Gpu, Ram, Mainboard];
+
+const findProductAcrossModels = async (id) => {
+  for (const model of PRODUCT_MODELS) {
+    const product = await model.findById(id).lean();
+    if (product) return { product, model };
+  }
+  return null;
+};
+
 const getModelByType = (type) => {
   switch ((type || "").toLowerCase()) {
     case "cpu":
-      return mongoose.model("Cpu");
+      return Cpu;
     case "gpu":
-      return mongoose.model("Gpu");
+      return Gpu;
     case "ram":
-      return mongoose.model("Ram");
+      return Ram;
     case "mainboard":
-      return mongoose.model("Mainboard");
+      return Mainboard;
     default:
-      return mongoose.model("Product"); 
+      return Product;
   }
 };
 
@@ -100,12 +116,18 @@ const createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const cartItem of itemsToCheckout) {
-      const Model = getModelByType(cartItem.productType);
-      const product = await Model.findById(cartItem.productId).lean();
+      const found = await findProductAcrossModels(cartItem.productId);
+      const product = found?.product;
 
-      if (!product || !product.isActive) {
+      if (!product) {
         return res.status(400).json({
-          message: `Sản phẩm "${cartItem.nameSnapshot}" không khả dụng hoặc đã bị khóa`,
+          message: `Không tìm thấy sản phẩm "${cartItem.nameSnapshot}" trong hệ thống`,
+        });
+      }
+
+      if (!product.isActive) {
+        return res.status(400).json({
+          message: `Sản phẩm "${cartItem.nameSnapshot}" đã bị khóa`,
         });
       }
 
@@ -140,9 +162,19 @@ const createOrder = async (req, res) => {
       const itemTotal = cartItem.quantity * cartItem.priceSnapshot;
       subtotal += itemTotal;
 
+      const productTypeMap = {
+        cpu: "Cpu",
+        gpu: "Gpu",
+        ram: "Ram",
+        mainboard: "Mainboard",
+        product: "Product",
+      };
+
+      const normalizedProductType = productTypeMap[(cartItem.productType || "").toLowerCase()] || found?.model?.modelName || "Product";
+
       orderItems.push({
         productId: cartItem.productId,
-        productType: cartItem.productType,
+        productType: normalizedProductType,
         nameSnapshot: cartItem.nameSnapshot,
         imageSnapshot: cartItem.imageSnapshot,
         priceSnapshot: cartItem.priceSnapshot,
@@ -243,11 +275,12 @@ const createOrder = async (req, res) => {
     // Giu hang trong 5
     if (paymentMethod === "MOMOPAY") {
       for (const item of orderItems) {
-       const Model = getModelByType(item.productType);
+        const found = await findProductAcrossModels(item.productId);
+        if (!found?.model) continue;
 
-       await Model.findByIdAndUpdate(item.productId, {
-         $inc: { reservedStock: item.quantity },
-       });
+        await found.model.findByIdAndUpdate(item.productId, {
+          $inc: { reservedStock: item.quantity },
+        });
       }
 
       newOrder.reservationExpiresAt = new Date(Date.now() + 1 * 60 * 1000);
@@ -274,12 +307,18 @@ const createOrder = async (req, res) => {
 
     //  TRỪ STOCK (COD / BANK)
     for (const item of orderItems) {
-     const Model = getModelByType(item.productType);
-     const updated = await Model.findOneAndUpdate(
-       { _id: item.productId, stock: { $gte: item.quantity } },
-       { $inc: { stock: -item.quantity } },
-       { new: true }
-     );
+      const found = await findProductAcrossModels(item.productId);
+      if (!found?.model) {
+        return res.status(400).json({
+          message: `Không tìm thấy sản phẩm ${item.nameSnapshot} khi trừ tồn kho`,
+        });
+      }
+
+      const updated = await found.model.findOneAndUpdate(
+        { _id: item.productId, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
 
       if (!updated) {
         await Order.findByIdAndUpdate(newOrder._id, {

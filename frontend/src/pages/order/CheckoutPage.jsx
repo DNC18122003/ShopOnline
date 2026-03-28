@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
@@ -8,16 +8,48 @@ import { toast } from 'react-toastify';
 import discountService from '@/services/discount/discount.api';
 import DiscountInput from '@/components/Discount/DiscountInput';
 import { useLocation } from 'react-router-dom';
+
+const safeParseJson = (value) => {
+    try {
+        return value ? JSON.parse(value) : null;
+    } catch {
+        return null;
+    }
+};
+
 const CheckoutPage = () => {
     const { cart, removeMultipleItems } = useCart();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // Lấy dữ liệu Build PC từ localStorage nếu có
+    // Ưu tiên dữ liệu Build PC từ navigate state, fallback localStorage
     const [buildPcData] = useState(() => {
-        const saved = localStorage.getItem('buildpc_checkout');
-        return saved ? JSON.parse(saved) : null;
+        const fromState = location.state?.buildPcCheckout || null;
+        if (fromState?.isBuildPc && Array.isArray(fromState.items) && fromState.items.length > 0) {
+            return fromState;
+        }
+
+        const fromStorage = safeParseJson(localStorage.getItem('buildpc_checkout'));
+        if (fromStorage?.isBuildPc && Array.isArray(fromStorage.items) && fromStorage.items.length > 0) {
+            return fromStorage;
+        }
+
+        const fromLegacyStorage = safeParseJson(localStorage.getItem('buipc_checkout'));
+        if (fromLegacyStorage?.isBuildPc && Array.isArray(fromLegacyStorage.items) && fromLegacyStorage.items.length > 0) {
+            return fromLegacyStorage;
+        }
+
+        return null;
     });
+
+    useEffect(() => {
+        return () => {
+            // Rời khỏi checkout khi chưa hoàn tất thanh toán thì dọn dữ liệu Build PC tạm
+            localStorage.removeItem('buildpc_checkout');
+            localStorage.removeItem('buipc_checkout');
+        };
+    }, []);
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -30,11 +62,12 @@ const CheckoutPage = () => {
         discountCode: '',
         paymentMethod: 'COD',
     });
-    const location = useLocation();
+
     const buyNowItem = location.state?.buyNowItem || null;
-    const isBuyNow = !!buyNowItem;
+    const isBuildPcNavigation = !!location.state?.buildPcCheckout;
+    const isBuyNow = !!buyNowItem && !isBuildPcNavigation;
     const isBuildPc = !!(buildPcData?.isBuildPc && Array.isArray(buildPcData?.items) && buildPcData.items.length > 0);
-    const fromCart = location.state?.fromCart || false;
+    const fromCart = !isBuildPc ? (location.state?.fromCart || false) : false;
     const [discountInfo, setDiscountInfo] = useState(null);
     const [discountError, setDiscountError] = useState(null);
     const [availableDiscounts, setAvailableDiscounts] = useState([]);
@@ -50,7 +83,7 @@ const CheckoutPage = () => {
         return <Navigate to="/cart" replace />;
     }
     const selectedItems = isBuildPc
-        ? buildPcData.items
+        ? (buildPcData?.items || [])
         : isBuyNow
           ? [buyNowItem]
           : location.state?.selectedItems || cart?.items || [];
@@ -305,6 +338,11 @@ const CheckoutPage = () => {
                 position: 'top-right',
                 autoClose: 4000,
             });
+
+            if (isBuildPc) {
+                localStorage.removeItem('buildpc_checkout');
+                localStorage.removeItem('buipc_checkout');
+            }
            if (fromCart) {
                const itemsToRemove = selectedItems.map((i) => ({
                    productId: i.productId?._id || i.productId,

@@ -465,8 +465,12 @@ function RightSummary({ selectedItems, onLoadConfig, onSaveConfig, onClearAll })
       isBuildPc: true,
     };
 
-    localStorage.setItem('buildpc_checkout', JSON.stringify(buildPcData));
-    navigate('/checkout');
+    localStorage.setItem('buipc_checkout', JSON.stringify(buildPcData));
+    navigate('/checkout', {
+      state: {
+        buildPcCheckout: buildPcData,
+      },
+    });
   };
 
   return (
