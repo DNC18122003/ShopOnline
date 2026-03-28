@@ -7,9 +7,6 @@ router.get("/", blogController.getAllBlogs);
 // GET: Lấy chi tiết theo ID
 router.get("/:id", blogController.getBlogById);
 
-// GET: Lấy chi tiết theo Slug (Ví dụ: /api/blog/detail/huong-dan-code)
-router.get("/detail/:slug", blogController.getBlogBySlug);
-
 // POST: Tạo bài viết mới
 router.post("/", blogController.createBlog);
 
@@ -18,5 +15,7 @@ router.put("/:id", blogController.updateBlog);
 
 // DELETE: Xóa bài viết
 router.delete("/:id", blogController.deleteBlog);
+// PATCH: tăng viewCount
+router.patch("/:id", blogController.incrementViewCount);
 
 module.exports = router;

@@ -128,7 +128,6 @@ const blogController = {
 
       // Chỉ lấy thông tin bài viết
       const blog = await Blog.findById(id);
-
       if (!blog) {
         return res.status(404).json({
           success: false,
@@ -147,26 +146,22 @@ const blogController = {
     }
   },
 
-  // 4. Lấy chi tiết bài viết (Theo Slug)
-  getBlogBySlug: async (req, res) => {
+  // 4. tăng view bài viết
+  incrementViewCount: async (req, res) => {
     try {
-      const { slug } = req.params;
-
-      const blog = await Blog.findOneAndUpdate(
-        { slug: slug },
-        { $inc: { viewCount: 1 } },
-        { new: true },
-      ).populate("author", "name email");
-
+      const { id } = req.params;
+      const blog = await Blog.findById(id);
       if (!blog) {
         return res.status(404).json({
           success: false,
           message: "Bài viết không tồn tại",
         });
       }
-
+      blog.viewCount += 1;
+      await blog.save();
       res.status(200).json({
         success: true,
+        message: "Đã tăng view bài viết",
         data: blog,
       });
     } catch (error) {

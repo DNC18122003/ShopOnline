@@ -72,11 +72,11 @@ export default function CommentManagementPage() {
         const fetchProductComments = async () => {
             // Kiểm tra xem có lấy được productId không
 
-            if (selectedComment && selectedComment.productId?._id) {
+            if (selectedComment && selectedComment.productInfo?._id) {
                 setIsLoadingProductComments(true);
 
                 try {
-                    const response = await commentService.getCommentsByProductId(selectedComment.productId._id);
+                    const response = await commentService.getCommentsByProductId(selectedComment.productInfo?._id);
                     const data = response.data || response;
 
                     setProductComments(data);
@@ -303,10 +303,10 @@ export default function CommentManagementPage() {
                                             <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded border overflow-hidden">
                                                 <img
                                                     src={
-                                                        comment.productId?.images?.[0] ||
+                                                        comment.productInfo?.images?.[0] ||
                                                         'https://dummyimage.com/100x100/eee/000&text=No+Image'
                                                     }
-                                                    alt={comment.productId?.name}
+                                                    alt={comment.productInfo?.name}
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
@@ -314,7 +314,7 @@ export default function CommentManagementPage() {
                                             <div className="flex flex-col justify-center">
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <h3 className="text-sm font-semibold text-blue-600">
-                                                        {comment.productId?.name || 'Sản phẩm không xác định'}
+                                                        {comment.productInfo?.name || 'Sản phẩm không xác định'}
                                                     </h3>
 
                                                     {comment.isActive !== false ? (
@@ -435,56 +435,71 @@ export default function CommentManagementPage() {
                                 <div className="w-full md:w-1/3 flex flex-col items-center">
                                     <img
                                         src={
-                                            selectedComment.productId?.images?.[0] ||
+                                            selectedComment.productInfo?.images?.[0] ||
                                             'https://dummyimage.com/400x400/eee/000&text=No+Image'
                                         }
-                                        alt={selectedComment.productId?.name}
+                                        alt={selectedComment.productInfo?.name}
                                         className="w-full max-w-[280px] object-contain rounded-lg mix-blend-multiply"
                                     />
                                 </div>
 
                                 <div className="w-full md:w-2/3">
                                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                                        {selectedComment.productId?.name}
+                                        {selectedComment.productInfo?.name}
                                     </h1>
                                     <div className="text-2xl font-bold text-red-600 mb-6">
-                                        {selectedComment.productId?.price?.toLocaleString('vi-VN')} ₫
+                                        {selectedComment.productInfo?.price?.toLocaleString('vi-VN')} ₫
                                     </div>
                                     <div className="text-sm">
                                         <span className="text-gray-500 mr-2">Tồn kho:</span>
                                         <span
                                             className={`font-bold px-2.5 py-1 rounded-md ${
-                                                selectedComment.productId?.stock > 0
+                                                selectedComment.productInfo?.stock > 0
                                                     ? 'bg-green-100 text-green-700'
                                                     : 'bg-red-100 text-red-700'
                                             }`}
                                         >
-                                            {selectedComment.productId?.stock > 0
-                                                ? `${selectedComment.productId?.stock} sản phẩm`
+                                            {selectedComment.productInfo?.stock > 0
+                                                ? `${selectedComment.productInfo?.stock} sản phẩm`
                                                 : 'Hết hàng'}
                                         </span>
                                     </div>
 
                                     {/* Bảng thông số kỹ thuật */}
-                                    {selectedComment.productId?.specifications?.detail_json ? (
+                                    {selectedComment.productInfo?.specifications ? (
                                         <div className="mt-6">
                                             <h3 className="text-base font-bold text-gray-800 mb-3 uppercase">
                                                 Thông số kỹ thuật
                                             </h3>
                                             <div className="border rounded-lg overflow-hidden border-gray-200 text-sm">
-                                                {Object.entries(
-                                                    selectedComment.productId.specifications.detail_json,
-                                                ).map(([key, value], index) => (
-                                                    <div
-                                                        key={key}
-                                                        className={`flex px-4 py-2.5 ${
-                                                            index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                                                        }`}
-                                                    >
-                                                        <div className="w-1/3 font-medium text-gray-600">{key}</div>
-                                                        <div className="w-2/3 text-gray-900 font-medium">{value}</div>
-                                                    </div>
-                                                ))}
+                                                {(() => {
+                                                    // 1. Lấy toàn bộ object specifications
+                                                    const specs = selectedComment.productInfo.specifications;
+
+                                                    // 2. Tách detail_json ra (và loại bỏ _id nếu có) để lấy các thông số chính
+                                                    const { detail_json, _id, ...mainSpecs } = specs;
+
+                                                    // 3. Gộp chung thông số chính và thông số trong detail_json thành 1 object
+                                                    const combinedSpecs = { ...mainSpecs, ...(detail_json || {}) };
+
+                                                    return Object.entries(combinedSpecs).map(([key, value], index) => (
+                                                        <div
+                                                            key={key}
+                                                            className={`flex px-4 py-2.5 ${
+                                                                index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                                                            }`}
+                                                        >
+                                                            {/* Thay thế dấu gạch dưới thành khoảng trắng và in hoa chữ cái đầu cho đẹp */}
+                                                            <div className="w-1/3 font-medium text-gray-600 capitalize">
+                                                                {key.replace(/_/g, ' ')}
+                                                            </div>
+                                                            <div className="w-2/3 text-gray-900 font-medium">
+                                                                {/* Ép kiểu về string để tránh lỗi nếu value là object/array chưa lường trước */}
+                                                                {String(value)}
+                                                            </div>
+                                                        </div>
+                                                    ));
+                                                })()}
                                             </div>
                                         </div>
                                     ) : (

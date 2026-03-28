@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Clock, User, Eye, ArrowLeft } from 'lucide-react';
 import blogService from '@/services/blog/blog.api';
@@ -23,16 +23,24 @@ const BlogDetails = () => {
     // 2. Khai báo State lưu dữ liệu
     const [blog, setBlog] = useState(null);
     const [loading, setLoading] = useState(true);
+    const hasIncreasedView = useRef(false);
 
     // 3. Gọi API lấy chi tiết bài viết khi vào trang
     useEffect(() => {
+        console.log('useEffect triggered with id:', id);
+
         const fetchBlogDetail = async () => {
             try {
                 setLoading(true);
                 const response = await blogService.getBlogDetail(id);
-
+                // await blogService.incrementViewCount(id); // Tăng viewCount khi người dùng xem bài viết
                 if (response.data) {
                     setBlog(response.data);
+                }
+                if (hasIncreasedView.current === false) {
+                    hasIncreasedView.current = true;
+                    // Gọi API tăng view, không cần await để không chậm render
+                    blogService.incrementViewCount(id).catch(console.error);
                 }
             } catch (error) {
                 console.error('Lỗi khi tải chi tiết bài viết:', error);
