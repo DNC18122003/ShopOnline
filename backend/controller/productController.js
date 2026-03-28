@@ -182,7 +182,7 @@ const getProducts = async (req, res) => {
 
     // ===== 2. Filter theo CATEGORY IDs hoặc SLUGs =====
     if (category) {
-      const parts = category.split(",");
+      const parts = category.split(",").map((p) => p.trim()).filter(Boolean);
       const objectIds = parts.filter(p => mongoose.Types.ObjectId.isValid(p));
       const slugs = parts.filter(p => !mongoose.Types.ObjectId.isValid(p));
 
@@ -190,12 +190,27 @@ const getProducts = async (req, res) => {
 
       if (slugs.length > 0) {
         const categoriesFound = await Category.find({ slug: { $in: slugs } });
-        categoryIds = [...categoryIds, ...categoriesFound.map((c) => c._id)];
+        categoryIds = [...categoryIds, ...categoriesFound.map((c) => c._id.toString())];
       }
 
-      if (categoryIds.length > 0) {
-        filter.category = { $in: categoryIds };
+      categoryIds = [...new Set(categoryIds.map(String))];
+
+      // Nếu client truyền category nhưng không resolve được id nào,
+      // trả về rỗng thay vì bỏ filter (tránh bị list all).
+      if (categoryIds.length === 0) {
+        return res.status(200).json({
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: 0,
+          },
+        });
       }
+
+      filter.category = { $in: categoryIds };
     }
 
     // ===== 3. Filter theo BRAND IDs hoặc SLUGs =====

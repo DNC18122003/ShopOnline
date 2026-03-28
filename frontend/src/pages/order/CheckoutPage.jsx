@@ -33,6 +33,7 @@ const CheckoutPage = () => {
     const location = useLocation();
     const buyNowItem = location.state?.buyNowItem || null;
     const isBuyNow = !!buyNowItem;
+    const isBuildPc = !!(buildPcData?.isBuildPc && Array.isArray(buildPcData?.items) && buildPcData.items.length > 0);
     const fromCart = location.state?.fromCart || false;
     const [discountInfo, setDiscountInfo] = useState(null);
     const [discountError, setDiscountError] = useState(null);
@@ -45,10 +46,14 @@ const CheckoutPage = () => {
     const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!user) return <Navigate to="/login" replace />;
-    if (!isBuyNow && !cart?.items?.length) {
+    if (!isBuyNow && !isBuildPc && !cart?.items?.length) {
         return <Navigate to="/cart" replace />;
     }
-    const selectedItems = isBuyNow ? [buyNowItem] : location.state?.selectedItems || cart?.items || [];
+    const selectedItems = isBuildPc
+        ? buildPcData.items
+        : isBuyNow
+          ? [buyNowItem]
+          : location.state?.selectedItems || cart?.items || [];
 
     const subtotal = selectedItems.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
     const shippingFee = 0;
