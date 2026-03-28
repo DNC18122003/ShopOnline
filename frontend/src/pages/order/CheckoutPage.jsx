@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/cartContext';
 import { useAuth } from '@/context/authContext';
@@ -11,13 +11,28 @@ import { useLocation } from 'react-router-dom';
 const CheckoutPage = () => {
     const { cart, removeMultipleItems } = useCart();
     const { user } = useAuth();
-    const navigate = useNavigate();
+   const navigate = useNavigate();
+   const location = useLocation();
+   const prevPathRef = useRef(location.pathname);
+   // Lấy dữ liệu Build PC từ localStorage nếu có
+   const [buildPcData, setBuildPcData] = useState(() => {
+       const saved = localStorage.getItem('buildpc_checkout');
+       return saved ? JSON.parse(saved) : null;
+   });
 
-    // Lấy dữ liệu Build PC từ localStorage nếu có
-    const [buildPcData] = useState(() => {
-        const saved = localStorage.getItem('buildpc_checkout');
-        return saved ? JSON.parse(saved) : null;
-    });
+   useEffect(() => {
+       const prevPath = prevPathRef.current;
+       const currentPath = location.pathname;
+
+       // Nếu đi đến /checkout mà không phải từ /build-pc thì reset
+       if (currentPath === '/checkout' && prevPath !== '/build-pc') {
+           localStorage.removeItem('buildpc_checkout');
+           setBuildPcData(null);
+       }
+
+       // Cập nhật prevPathRef cho lần di chuyển tiếp theo
+       prevPathRef.current = currentPath;
+   }, [location]);
 
     const [formData, setFormData] = useState({
         fullName: '',
@@ -30,7 +45,7 @@ const CheckoutPage = () => {
         discountCode: '',
         paymentMethod: 'COD',
     });
-    const location = useLocation();
+
     const buyNowItem = location.state?.buyNowItem || null;
     const isBuyNow = !!buyNowItem;
     const isBuildPc = !!(buildPcData?.isBuildPc && Array.isArray(buildPcData?.items) && buildPcData.items.length > 0);
